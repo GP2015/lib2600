@@ -2,15 +2,15 @@ mod instructions;
 
 use crate::bus::Bus;
 
-const PC_RESET_ADDR_LOW_BYTE: usize = 0xFFFC;
-const PC_RESET_ADDR_HIGH_BYTE: usize = 0xFFFD;
+const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
+const PC_RESET_ADDR_HIGH_BYTE: usize = 0xfffd;
 
 const PROGRAM_COUNTER_RESET_VALUE: u16 = 0x0000;
 const ACCUMULATOR_RESET_VALUE: u8 = 0x00;
 const X_REGISTER_RESET_VALUE: u8 = 0x00;
 const Y_REGISTER_RESET_VALUE: u8 = 0x00;
 const STATUS_REGISTER_RESET_VALUE: u8 = 0x00;
-const STACK_POINTER_RESET_VALUE: u8 = 0xFD;
+const STACK_POINTER_RESET_VALUE: u8 = 0xfd;
 
 
 
