@@ -1,17 +1,17 @@
 enum AddressingMode {
-    A,    // Use accumulator.
-    Abs,  // Use data at address.
-    AbsX, // Use data at (address + X).
-    AbsY, // Use data at (address + Y).
-    Imm,  // Use byte as data.
-    Impl, // No operand.
-    Ind,  // Use data at address as new address.
-    XInd, // Use data at (address + x) as new address.
-    IndY, // Use (data + y) at address as new address.
-    Rel,  // Use data at (program counter + byte).
-    Zpg,  // Operand is low byte of zero-page address
-    ZpgX, // Operand is low byte of zero-page address incremented by X
-    ZpgY, // Operand is low byte of zero-page address incremented by Y
+    A,    // operand is accumulator (implied single byte instruction)
+    Abs,  // operand is address $HHLL
+    AbsX, // operand is address; effective address is address incremented by X with carry
+    AbsY, // operand is address; effective address is address incremented by Y with carry
+    Imm,  // operand is byte BB
+    Impl, // operand implied
+    Ind,  // operand is address; effective address is contents of word at address: C.w($HHLL)
+    XInd, // operand is zeropage address; effective address is word in (LL + X, LL + X + 1), inc. without carry: C.w($00LL + X)
+    IndY, // operand is zeropage address; effective address is word in (LL, LL + 1) incremented by Y with carry: C.w($00LL) + Y
+    Rel,  // branch target is PC + signed offset BB
+    Zpg,  // operand is zeropage address (hi-byte is zero, address = $00LL)
+    ZpgX, // operand is zeropage address; effective address is address incremented by X without carry
+    ZpgY, // operand is zeropage address; effective address is address incremented by Y without carry
 }
 
 enum Instruction {
