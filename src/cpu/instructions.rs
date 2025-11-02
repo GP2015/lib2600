@@ -1,3 +1,5 @@
+use super::*;
+
 enum AddressingMode {
     A,    // operand is accumulator (implied single byte instruction)
     Abs,  // operand is address $HHLL
@@ -371,4 +373,16 @@ pub fn get_instruction(opcode: u8) -> (Instruction, AddressingMode) {
         0xef => (Instruction::ISC, AddressingMode::Abs),
         0xff => (Instruction::ISC, AddressingMode::AbsX),
     }
+}
+
+type CycleFunctionPointer
+
+pub enum CycleFunction{
+    Default(CycleFunctionPointer)
+}
+
+// pub type CycleFunction = fn(cpu: &mut CPU, address_bus: &mut Bus, data_bus: &mut Bus);
+
+pub fn do_nothing(_: &mut CPU, _: &mut Bus, _: &mut Bus) {
+    return;
 }
