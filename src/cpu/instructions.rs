@@ -99,7 +99,7 @@ enum Instruction {
     JAM,  // Freeze CPU in T1 phase with $FF on the data bus
 }
 
-pub fn get_instruction(opcode: u8) -> (Instruction, AddressingMode) {
+fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     match opcode {
         0x00 => (Instruction::BRK, AddressingMode::Impl),
         0x10 => (Instruction::BPL, AddressingMode::Rel),
@@ -375,14 +375,78 @@ pub fn get_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     }
 }
 
-type CycleFunctionPointer
-
-pub enum CycleFunction{
-    Default(CycleFunctionPointer)
+fn decode_instruction(cpu: &mut CPU, instruction: Instruction, addressing_mode: AddressingMode) {
+    match instruction {
+        // Transfer instructions
+        Instruction::LDA => {}
+        Instruction::LDX => {}
+        Instruction::LDY => {}
+        Instruction::STA => {}
+        Instruction::STX => {}
+        Instruction::STY => {}
+        Instruction::TAX => {}
+        Instruction::TAY => {}
+        Instruction::TSX => {}
+        Instruction::TXA => {}
+        Instruction::TXS => {}
+        Instruction::TYA => {}
+        _ => (),
+    }
 }
 
-// pub type CycleFunction = fn(cpu: &mut CPU, address_bus: &mut Bus, data_bus: &mut Bus);
+pub fn fetch_and_decode_instruction(cpu: &mut CPU, data_bus: &mut Bus) {
+    let opcode = data_bus.get_combined() as u8;
+    let (instruction, addressing_mode) = fetch_instruction(opcode);
+    decode_instruction(cpu, instruction, addressing_mode);
+}
 
-pub fn do_nothing(_: &mut CPU, _: &mut Bus, _: &mut Bus) {
-    return;
+#[derive(Clone, Copy)]
+pub enum Job {
+    EndCycle,
+    ReadFromAddress(usize),
+    FnInternal(fn(&mut CPU)),
+    FnWithAddressBus(fn(&mut CPU, &mut Bus)),
+    FnWithDataBus(fn(&mut CPU, &mut Bus)),
+    FnWithAddressAndDataBus(fn(&mut CPU, &mut Bus, &mut Bus)),
+}
+
+const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
+const PC_RESET_ADDR_HIGH_BYTE: usize = 0xfffd;
+
+pub fn reset(cpu: &mut CPU) {
+    let jobs = vec![
+        Job::EndCycle,
+        Job::EndCycle,
+        Job::EndCycle,
+        Job::EndCycle,
+        Job::EndCycle,
+        Job::EndCycle,
+        Job::ReadFromAddress(PC_RESET_ADDR_LOW_BYTE),
+        Job::EndCycle,
+        Job::FnWithDataBus(set_program_counter_low_byte),
+        Job::ReadFromAddress(PC_RESET_ADDR_HIGH_BYTE),
+        Job::EndCycle,
+        Job::FnWithDataBus(set_program_counter_high_byte),
+        Job::EndCycle,
+    ];
+
+    cpu.schedule_jobs(jobs);
+}
+
+pub fn get_new_jobs(cpu: &mut CPU) {
+    let jobs = vec![
+        Job::ReadFromAddress(cpu.program_counter as usize),
+        Job::EndCycle,
+        Job::FnWithDataBus(fetch_and_decode_instruction),
+    ];
+}
+
+pub fn set_program_counter_low_byte(cpu: &mut CPU, data_bus: &mut Bus) {
+    cpu.program_counter &= 0xFF00;
+    cpu.program_counter |= data_bus.get_combined() as u16;
+}
+
+pub fn set_program_counter_high_byte(cpu: &mut CPU, data_bus: &mut Bus) {
+    cpu.program_counter &= 0x00FF;
+    cpu.program_counter |= (data_bus.get_combined() as u16) << 8;
 }

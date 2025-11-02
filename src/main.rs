@@ -42,6 +42,7 @@ fn main() -> Result<()> {
 
     loop {
         cart.tick(&mut address_bus, &mut data_bus);
+        cpu.tick(&mut address_bus, &mut data_bus);
     }
 
     Ok(())
