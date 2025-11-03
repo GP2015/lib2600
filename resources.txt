@@ -10,6 +10,12 @@ https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets
 MOS 6502 instruction set:
 https://www.masswerk.at/6502/6502_instruction_set.html
 
+MOS 6532 (RIOT) datasheet:
+https://web.archive.org/web/20160329090844if_/http://archive.6502.org/datasheets/mos_6532_riot.pdf
+
+TIA 1A info:
+https://www.atariarchives.org/dev/tia/description.php
+
 Breakdown of mappers:
 http://blog.kevtris.org/blogfiles/Atari%202600%20Mappers.txt
 
