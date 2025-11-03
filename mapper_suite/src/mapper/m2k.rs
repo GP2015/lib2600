@@ -8,17 +8,19 @@ pub struct Mapper2K {
     rom: Vec<u8>,
 }
 
-impl UseAsMapper for Mapper2K {
-    fn new(program: Vec<u8>) -> Result<Self> {
+impl Mapper2K {
+    pub fn new(program: Vec<u8>) -> Result<Self> {
         if program.len() > ROM_SIZE {
             return Err(anyhow!("Program supplied is too large."));
         }
 
         Ok(Self { rom: program })
     }
+}
 
+impl CartridgeHandler for Mapper2K {
     fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
-        if address_bus.get_line(CHIP_ENABLE_LINE).unwrap() {
+        if address_bus.get_line(CHIP_ENABLE_LINE) {
             let addr = address_bus.get_combined();
             let data = self.rom[addr % ROM_SIZE];
             data_bus.set_combined(data as usize);

@@ -1,5 +1,3 @@
-use anyhow::{Result, anyhow};
-
 pub struct Bus {
     combined_value: usize,
     number_of_lines: usize,
@@ -19,15 +17,15 @@ impl Bus {
         self.combined_value
     }
 
-    pub fn get_line(&self, line: usize) -> Result<bool> {
+    pub fn get_line(&self, line: usize) -> bool {
         if line >= self.number_of_lines {
-            return Err(anyhow!(
+            panic!(
                 "Cannot access non-existent bit {line} of {}-size bus.",
                 self.number_of_lines
-            ));
+            );
         }
 
-        Ok((self.combined_value >> line) & 1 == 1)
+        (self.combined_value >> line) & 1 == 1
     }
 
     // Returns true if the input value overflowed to fit the bus.
@@ -36,20 +34,18 @@ impl Bus {
         return combined_value >= self.value_range_size;
     }
 
-    pub fn set_line(&mut self, line: usize, value: bool) -> Result<()> {
+    pub fn set_line(&mut self, line: usize, value: bool) {
         if line >= self.number_of_lines {
-            return Err(anyhow!(
+            panic!(
                 "Cannot write to non-existent line {line} of {}-sized bus.",
                 self.number_of_lines
-            ));
+            );
         }
 
         self.combined_value = match value {
             true => self.combined_value | (1 << line),
             false => self.combined_value & !(1 << line),
         };
-
-        Ok(())
     }
 }
 
@@ -68,18 +64,18 @@ mod tests {
     fn test_get_bus_line_value() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b0110);
-        assert_eq!(bus.get_line(2).unwrap(), true);
-        assert_eq!(bus.get_line(3).unwrap(), false);
+        assert_eq!(bus.get_line(2), true);
+        assert_eq!(bus.get_line(3), false);
     }
 
     #[test]
     fn test_set_bus_line_value() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b1100);
-        bus.set_line(0, false).unwrap();
-        bus.set_line(1, true).unwrap();
-        bus.set_line(2, false).unwrap();
-        bus.set_line(3, true).unwrap();
+        bus.set_line(0, false);
+        bus.set_line(1, true);
+        bus.set_line(2, false);
+        bus.set_line(3, true);
         assert_eq!(bus.get_combined(), 0b1010);
     }
 }
