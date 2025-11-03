@@ -22,7 +22,8 @@ pub fn run_console_with_cartridge(cartridge: &mut dyn CartridgeHandler) {
     let mut cpu = CPU::new();
 
     loop {
-        cpu.tick(&mut address_bus, &mut data_bus);
+        cpu.rising_edge(&mut address_bus, &mut data_bus);
         cartridge.tick(&mut address_bus, &mut data_bus);
+        cpu.falling_edge(&mut address_bus, &mut data_bus);
     }
 }

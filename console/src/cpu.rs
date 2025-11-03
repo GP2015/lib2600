@@ -11,7 +11,7 @@ const STATUS_REGISTER_RESET_VALUE: u8 = 0x00;
 const STACK_POINTER_RESET_VALUE: u8 = 0xfd;
 
 pub struct CPU {
-    job_queue: Vec<Job>,
+    job_stack: Vec<Job>,
     program_counter: u16,
     accumulator: u8,
     x_register: u8,
@@ -23,7 +23,7 @@ pub struct CPU {
 impl CPU {
     pub fn new() -> Self {
         let mut cpu = Self {
-            job_queue: Vec::new(),
+            job_stack: Vec::new(),
             program_counter: PROGRAM_COUNTER_RESET_VALUE,
             accumulator: ACCUMULATOR_RESET_VALUE,
             x_register: X_REGISTER_RESET_VALUE,
@@ -37,20 +37,31 @@ impl CPU {
         return cpu;
     }
 
-    pub fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
-        if self.job_queue.is_empty() {
+    pub fn rising_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
+        if self.job_stack.is_empty() {
             instructions::get_new_jobs(self);
         }
 
-        while !self.job_queue.is_empty() {
+        if let Job::RequestRead(addr) = self
+            .job_stack
+            .last()
+            .expect("Job queue isn't empty, so last() won't return None.")
+        {
+            address_bus.set_combined(*addr);
+            self.job_stack.pop();
+        }
+    }
+
+    pub fn falling_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
+        loop {
             let job = self
-                .job_queue
+                .job_stack
                 .pop()
-                .expect("Job queue isn't empty, therefore pop() can't return None.");
+                .expect("Job queue isn't empty, so pop() won't return None.");
 
             match job {
                 Job::EndCycle => break,
-                Job::ReadFromAddress(addr) => _ = address_bus.set_combined(addr),
+                Job::RequestRead(_) => panic!("There should not be a request read here."),
                 Job::FnInternal(fn_ptr) => fn_ptr(self),
                 Job::FnWithAddressBus(fn_ptr) => fn_ptr(self, address_bus),
                 Job::FnWithDataBus(fn_ptr) => fn_ptr(self, data_bus),
@@ -59,12 +70,9 @@ impl CPU {
         }
     }
 
-    fn schedule_jobs(&mut self, mut operations: Vec<Job>) {
-        operations.reverse();
-        self.job_queue.append(&mut operations);
-    }
-
-    fn increment_program_counter(&mut self) {
-        self.program_counter = self.program_counter.wrapping_add(1);
+    // Jobs are scheduled in a "first in, first out" manner.
+    pub fn schedule_jobs(&mut self, mut jobs: Vec<Job>) {
+        jobs.reverse();
+        self.job_stack.append(&mut jobs);
     }
 }

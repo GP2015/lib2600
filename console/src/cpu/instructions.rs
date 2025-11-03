@@ -400,10 +400,10 @@ pub fn fetch_and_decode_instruction(cpu: &mut CPU, data_bus: &mut Bus) {
     decode_instruction(cpu, instruction, addressing_mode);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Job {
     EndCycle,
-    ReadFromAddress(usize),
+    RequestRead(usize),
     FnInternal(fn(&mut CPU)),
     FnWithAddressBus(fn(&mut CPU, &mut Bus)),
     FnWithDataBus(fn(&mut CPU, &mut Bus)),
@@ -420,12 +420,10 @@ pub fn reset(cpu: &mut CPU) {
         Job::EndCycle,
         Job::EndCycle,
         Job::EndCycle,
-        Job::EndCycle,
-        Job::ReadFromAddress(PC_RESET_ADDR_LOW_BYTE),
-        Job::EndCycle,
+        Job::RequestRead(PC_RESET_ADDR_LOW_BYTE),
         Job::FnWithDataBus(set_program_counter_low_byte),
-        Job::ReadFromAddress(PC_RESET_ADDR_HIGH_BYTE),
         Job::EndCycle,
+        Job::RequestRead(PC_RESET_ADDR_HIGH_BYTE),
         Job::FnWithDataBus(set_program_counter_high_byte),
         Job::EndCycle,
     ];
@@ -435,10 +433,12 @@ pub fn reset(cpu: &mut CPU) {
 
 pub fn get_new_jobs(cpu: &mut CPU) {
     let jobs = vec![
-        Job::ReadFromAddress(cpu.program_counter as usize),
-        Job::EndCycle,
+        Job::RequestRead(cpu.program_counter as usize),
         Job::FnWithDataBus(fetch_and_decode_instruction),
+        Job::EndCycle,
     ];
+
+    cpu.schedule_jobs(jobs);
 }
 
 pub fn set_program_counter_low_byte(cpu: &mut CPU, data_bus: &mut Bus) {
