@@ -4,7 +4,6 @@ https://problemkaputt.de/2k6specs.htm
 Atari 2600 schematic:
 https://images.archbee.com/9EnOacbhz7Zqgrsars4GT/PuCNAEr_1YFk9VZe81_s8_2600-motherboard-schematic.png?format=webp&width=1280
 
-
 MOS 65XX datasheet:
 https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets/mos_6500_mpu_nov_1985.pdf
 
