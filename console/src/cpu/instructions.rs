@@ -376,6 +376,8 @@ fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
 }
 
 fn decode_instruction(cpu: &mut CPU, instruction: Instruction, addressing_mode: AddressingMode) {
+    let jobs = vec![Job::RequestRead(cpu.get_program_counter() as usize)];
+
     match instruction {
         // Transfer instructions
         Instruction::LDA => {}
@@ -397,7 +399,7 @@ fn decode_instruction(cpu: &mut CPU, instruction: Instruction, addressing_mode: 
 pub fn fetch_and_decode_instruction(cpu: &mut CPU, data_bus: &mut Bus) {
     let opcode = data_bus.get_combined() as u8;
     let (instruction, addressing_mode) = fetch_instruction(opcode);
-    decode_instruction(cpu, instruction, addressing_mode);
+    let jobs = decode_instruction(cpu, instruction, addressing_mode);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -405,9 +407,7 @@ pub enum Job {
     EndCycle,
     RequestRead(usize),
     FnInternal(fn(&mut CPU)),
-    FnWithAddressBus(fn(&mut CPU, &mut Bus)),
     FnWithDataBus(fn(&mut CPU, &mut Bus)),
-    FnWithAddressAndDataBus(fn(&mut CPU, &mut Bus, &mut Bus)),
 }
 
 const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
@@ -449,4 +449,36 @@ pub fn set_program_counter_low_byte(cpu: &mut CPU, data_bus: &mut Bus) {
 pub fn set_program_counter_high_byte(cpu: &mut CPU, data_bus: &mut Bus) {
     cpu.program_counter &= 0x00FF;
     cpu.program_counter |= (data_bus.get_combined() as u16) << 8;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_objects() -> (Bus, Bus, CPU) {
+        let address_bus = Bus::new(13);
+        let data_bus = Bus::new(8);
+        let cpu = CPU::new();
+        (address_bus, data_bus, cpu)
+    }
+
+    #[test]
+    fn test_cpu_reset_sequence() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_test_objects();
+
+        for _ in 0..5 {
+            cpu.rising_edge(&mut address_bus, &mut data_bus);
+            cpu.falling_edge(&mut address_bus, &mut data_bus);
+        }
+
+        cpu.rising_edge(&mut address_bus, &mut data_bus);
+        assert_eq!(address_bus.get_combined(), 0x1ffc);
+        cpu.falling_edge(&mut address_bus, &mut data_bus);
+
+        cpu.rising_edge(&mut address_bus, &mut data_bus);
+        assert_eq!(address_bus.get_combined(), 0x1ffd);
+        cpu.falling_edge(&mut address_bus, &mut data_bus);
+
+        assert!(cpu.job_stack.is_empty());
+    }
 }

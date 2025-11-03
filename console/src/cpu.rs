@@ -45,7 +45,7 @@ impl CPU {
         if let Job::RequestRead(addr) = self
             .job_stack
             .last()
-            .expect("Job queue isn't empty, so last() won't return None.")
+            .expect("Job queue shouldn't empty, so last() won't return None.")
         {
             address_bus.set_combined(*addr);
             self.job_stack.pop();
@@ -57,15 +57,13 @@ impl CPU {
             let job = self
                 .job_stack
                 .pop()
-                .expect("Job queue isn't empty, so pop() won't return None.");
+                .expect("Job queue shouldn't be empty, so pop() won't return None.");
 
             match job {
                 Job::EndCycle => break,
-                Job::RequestRead(_) => panic!("There should not be a request read here."),
+                Job::RequestRead(_) => panic!("There should not be a read request here."),
                 Job::FnInternal(fn_ptr) => fn_ptr(self),
-                Job::FnWithAddressBus(fn_ptr) => fn_ptr(self, address_bus),
                 Job::FnWithDataBus(fn_ptr) => fn_ptr(self, data_bus),
-                Job::FnWithAddressAndDataBus(fn_ptr) => fn_ptr(self, address_bus, data_bus),
             }
         }
     }
@@ -74,5 +72,9 @@ impl CPU {
     pub fn schedule_jobs(&mut self, mut jobs: Vec<Job>) {
         jobs.reverse();
         self.job_stack.append(&mut jobs);
+    }
+
+    pub fn get_program_counter(&self) -> u16 {
+        self.program_counter
     }
 }
