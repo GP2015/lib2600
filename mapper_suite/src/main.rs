@@ -2,7 +2,6 @@ mod mapper;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use console::{self, Bus, CartridgeHandler};
 use mapper::MapperKind;
 
 #[derive(Parser, Debug)]
