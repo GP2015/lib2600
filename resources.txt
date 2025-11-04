@@ -1,10 +1,10 @@
 Atari 2600 specifications:
 https://problemkaputt.de/2k6specs.htm
 
-Atari 2600 schematic:
-https://images.archbee.com/9EnOacbhz7Zqgrsars4GT/PuCNAEr_1YFk9VZe81_s8_2600-motherboard-schematic.png?format=webp&width=1280
+Atari 2600 motherboard schematic:
+https://dn721801.ca.archive.org/0/items/atari-2600-schematics-archive/%5BSCH%5D%202600%20Motherboard%20Schematic.png
 
-MOS 65XX datasheet:
+MOS 650X datasheet:
 https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets/mos_6500_mpu_nov_1985.pdf
 
 MOS 6502 instruction set:
