@@ -1,5 +1,4 @@
 use super::*;
-use anyhow::{Result, anyhow};
 
 const ROM_SIZE: usize = 2048;
 const CHIP_ENABLE_LINE: usize = 12;
@@ -9,9 +8,11 @@ pub struct Mapper2K {
 }
 
 impl Mapper2K {
-    pub fn new(program: Vec<u8>) -> Result<Self> {
-        if program.len() > ROM_SIZE {
-            return Err(anyhow!("Program supplied is too large."));
+    pub fn new(program: Vec<u8>) -> Result<Self, MapperError> {
+        if program.len() != ROM_SIZE {
+            return Err(MapperError::InvalidProgram {
+                mapper_name: String::from("2K"),
+            });
         }
 
         Ok(Self { rom: program })
@@ -32,7 +33,7 @@ impl CartridgeHandler for Mapper2K {
 mod tests {
     use super::*;
 
-    fn create_test_objects(program: Vec<u8>) -> (Bus, Bus, Mapper2K) {
+    fn create_valid_objects(program: Vec<u8>) -> (Bus, Bus, Mapper2K) {
         let address_bus = Bus::new(13);
         let data_bus = Bus::new(8);
         let cart = Mapper2K::new(program).unwrap();
@@ -40,11 +41,19 @@ mod tests {
     }
 
     #[test]
-    fn test_m2k_no_read() {
+    fn invalid_program() {
+        let program = vec![0; 5];
+        let Err(_) = Mapper2K::new(program) else {
+            panic!("Provided program is invalid, so cartridge creation should have failed.");
+        };
+    }
+
+    #[test]
+    fn no_read() {
         let mut program = vec![0; ROM_SIZE];
         program[0x67] = 0x89;
 
-        let (mut address_bus, mut data_bus, mut cart) = create_test_objects(program);
+        let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
 
         address_bus.set_combined(0x0067);
         cart.tick(&mut address_bus, &mut data_bus);
@@ -53,11 +62,11 @@ mod tests {
     }
 
     #[test]
-    fn test_m2k_read() {
+    fn read() {
         let mut program = vec![0; ROM_SIZE];
         program[0x67] = 0x89;
 
-        let (mut address_bus, mut data_bus, mut cart) = create_test_objects(program);
+        let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
 
         address_bus.set_combined(0x1067);
         cart.tick(&mut address_bus, &mut data_bus);
@@ -66,11 +75,11 @@ mod tests {
     }
 
     #[test]
-    fn test_m2k_read_wrapped() {
+    fn read_wrapped() {
         let mut program = vec![0; ROM_SIZE];
         program[0x67] = 0x89;
 
-        let (mut address_bus, mut data_bus, mut cart) = create_test_objects(program);
+        let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
 
         address_bus.set_combined(0x1867);
         cart.tick(&mut address_bus, &mut data_bus);

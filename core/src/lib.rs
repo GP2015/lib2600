@@ -10,7 +10,7 @@ pub trait CartridgeHandler {
     fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus);
 }
 
-pub fn run_console_with_cartridge(cartridge: &mut dyn CartridgeHandler) {
+pub fn run_console(cartridge: &mut dyn CartridgeHandler) {
     let mut state = State::new();
 
     let mut address_bus = Bus::new(13);

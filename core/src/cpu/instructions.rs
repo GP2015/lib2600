@@ -455,7 +455,7 @@ pub fn set_program_counter_high_byte(cpu: &mut CPU, data_bus: &mut Bus) {
 mod tests {
     use super::*;
 
-    fn create_test_objects() -> (Bus, Bus, CPU) {
+    fn create_valid_objects() -> (Bus, Bus, CPU) {
         let address_bus = Bus::new(13);
         let data_bus = Bus::new(8);
         let cpu = CPU::new();
@@ -463,8 +463,8 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_reset_sequence() {
-        let (mut address_bus, mut data_bus, mut cpu) = create_test_objects();
+    fn reset_sequence() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
 
         for _ in 0..5 {
             cpu.rising_edge(&mut address_bus, &mut data_bus);

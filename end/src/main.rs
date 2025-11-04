@@ -1,14 +1,13 @@
-mod mapper;
+mod config;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use clap::Parser;
-use mapper::MapperKind;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    mapper_kind: lib2600mappers::MapperKind,
     program_path: String,
-    mapper: MapperKind,
 }
 
 fn main() -> Result<()> {
@@ -21,9 +20,8 @@ fn main() -> Result<()> {
         ));
     };
 
-    let mut cartridge = MapperKind::to_cartridge(args.mapper, program)?;
-
-    console::run_console_with_cartridge(&mut *cartridge);
+    let mut cartridge = args.mapper_kind.to_cartridge(program)?;
+    lib2600core::run_console(&mut *cartridge);
 
     Ok(())
 }

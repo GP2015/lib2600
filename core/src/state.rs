@@ -21,7 +21,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_state_active() {
+    fn deactivate() {
         let mut state = State::new();
         assert_eq!(state.is_active(), true);
         state.deactivate();

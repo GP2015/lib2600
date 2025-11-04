@@ -54,14 +54,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_bus_combined_value() {
+    fn get_combined_value() {
         let mut bus = Bus::new(8);
         bus.set_combined(0x67);
         assert_eq!(bus.get_combined(), 0x67);
     }
 
     #[test]
-    fn test_get_bus_line_value() {
+    fn get_line_value() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b0110);
         assert_eq!(bus.get_line(2), true);
@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn test_set_bus_line_value() {
+    fn set_line_value() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b1100);
         bus.set_line(0, false);
