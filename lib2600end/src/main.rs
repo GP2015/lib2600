@@ -1,6 +1,6 @@
 mod mapper;
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use mapper::MapperKind;
 
