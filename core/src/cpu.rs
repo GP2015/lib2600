@@ -37,7 +37,7 @@ impl CPU {
         return cpu;
     }
 
-    pub fn rising_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
+    pub fn tick_rising_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
         if self.job_stack.is_empty() {
             instructions::get_new_jobs(self);
         }
@@ -52,7 +52,7 @@ impl CPU {
         }
     }
 
-    pub fn falling_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
+    pub fn tick_falling_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
         loop {
             let job = self
                 .job_stack

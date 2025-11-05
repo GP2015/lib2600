@@ -467,17 +467,17 @@ mod tests {
         let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
 
         for _ in 0..5 {
-            cpu.rising_edge(&mut address_bus, &mut data_bus);
-            cpu.falling_edge(&mut address_bus, &mut data_bus);
+            cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
+            cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
         }
 
-        cpu.rising_edge(&mut address_bus, &mut data_bus);
+        cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
         assert_eq!(address_bus.get_combined(), 0x1ffc);
-        cpu.falling_edge(&mut address_bus, &mut data_bus);
+        cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
 
-        cpu.rising_edge(&mut address_bus, &mut data_bus);
+        cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
         assert_eq!(address_bus.get_combined(), 0x1ffd);
-        cpu.falling_edge(&mut address_bus, &mut data_bus);
+        cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
 
         assert!(cpu.job_stack.is_empty());
     }
