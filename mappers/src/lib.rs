@@ -19,6 +19,7 @@ macro_rules! define_mappers {
         #[derive(Copy, Clone, Debug, serde::Deserialize, clap::ValueEnum)]
         pub enum MapperKind {
             $(
+                #[value(name = $string)]
                 #[serde(rename = $string)]
                 $variant
             ),*
