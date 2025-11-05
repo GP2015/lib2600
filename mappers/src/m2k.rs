@@ -19,7 +19,7 @@ impl Mapper2K {
     }
 }
 
-impl CartridgeHandler for Mapper2K {
+impl Cartridge for Mapper2K {
     fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
         if address_bus.get_line(CHIP_ENABLE_LINE) {
             let addr = address_bus.get_combined();

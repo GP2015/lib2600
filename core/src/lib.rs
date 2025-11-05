@@ -4,22 +4,44 @@ mod cpu;
 pub use bus::Bus;
 use cpu::CPU;
 
-pub trait CartridgeHandler {
+pub trait Cartridge {
     fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus);
 }
 
-pub fn run_console(cartridge: &mut dyn CartridgeHandler) {
-    let mut address_bus = Bus::new(13);
-    let mut data_bus = Bus::new(8);
-    let mut rw_line = false;
-    let mut phi2_line = false;
-    let mut rdy_line = false;
+pub struct Console {
+    address_bus: Bus,
+    data_bus: Bus,
+    cpu: CPU,
+    cartridge: Option<Box<dyn Cartridge>>,
+}
 
-    let mut cpu = CPU::new();
+impl Console {
+    pub fn new() -> Self {
+        Self {
+            address_bus: Bus::new(13),
+            data_bus: Bus::new(8),
+            cpu: CPU::new(),
+            cartridge: None,
+        }
+    }
 
-    loop {
-        cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
-        cartridge.tick(&mut address_bus, &mut data_bus);
-        cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
+    pub fn tick(&mut self) {
+        self.cpu
+            .tick_rising_edge(&mut self.address_bus, &mut self.data_bus);
+
+        if let Some(cartridge) = self.cartridge.as_mut() {
+            cartridge.tick(&mut self.address_bus, &mut self.data_bus);
+        }
+
+        self.cpu
+            .tick_falling_edge(&mut self.address_bus, &mut self.data_bus);
+    }
+
+    pub fn load_cartridge(&mut self, cartridge: Box<dyn Cartridge>) {
+        self.cartridge = Some(cartridge);
+    }
+
+    pub fn unload_cartridge(&mut self) {
+        self.cartridge = None;
     }
 }

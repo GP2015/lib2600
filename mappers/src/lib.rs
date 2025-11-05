@@ -1,7 +1,7 @@
 mod m2k;
 mod m4k;
 
-use lib2600core::{Bus, CartridgeHandler};
+use lib2600core::{Bus, Cartridge};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -26,7 +26,7 @@ macro_rules! define_mappers {
         }
 
         impl MapperKind {
-            pub fn to_cartridge(self, program: Vec<u8>) -> Result<Box<dyn CartridgeHandler>, MapperError> {
+            pub fn to_cartridge(self, program: Vec<u8>) -> Result<Box<dyn Cartridge>, MapperError> {
                 match self {
                     $(
                         MapperKind::$variant => Ok(Box::new($module::$struct_name::new(program)?)),

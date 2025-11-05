@@ -19,7 +19,7 @@ impl Mapper4K {
     }
 }
 
-impl CartridgeHandler for Mapper4K {
+impl Cartridge for Mapper4K {
     fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
         if address_bus.get_line(CHIP_ENABLE_LINE) {
             let addr = address_bus.get_combined();
