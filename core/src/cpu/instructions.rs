@@ -1,5 +1,8 @@
+mod non_op;
+
 use super::*;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AddressingMode {
     A,    // operand is accumulator (implied single byte instruction)
     Abs,  // operand is address $HHLL
@@ -16,7 +19,12 @@ pub enum AddressingMode {
     ZpgY, // operand is zeropage address; effective address is address incremented by Y without carry
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Instruction {
+    // -- Non-opcode instructions --
+    Reset, // Reset the CPU; called when powered on
+    Fetch, // Fetch the next instruction; called after each instruction finishes
+
     // -- Legal opcodes --
     ADC, // Add Memory to Accumulator with Carry
     AND, // AND Memory with Accumulator
@@ -375,75 +383,18 @@ pub fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     }
 }
 
-const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
-const PC_RESET_ADDR_HIGH_BYTE: usize = 0xfffd;
-
-pub fn reset(cpu: &mut CPU) {
-    let jobs = vec![
-        Job::EndCycle,
-        Job::EndCycle,
-        Job::EndCycle,
-        Job::EndCycle,
-        Job::EndCycle,
-        Job::RequestRead(PC_RESET_ADDR_LOW_BYTE),
-        Job::FnWithDataBus(set_program_counter_low_byte),
-        Job::EndCycle,
-        Job::RequestRead(PC_RESET_ADDR_HIGH_BYTE),
-        Job::FnWithDataBus(set_program_counter_high_byte),
-        Job::EndCycle,
-    ];
-
-    cpu.schedule_jobs(jobs);
-}
-
-pub fn get_new_jobs(cpu: &mut CPU) {
-    let jobs = vec![
-        Job::RequestRead(cpu.program_counter as usize),
-        Job::FnWithDataBus(fetch_and_decode_instruction),
-        Job::EndCycle,
-    ];
-
-    cpu.schedule_jobs(jobs);
-}
-
-pub fn set_program_counter_low_byte(cpu: &mut CPU, data_bus: &mut Bus) {
-    cpu.program_counter &= 0xFF00;
-    cpu.program_counter |= data_bus.get_combined() as u16;
-}
-
-pub fn set_program_counter_high_byte(cpu: &mut CPU, data_bus: &mut Bus) {
-    cpu.program_counter &= 0x00FF;
-    cpu.program_counter |= (data_bus.get_combined() as u16) << 8;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn create_valid_objects() -> (Bus, Bus, CPU) {
-        let address_bus = Bus::new(13);
-        let data_bus = Bus::new(8);
-        let cpu = CPU::new();
-        (address_bus, data_bus, cpu)
+pub fn execute_instruction_rising_edge(cpu: &mut CPU, address_bus: &mut Bus, data_bus: &mut Bus) {
+    match cpu.current_instruction {
+        Instruction::Reset => non_op::reset_rising_edge(cpu, address_bus),
+        Instruction::Fetch => non_op::fetch_rising_edge(cpu, address_bus),
+        _ => (),
     }
+}
 
-    #[test]
-    fn reset_sequence() {
-        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
-
-        for _ in 0..5 {
-            cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
-            cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
-        }
-
-        cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
-        assert_eq!(address_bus.get_combined(), 0x1ffc);
-        cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
-
-        cpu.tick_rising_edge(&mut address_bus, &mut data_bus);
-        assert_eq!(address_bus.get_combined(), 0x1ffd);
-        cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
-
-        assert!(cpu.job_stack.is_empty());
+pub fn execute_instruction_falling_edge(cpu: &mut CPU, address_bus: &mut Bus, data_bus: &mut Bus) {
+    match cpu.current_instruction {
+        Instruction::Reset => non_op::reset_falling_edge(cpu, data_bus),
+        Instruction::Fetch => non_op::fetch_falling_edge(cpu, data_bus),
+        _ => (),
     }
 }
