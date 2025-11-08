@@ -1,6 +1,6 @@
 use super::*;
 
-enum AddressingMode {
+pub enum AddressingMode {
     A,    // operand is accumulator (implied single byte instruction)
     Abs,  // operand is address $HHLL
     AbsX, // operand is address; effective address is address incremented by X with carry
@@ -16,7 +16,7 @@ enum AddressingMode {
     ZpgY, // operand is zeropage address; effective address is address incremented by Y without carry
 }
 
-enum Instruction {
+pub enum Instruction {
     // -- Legal opcodes --
     ADC, // Add Memory to Accumulator with Carry
     AND, // AND Memory with Accumulator
@@ -99,7 +99,7 @@ enum Instruction {
     JAM,  // Freeze CPU in T1 phase with $FF on the data bus
 }
 
-fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
+pub fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     match opcode {
         0x00 => (Instruction::BRK, AddressingMode::Impl),
         0x10 => (Instruction::BPL, AddressingMode::Rel),
@@ -373,41 +373,6 @@ fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
         0xef => (Instruction::ISC, AddressingMode::Abs),
         0xff => (Instruction::ISC, AddressingMode::AbsX),
     }
-}
-
-fn decode_instruction(cpu: &mut CPU, instruction: Instruction, addressing_mode: AddressingMode) {
-    let jobs = vec![Job::RequestRead(cpu.get_program_counter() as usize)];
-
-    match instruction {
-        // Transfer instructions
-        Instruction::LDA => {}
-        Instruction::LDX => {}
-        Instruction::LDY => {}
-        Instruction::STA => {}
-        Instruction::STX => {}
-        Instruction::STY => {}
-        Instruction::TAX => {}
-        Instruction::TAY => {}
-        Instruction::TSX => {}
-        Instruction::TXA => {}
-        Instruction::TXS => {}
-        Instruction::TYA => {}
-        _ => (),
-    }
-}
-
-pub fn fetch_and_decode_instruction(cpu: &mut CPU, data_bus: &mut Bus) {
-    let opcode = data_bus.get_combined() as u8;
-    let (instruction, addressing_mode) = fetch_instruction(opcode);
-    let jobs = decode_instruction(cpu, instruction, addressing_mode);
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Job {
-    EndCycle,
-    RequestRead(usize),
-    FnInternal(fn(&mut CPU)),
-    FnWithDataBus(fn(&mut CPU, &mut Bus)),
 }
 
 const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
