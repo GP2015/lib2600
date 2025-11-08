@@ -1,3 +1,4 @@
+/// Represents a bus inside the console, carrying data.
 pub struct Bus {
     combined_value: usize,
     number_of_lines: usize,
@@ -5,6 +6,7 @@ pub struct Bus {
 }
 
 impl Bus {
+    /// Returns a new bus with `size` data lines.
     pub fn new(size: usize) -> Self {
         Self {
             combined_value: 0,
@@ -13,10 +15,12 @@ impl Bus {
         }
     }
 
+    /// Read the value held in the bus.
     pub fn get_combined(&self) -> usize {
         self.combined_value
     }
 
+    /// Returns true if the `line`-th line of the bus is high.
     pub fn get_line(&self, line: usize) -> bool {
         if line >= self.number_of_lines {
             panic!(
@@ -28,12 +32,15 @@ impl Bus {
         (self.combined_value >> line) & 1 == 1
     }
 
-    // Returns true if the input value overflowed to fit the bus.
+    /// Drive the bus with the value `combined_value`.
+    ///
+    /// Returns true if the input value overflowed to fit into the bus.
     pub fn set_combined(&mut self, combined_value: usize) -> bool {
         self.combined_value = combined_value % self.value_range_size;
         return combined_value >= self.value_range_size;
     }
 
+    /// Drive the `line`-th line of the bus either high (`value = true`) or low (`value = false`).
     pub fn set_line(&mut self, line: usize, value: bool) {
         if line >= self.number_of_lines {
             panic!(
