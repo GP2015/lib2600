@@ -4,6 +4,9 @@ https://problemkaputt.de/2k6specs.htm
 Atari 2600 motherboard schematic:
 https://dn721801.ca.archive.org/0/items/atari-2600-schematics-archive/%5BSCH%5D%202600%20Motherboard%20Schematic.png
 
+Atari 2600 field service manual:
+http://www.robotsandcomputers.com/computers/manuals/atari2600_fsm.pdf
+
 MOS 650X datasheet:
 https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets/mos_6500_mpu_nov_1985.pdf
 
@@ -15,6 +18,9 @@ https://web.archive.org/web/20160329090844if_/http://archive.6502.org/datasheets
 
 TIA 1A info:
 https://www.atariarchives.org/dev/tia/description.php
+
+Fairchild CD4050 datasheet:
+https://www.futurlec.com/4000Series/CD4050.shtml
 
 Breakdown of mappers:
 http://blog.kevtris.org/blogfiles/Atari%202600%20Mappers.txt
