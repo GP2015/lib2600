@@ -139,40 +139,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
-name = "lib2600core"
+name = "lib2600"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "serde",
  "thiserror",
 ]
 
 [[package]]
-name = "lib2600end"
+name = "lib2600frontend"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "lib2600core",
- "lib2600inputs",
- "lib2600mappers",
+ "lib2600",
  "serde",
  "toml",
-]
-
-[[package]]
-name = "lib2600inputs"
-version = "0.1.0"
-dependencies = [
- "lib2600core",
-]
-
-[[package]]
-name = "lib2600mappers"
-version = "0.1.0"
-dependencies = [
- "clap",
- "lib2600core",
- "serde",
- "thiserror",
 ]
 
 [[package]]

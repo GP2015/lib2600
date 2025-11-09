@@ -1,6 +1,6 @@
 mod instructions;
 
-use crate::bus::Bus;
+use crate::core::bus::Bus;
 use instructions::{AddressingMode, Instruction};
 
 const PROGRAM_COUNTER_RESET_VALUE: u16 = 0x0000;

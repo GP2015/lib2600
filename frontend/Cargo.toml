@@ -1,13 +1,11 @@
 [package]
-name = "lib2600end"
+name = "lib2600frontend"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
 clap = { version = "4.5.51", features = ["derive"] }
-lib2600core = { path = "../core" }
-lib2600mappers = { path = "../mappers" }
-lib2600inputs = { path = "../inputs" }
+lib2600 = { path = "../emulator", features = ["mappers"]}
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.8"

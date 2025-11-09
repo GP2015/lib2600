@@ -2,8 +2,8 @@ mod config;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
-use lib2600core::Console;
-use lib2600mappers::MapperKind;
+use lib2600::core::Console;
+use lib2600::mappers::MapperKind;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

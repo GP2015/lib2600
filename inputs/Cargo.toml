@@ -1,7 +1,0 @@
-[package]
-name = "lib2600inputs"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-lib2600core = { path = "../core" }
