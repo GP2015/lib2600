@@ -17,10 +17,13 @@ pub struct CPU {
     y_register: u8,
     status_register: u8,
     stack_pointer: u8,
+
     current_instruction: Instruction,
     current_addressing_mode: AddressingMode,
     instruction_cycle: usize,
     addressing_cycle: usize,
+    finished_addressing: bool,
+    mid_instruction_address_hold: u16,
 }
 
 impl CPU {
@@ -32,19 +35,26 @@ impl CPU {
             y_register: Y_REGISTER_RESET_VALUE,
             status_register: STATUS_REGISTER_RESET_VALUE,
             stack_pointer: STACK_POINTER_RESET_VALUE,
+
             current_instruction: Instruction::Reset,
             current_addressing_mode: AddressingMode::Impl,
             instruction_cycle: 0,
             addressing_cycle: 0,
+            finished_addressing: false,
+            mid_instruction_address_hold: 0,
         }
     }
 
-    pub fn tick_rising_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
-        instructions::execute_instruction_rising_edge(self, address_bus, data_bus);
+    pub fn tick_rising_edge(&mut self, address_bus: &mut Bus) {
+        instructions::execute_instruction_rising_edge(self, address_bus);
     }
 
-    pub fn tick_falling_edge(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
-        instructions::execute_instruction_falling_edge(self, address_bus, data_bus);
+    pub fn tick_falling_edge(&mut self, data_bus: &mut Bus) {
+        instructions::execute_instruction_falling_edge(self, data_bus);
+    }
+
+    pub fn increment_program_counter(&mut self) {
+        self.program_counter = self.program_counter.wrapping_add(1);
     }
 
     pub fn reset(&mut self) {
