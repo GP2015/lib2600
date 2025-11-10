@@ -88,6 +88,7 @@ mod tests {
         assert_eq!(address_bus.get_combined(), 0x67);
 
         data_bus.set_combined(0xea);
+
         cpu.tick_falling_edge(&mut address_bus, &mut data_bus);
         assert_eq!(cpu.current_instruction, Instruction::NOP);
         assert_eq!(cpu.current_addressing_mode, AddressingMode::Impl);
