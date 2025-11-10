@@ -40,3 +40,48 @@ pub fn abs_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
 
     cpu.addressing_cycle += 1;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::cpu::instructions::{AddressingMode, Instruction};
+
+    fn create_valid_objects() -> (Bus, Bus, CPU) {
+        let address_bus = Bus::new(13);
+        let data_bus = Bus::new(8);
+        let cpu = CPU::new();
+        (address_bus, data_bus, cpu)
+    }
+
+    #[test]
+    fn imm_addressing() {
+        let (mut address_bus, _, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::Imm;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+    }
+
+    #[test]
+    fn abs_addressing() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::Abs;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x23);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x68);
+        data_bus.set_combined(0x01);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0123);
+    }
+}
