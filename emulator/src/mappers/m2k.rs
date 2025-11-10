@@ -1,4 +1,5 @@
-use super::*;
+use crate::core::{Bus, Cartridge};
+use crate::mappers::MapperError;
 
 const ROM_SIZE: usize = 2048;
 const CHIP_ENABLE_LINE: usize = 12;

@@ -1,7 +1,7 @@
 mod m2k;
 mod m4k;
 
-use crate::core::{Bus, Cartridge};
+use crate::core::Cartridge;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
