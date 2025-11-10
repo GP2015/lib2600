@@ -1,5 +1,6 @@
 use crate::core::bus::Bus;
 use crate::core::cpu::CPU;
+use crate::core::cpu::instructions::Register;
 
 pub fn imm_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
     address_bus.set_combined(cpu.program_counter as usize);
@@ -21,7 +22,7 @@ pub fn abs_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
             address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
             cpu.finished_addressing = true;
         }
-        _ => panic!("Invalid address cycle reached in abs_rising_edge."),
+        _ => (),
     }
 }
 
@@ -35,7 +36,67 @@ pub fn abs_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
             // OR in the high byte of the address.
             cpu.mid_instruction_address_hold |= (data_bus.get_combined() as u16) << 8;
         }
-        _ => panic!("Invalid address cycle reached in abs_falling_edge."),
+        _ => (),
+    }
+
+    cpu.addressing_cycle += 1;
+}
+
+pub fn zpg_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
+    match cpu.addressing_cycle {
+        0 => {
+            address_bus.set_combined(cpu.program_counter as usize);
+            cpu.increment_program_counter();
+        }
+        1 => {
+            address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
+            cpu.finished_addressing = true;
+        }
+        _ => (),
+    }
+}
+
+pub fn zpg_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
+    match cpu.addressing_cycle {
+        0 => {
+            // Grab the zeropage address.
+            cpu.mid_instruction_address_hold = data_bus.get_combined() as u16;
+        }
+        _ => (),
+    }
+
+    cpu.addressing_cycle += 1;
+}
+
+pub fn zpg_indexed_rising_edge(cpu: &mut CPU, address_bus: &mut Bus, reg: Register) {
+    match cpu.addressing_cycle {
+        0 => {
+            address_bus.set_combined(cpu.program_counter as usize);
+            cpu.increment_program_counter();
+        }
+        2 => {
+            address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
+            cpu.finished_addressing = true;
+        }
+        _ => (),
+    }
+}
+
+pub fn zpg_indexed_falling_edge(cpu: &mut CPU, data_bus: &mut Bus, reg: Register) {
+    match cpu.addressing_cycle {
+        0 => {
+            // Grab the zeropage address.
+            cpu.mid_instruction_address_hold = data_bus.get_combined() as u16;
+        }
+        1 => {
+            cpu.mid_instruction_address_hold += match reg {
+                Register::X => cpu.x_register as u16,
+                Register::Y => cpu.y_register as u16,
+            };
+
+            cpu.mid_instruction_address_hold %= 256;
+        }
+        _ => (),
     }
 
     cpu.addressing_cycle += 1;
@@ -54,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    fn imm_addressing() {
+    fn imm() {
         let (mut address_bus, _, mut cpu) = create_valid_objects();
         cpu.program_counter = 0x67;
         cpu.current_instruction = Instruction::LDA;
@@ -62,10 +123,11 @@ mod tests {
 
         cpu.tick_rising_edge(&mut address_bus);
         assert_eq!(address_bus.get_combined(), 0x67);
+        assert_eq!(cpu.program_counter, 0x68);
     }
 
     #[test]
-    fn abs_addressing() {
+    fn abs() {
         let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
         cpu.program_counter = 0x67;
         cpu.current_instruction = Instruction::LDA;
@@ -83,5 +145,86 @@ mod tests {
 
         cpu.tick_rising_edge(&mut address_bus);
         assert_eq!(address_bus.get_combined(), 0x0123);
+        assert_eq!(cpu.program_counter, 0x69);
+    }
+
+    #[test]
+    fn zpg() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::Zpg;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x12);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0012);
+        assert_eq!(cpu.program_counter, 0x68);
+    }
+
+    #[test]
+    fn zpg_x_indexed() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.x_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::ZpgX;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x12);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0014);
+        assert_eq!(cpu.program_counter, 0x68);
+    }
+
+    #[test]
+    fn zpg_y_indexed() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.y_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::ZpgY;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x12);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0014);
+        assert_eq!(cpu.program_counter, 0x68);
+    }
+
+    #[test]
+    fn zpg_indexed_page_cross() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.x_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::ZpgX;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0xFF);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0001);
+        assert_eq!(cpu.program_counter, 0x68);
     }
 }
