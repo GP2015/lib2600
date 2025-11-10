@@ -10,5 +10,7 @@ pub fn lda_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
     if cpu.finished_addressing {
         cpu.accumulator = data_bus.get_combined() as u8;
         cpu.end_instruction();
+    } else {
+        instructions::execute_addressing_falling_edge(cpu, data_bus);
     }
 }

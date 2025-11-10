@@ -33,7 +33,7 @@ pub fn abs_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
         }
         1 => {
             // OR in the high byte of the address.
-            cpu.mid_instruction_address_hold |= data_bus.get_combined() as u16;
+            cpu.mid_instruction_address_hold |= (data_bus.get_combined() as u16) << 8;
         }
         _ => panic!("Invalid address cycle reached in abs_falling_edge."),
     }
