@@ -74,15 +74,13 @@ impl Console {
 
     /// Advance the console forward one cycle.
     pub fn tick(&mut self) {
-        self.cpu
-            .tick_rising_edge(&mut self.address_bus, &mut self.data_bus);
+        self.cpu.tick_rising_edge(&mut self.address_bus);
 
         if let Some(cartridge) = self.cartridge.as_mut() {
             cartridge.tick(&mut self.address_bus, &mut self.data_bus);
         }
 
-        self.cpu
-            .tick_falling_edge(&mut self.address_bus, &mut self.data_bus);
+        self.cpu.tick_falling_edge(&mut self.data_bus);
     }
 
     /// Load a cartridge into the console.
