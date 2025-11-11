@@ -48,7 +48,7 @@ pub fn fetch_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
     cpu.current_addressing_mode = addressing_mode;
 
     cpu.increment_program_counter();
-    cpu.reset_cycle_counters();
+    cpu.reset_instruction_vars();
 }
 
 #[cfg(test)]
