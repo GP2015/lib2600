@@ -66,12 +66,12 @@ impl CPU {
 
     fn write_to_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
         address_bus.set_combined(value as usize);
-        *rw_line = true;
+        *rw_line = false;
     }
 
     fn read_from_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
         address_bus.set_combined(value as usize);
-        *rw_line = false;
+        *rw_line = true;
     }
 
     fn end_addressing(&mut self) {
