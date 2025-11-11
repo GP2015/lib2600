@@ -17,7 +17,7 @@ pub fn reset_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     }
 }
 
-pub fn reset_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn reset_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.instruction_cycle {
         5 => {
             // Set the low byte of the program counter
@@ -70,16 +70,16 @@ mod tests {
 
         for _ in 0..5 {
             cpu.tick_rising(&mut address_bus, &mut rw_line);
-            cpu.tick_falling(&mut data_bus, &mut rw_line);
+            cpu.tick_falling(&mut data_bus);
         }
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffc);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffd);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
     }
@@ -96,7 +96,7 @@ mod tests {
 
         data_bus.set_combined(0xea);
 
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
         assert_eq!(cpu.current_instruction, Instruction::NOP);
         assert_eq!(cpu.current_addressing_mode, AddressingMode::Impl);
         assert_eq!(cpu.program_counter, 0x68);

@@ -395,11 +395,11 @@ pub fn execute_instruction_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line:
     }
 }
 
-pub fn execute_instruction_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn execute_instruction_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.current_instruction {
-        Instruction::Reset => non_opcode::reset_falling(cpu, data_bus, rw_line),
+        Instruction::Reset => non_opcode::reset_falling(cpu, data_bus),
         Instruction::Fetch => non_opcode::fetch_falling(cpu, data_bus),
-        Instruction::LDA => transfer::lda_falling(cpu, data_bus, rw_line),
+        Instruction::LDA => transfer::lda_falling(cpu, data_bus),
         _ => (),
     }
 }
@@ -426,22 +426,14 @@ fn execute_addressing_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut
     }
 }
 
-fn execute_addressing_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+fn execute_addressing_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.current_addressing_mode {
-        AddressingMode::Abs => addressing::abs_falling(cpu, data_bus, rw_line),
-        AddressingMode::AbsX => {
-            addressing::abs_indexed_falling(Register::X, cpu, data_bus, rw_line)
-        }
-        AddressingMode::AbsY => {
-            addressing::abs_indexed_falling(Register::Y, cpu, data_bus, rw_line)
-        }
-        AddressingMode::Zpg => addressing::zpg_falling(cpu, data_bus, rw_line),
-        AddressingMode::ZpgX => {
-            addressing::zpg_indexed_falling(Register::X, cpu, data_bus, rw_line)
-        }
-        AddressingMode::ZpgY => {
-            addressing::zpg_indexed_falling(Register::Y, cpu, data_bus, rw_line)
-        }
+        AddressingMode::Abs => addressing::abs_falling(cpu, data_bus),
+        AddressingMode::AbsX => addressing::abs_indexed_falling(Register::X, cpu, data_bus),
+        AddressingMode::AbsY => addressing::abs_indexed_falling(Register::Y, cpu, data_bus),
+        AddressingMode::Zpg => addressing::zpg_falling(cpu, data_bus),
+        AddressingMode::ZpgX => addressing::zpg_indexed_falling(Register::X, cpu, data_bus),
+        AddressingMode::ZpgY => addressing::zpg_indexed_falling(Register::Y, cpu, data_bus),
         // AddressingMode::Ind => addressing::ind_falling(cpu, data_bus),
         // AddressingMode::XInd => addressing::xind_falling(cpu, data_bus),
         // AddressingMode::IndY => addressing::indy_falling(cpu, data_bus),

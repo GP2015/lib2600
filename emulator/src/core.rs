@@ -83,7 +83,7 @@ impl Console {
             cartridge.tick(&mut self.address_bus, &mut self.data_bus);
         }
 
-        self.cpu.tick_falling(&mut self.data_bus, &mut self.rw_line);
+        self.cpu.tick_falling(&mut self.data_bus);
     }
 
     /// Load a cartridge into the console.

@@ -51,8 +51,8 @@ impl CPU {
         instructions::execute_instruction_rising(self, address_bus, rw_line);
     }
 
-    pub fn tick_falling(&mut self, data_bus: &mut Bus, rw_line: &mut bool) {
-        instructions::execute_instruction_falling(self, data_bus, rw_line);
+    pub fn tick_falling(&mut self, data_bus: &mut Bus) {
+        instructions::execute_instruction_falling(self, data_bus);
     }
 
     pub fn increment_program_counter(&mut self) {

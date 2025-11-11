@@ -26,7 +26,7 @@ pub fn abs_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     }
 }
 
-pub fn abs_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn abs_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the low byte of the address.
@@ -66,7 +66,7 @@ pub fn abs_indexed_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bo
     }
 }
 
-pub fn abs_indexed_falling(reg: Register, cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn abs_indexed_falling(reg: Register, cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the low byte of the address.
@@ -110,7 +110,7 @@ pub fn zpg_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     }
 }
 
-pub fn zpg_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn zpg_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the zeropage address.
@@ -136,7 +136,7 @@ pub fn zpg_indexed_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bo
     }
 }
 
-pub fn zpg_indexed_falling(reg: Register, cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
+pub fn zpg_indexed_falling(reg: Register, cpu: &mut CPU, data_bus: &mut Bus) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the zeropage address.
@@ -158,8 +158,6 @@ pub fn zpg_indexed_falling(reg: Register, cpu: &mut CPU, data_bus: &mut Bus, rw_
 
 #[cfg(test)]
 mod tests {
-    use std::sync::RwLock;
-
     use super::*;
     use crate::core::cpu::instructions::{AddressingMode, Instruction};
 
@@ -193,12 +191,12 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x23);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x01);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0123);
@@ -216,12 +214,12 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x23);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x01);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0125);
@@ -239,12 +237,12 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x23);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x01);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0125);
@@ -262,15 +260,15 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0xFF);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x00);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0101);
@@ -287,7 +285,7 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x12);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0012);
@@ -305,10 +303,10 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x12);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0014);
@@ -326,10 +324,10 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x12);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0014);
@@ -347,10 +345,10 @@ mod tests {
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0xFF);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
-        cpu.tick_falling(&mut data_bus, &mut rw_line);
+        cpu.tick_falling(&mut data_bus);
 
         cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0001);
