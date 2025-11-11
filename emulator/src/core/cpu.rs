@@ -47,12 +47,12 @@ impl CPU {
         }
     }
 
-    pub fn tick_rising_edge(&mut self, address_bus: &mut Bus) {
-        instructions::execute_instruction_rising_edge(self, address_bus);
+    pub fn tick_rising(&mut self, address_bus: &mut Bus, rw_line: &mut bool) {
+        instructions::execute_instruction_rising(self, address_bus, rw_line);
     }
 
-    pub fn tick_falling_edge(&mut self, data_bus: &mut Bus) {
-        instructions::execute_instruction_falling_edge(self, data_bus);
+    pub fn tick_falling(&mut self, data_bus: &mut Bus, rw_line: &mut bool) {
+        instructions::execute_instruction_falling(self, data_bus, rw_line);
     }
 
     pub fn increment_program_counter(&mut self) {
@@ -62,6 +62,16 @@ impl CPU {
     pub fn reset(&mut self) {
         self.current_instruction = Instruction::Reset;
         self.reset_instruction_vars();
+    }
+
+    fn write_to_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
+        address_bus.set_combined(value as usize);
+        *rw_line = true;
+    }
+
+    fn read_from_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
+        address_bus.set_combined(value as usize);
+        *rw_line = false;
     }
 
     fn end_addressing(&mut self) {

@@ -2,22 +2,22 @@ use crate::core::bus::Bus;
 use crate::core::cpu::CPU;
 use crate::core::cpu::instructions;
 
-const PC_RESET_ADDR_LOW_BYTE: usize = 0xfffc;
-const PC_RESET_ADDR_HIGH_BYTE: usize = 0xfffd;
+const PC_RESET_ADDR_LOW_BYTE: u16 = 0xfffc;
+const PC_RESET_ADDR_HIGH_BYTE: u16 = 0xfffd;
 
-pub fn reset_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
+pub fn reset_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.instruction_cycle {
         5 => {
-            address_bus.set_combined(PC_RESET_ADDR_LOW_BYTE);
+            cpu.write_to_address(PC_RESET_ADDR_LOW_BYTE, address_bus, rw_line);
         }
         6 => {
-            address_bus.set_combined(PC_RESET_ADDR_HIGH_BYTE);
+            cpu.write_to_address(PC_RESET_ADDR_HIGH_BYTE, address_bus, rw_line);
         }
         _ => {}
     }
 }
 
-pub fn reset_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
+pub fn reset_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.instruction_cycle {
         5 => {
             // Set the low byte of the program counter
@@ -36,11 +36,11 @@ pub fn reset_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
     cpu.instruction_cycle += 1;
 }
 
-pub fn fetch_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
-    address_bus.set_combined(cpu.program_counter as usize);
+pub fn fetch_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
+    cpu.write_to_address(cpu.program_counter, address_bus, rw_line);
 }
 
-pub fn fetch_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
+pub fn fetch_falling(cpu: &mut CPU, data_bus: &mut Bus) {
     let opcode = data_bus.get_combined() as u8;
     let (instruction, addressing_mode) = instructions::fetch_instruction(opcode);
 
@@ -56,46 +56,47 @@ mod tests {
     use super::*;
     use crate::core::cpu::instructions::{AddressingMode, Instruction};
 
-    fn create_valid_objects() -> (Bus, Bus, CPU) {
+    fn create_valid_objects() -> (CPU, Bus, Bus, bool) {
+        let cpu = CPU::new();
         let address_bus = Bus::new(13);
         let data_bus = Bus::new(8);
-        let cpu = CPU::new();
-        (address_bus, data_bus, cpu)
+        let rw_line = false;
+        (cpu, address_bus, data_bus, rw_line)
     }
 
     #[test]
     fn reset() {
-        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_valid_objects();
 
         for _ in 0..5 {
-            cpu.tick_rising_edge(&mut address_bus);
-            cpu.tick_falling_edge(&mut data_bus);
+            cpu.tick_rising(&mut address_bus, &mut rw_line);
+            cpu.tick_falling(&mut data_bus, &mut rw_line);
         }
 
-        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffc);
-        cpu.tick_falling_edge(&mut data_bus);
+        cpu.tick_falling(&mut data_bus, &mut rw_line);
 
-        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffd);
-        cpu.tick_falling_edge(&mut data_bus);
+        cpu.tick_falling(&mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
     }
 
     #[test]
     fn fetch() {
-        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_valid_objects();
         cpu.program_counter = 0x67;
         cpu.current_instruction = Instruction::Fetch;
         cpu.current_addressing_mode = AddressingMode::A;
 
-        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_rising(&mut address_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
 
         data_bus.set_combined(0xea);
 
-        cpu.tick_falling_edge(&mut data_bus);
+        cpu.tick_falling(&mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::NOP);
         assert_eq!(cpu.current_addressing_mode, AddressingMode::Impl);
         assert_eq!(cpu.program_counter, 0x68);

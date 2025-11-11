@@ -386,20 +386,20 @@ pub fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     }
 }
 
-pub fn execute_instruction_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
+pub fn execute_instruction_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.current_instruction {
-        Instruction::Reset => non_opcode::reset_rising_edge(cpu, address_bus),
-        Instruction::Fetch => non_opcode::fetch_rising_edge(cpu, address_bus),
-        Instruction::LDA => transfer::lda_rising_edge(cpu, address_bus),
+        Instruction::Reset => non_opcode::reset_rising(cpu, address_bus, rw_line),
+        Instruction::Fetch => non_opcode::fetch_rising(cpu, address_bus, rw_line),
+        Instruction::LDA => transfer::lda_rising(cpu, address_bus, rw_line),
         _ => (),
     }
 }
 
-pub fn execute_instruction_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
+pub fn execute_instruction_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.current_instruction {
-        Instruction::Reset => non_opcode::reset_falling_edge(cpu, data_bus),
-        Instruction::Fetch => non_opcode::fetch_falling_edge(cpu, data_bus),
-        Instruction::LDA => transfer::lda_falling_edge(cpu, data_bus),
+        Instruction::Reset => non_opcode::reset_falling(cpu, data_bus, rw_line),
+        Instruction::Fetch => non_opcode::fetch_falling(cpu, data_bus),
+        Instruction::LDA => transfer::lda_falling(cpu, data_bus, rw_line),
         _ => (),
     }
 }
@@ -409,35 +409,43 @@ enum Register {
     Y,
 }
 
-fn execute_addressing_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
+fn execute_addressing_rising(cpu: &mut CPU, address_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.current_addressing_mode {
-        AddressingMode::Imm => addressing::imm_rising_edge(cpu, address_bus),
-        AddressingMode::Abs => addressing::abs_rising_edge(cpu, address_bus),
-        AddressingMode::AbsX => addressing::abs_indexed_rising_edge(cpu, address_bus, Register::X),
-        AddressingMode::AbsY => addressing::abs_indexed_rising_edge(cpu, address_bus, Register::Y),
-        AddressingMode::Zpg => addressing::zpg_rising_edge(cpu, address_bus),
-        AddressingMode::ZpgX => addressing::zpg_indexed_rising_edge(cpu, address_bus, Register::X),
-        AddressingMode::ZpgY => addressing::zpg_indexed_rising_edge(cpu, address_bus, Register::Y),
-        // AddressingMode::Ind => addressing::ind_rising_edge(cpu, address_bus),
-        // AddressingMode::XInd => addressing::xind_rising_edge(cpu, address_bus),
-        // AddressingMode::IndY => addressing::indy_rising_edge(cpu, address_bus),
-        // AddressingMode::Rel => addressing::rel_rising_edge(cpu, address_bus),
+        AddressingMode::Imm => addressing::imm_rising(cpu, address_bus, rw_line),
+        AddressingMode::Abs => addressing::abs_rising(cpu, address_bus, rw_line),
+        AddressingMode::AbsX => addressing::abs_indexed_rising(cpu, address_bus, rw_line),
+        AddressingMode::AbsY => addressing::abs_indexed_rising(cpu, address_bus, rw_line),
+        AddressingMode::Zpg => addressing::zpg_rising(cpu, address_bus, rw_line),
+        AddressingMode::ZpgX => addressing::zpg_indexed_rising(cpu, address_bus, rw_line),
+        AddressingMode::ZpgY => addressing::zpg_indexed_rising(cpu, address_bus, rw_line),
+        // AddressingMode::Ind => addressing::ind_rising(cpu, address_bus),
+        // AddressingMode::XInd => addressing::xind_rising(cpu, address_bus),
+        // AddressingMode::IndY => addressing::indy_rising(cpu, address_bus),
+        // AddressingMode::Rel => addressing::rel_rising(cpu, address_bus),
         _ => cpu.finished_addressing = true,
     }
 }
 
-fn execute_addressing_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
+fn execute_addressing_falling(cpu: &mut CPU, data_bus: &mut Bus, rw_line: &mut bool) {
     match cpu.current_addressing_mode {
-        AddressingMode::Abs => addressing::abs_falling_edge(cpu, data_bus),
-        AddressingMode::AbsX => addressing::abs_indexed_falling_edge(cpu, data_bus, Register::X),
-        AddressingMode::AbsY => addressing::abs_indexed_falling_edge(cpu, data_bus, Register::Y),
-        AddressingMode::Zpg => addressing::zpg_falling_edge(cpu, data_bus),
-        AddressingMode::ZpgX => addressing::zpg_indexed_falling_edge(cpu, data_bus, Register::X),
-        AddressingMode::ZpgY => addressing::zpg_indexed_falling_edge(cpu, data_bus, Register::Y),
-        // AddressingMode::Ind => addressing::ind_falling_edge(cpu, data_bus),
-        // AddressingMode::XInd => addressing::xind_falling_edge(cpu, data_bus),
-        // AddressingMode::IndY => addressing::indy_falling_edge(cpu, data_bus),
-        // AddressingMode::Rel => addressing::rel_falling_edge(cpu, data_bus),
+        AddressingMode::Abs => addressing::abs_falling(cpu, data_bus, rw_line),
+        AddressingMode::AbsX => {
+            addressing::abs_indexed_falling(Register::X, cpu, data_bus, rw_line)
+        }
+        AddressingMode::AbsY => {
+            addressing::abs_indexed_falling(Register::Y, cpu, data_bus, rw_line)
+        }
+        AddressingMode::Zpg => addressing::zpg_falling(cpu, data_bus, rw_line),
+        AddressingMode::ZpgX => {
+            addressing::zpg_indexed_falling(Register::X, cpu, data_bus, rw_line)
+        }
+        AddressingMode::ZpgY => {
+            addressing::zpg_indexed_falling(Register::Y, cpu, data_bus, rw_line)
+        }
+        // AddressingMode::Ind => addressing::ind_falling(cpu, data_bus),
+        // AddressingMode::XInd => addressing::xind_falling(cpu, data_bus),
+        // AddressingMode::IndY => addressing::indy_falling(cpu, data_bus),
+        // AddressingMode::Rel => addressing::rel_falling(cpu, data_bus),
         _ => panic!("Invalid addressing mode reached on clock falling edge."),
     }
 }

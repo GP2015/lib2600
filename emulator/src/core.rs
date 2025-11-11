@@ -38,6 +38,7 @@ pub struct Console {
     cartridge: Option<Box<dyn Cartridge>>,
     address_bus: Bus,
     data_bus: Bus,
+    rw_line: bool,
     game_select: bool,
     game_reset: bool,
     left_difficulty: Difficulty,
@@ -53,6 +54,7 @@ impl Console {
             cartridge: None,
             address_bus: Bus::new(13),
             data_bus: Bus::new(8),
+            rw_line: false,
             game_select: false,
             game_reset: false,
             left_difficulty: Difficulty::A,
@@ -74,13 +76,14 @@ impl Console {
 
     /// Advance the console forward one cycle.
     pub fn tick(&mut self) {
-        self.cpu.tick_rising_edge(&mut self.address_bus);
+        self.cpu
+            .tick_rising(&mut self.address_bus, &mut self.rw_line);
 
         if let Some(cartridge) = self.cartridge.as_mut() {
             cartridge.tick(&mut self.address_bus, &mut self.data_bus);
         }
 
-        self.cpu.tick_falling_edge(&mut self.data_bus);
+        self.cpu.tick_falling(&mut self.data_bus, &mut self.rw_line);
     }
 
     /// Load a cartridge into the console.
