@@ -18,6 +18,22 @@ const INTERRUPT_FLAG_BIT: u8 = 2;
 const ZERO_FLAG_BIT: u8 = 1;
 const CARRY_FLAG_BIT: u8 = 0;
 
+pub struct CPULines<'a> {
+    address_bus: &'a mut Bus,
+    data_bus: &'a mut Bus,
+    rw_line: &'a mut bool,
+}
+
+impl<'a> CPULines<'a> {
+    pub fn new(address_bus: &'a mut Bus, data_bus: &'a mut Bus, rw_line: &'a mut bool) -> Self {
+        Self {
+            address_bus,
+            data_bus,
+            rw_line,
+        }
+    }
+}
+
 pub struct CPU {
     program_counter: u16,
     accumulator: u8,
@@ -55,12 +71,12 @@ impl CPU {
         }
     }
 
-    pub fn tick_rising(&mut self, address_bus: &mut Bus, rw_line: &mut bool) {
-        instructions::execute_instruction_rising(self, address_bus, rw_line);
+    pub fn tick_rising(&mut self, mut lines: CPULines) {
+        instructions::execute_instruction_rising(self, &mut lines);
     }
 
-    pub fn tick_falling(&mut self, data_bus: &mut Bus) {
-        instructions::execute_instruction_falling(self, data_bus);
+    pub fn tick_falling(&mut self, mut lines: CPULines) {
+        instructions::execute_instruction_falling(self, &mut lines);
     }
 
     pub fn increment_program_counter(&mut self) {
@@ -72,14 +88,19 @@ impl CPU {
         self.reset_instruction_vars();
     }
 
-    fn write_to_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
-        address_bus.set_combined(value as usize);
-        *rw_line = false;
+    fn write_to_address(&mut self, addr: u16, value: u8, lines: &mut CPULines) {
+        lines.address_bus.set_combined(addr as usize);
+        lines.data_bus.set_combined(value as usize);
+        *lines.rw_line = false;
     }
 
-    fn read_from_address(&mut self, value: u16, address_bus: &mut Bus, rw_line: &mut bool) {
-        address_bus.set_combined(value as usize);
-        *rw_line = true;
+    fn read_from_address(&mut self, addr: u16, lines: &mut CPULines) {
+        lines.address_bus.set_combined(addr as usize);
+        *lines.rw_line = true;
+    }
+
+    fn read_from_data_bus(&mut self, lines: &mut CPULines) -> u8 {
+        lines.data_bus.get_combined() as u8
     }
 
     fn end_addressing(&mut self) {
@@ -123,5 +144,38 @@ impl CPU {
 
     fn get_zero_flag(&self) -> bool {
         self.get_status_line(ZERO_FLAG_BIT)
+    }
+}
+
+#[cfg(test)]
+mod test_functions {
+    use super::*;
+
+    pub fn create_test_objects() -> (CPU, Bus, Bus, bool) {
+        let cpu = CPU::new();
+        let address_bus = Bus::new(13);
+        let data_bus = Bus::new(8);
+        let rw_line = false;
+        (cpu, address_bus, data_bus, rw_line)
+    }
+
+    pub fn tick_rising_test(
+        cpu: &mut CPU,
+        address_bus: &mut Bus,
+        data_bus: &mut Bus,
+        rw_line: &mut bool,
+    ) {
+        let lines = CPULines::new(address_bus, data_bus, rw_line);
+        cpu.tick_rising(lines);
+    }
+
+    pub fn tick_falling_test(
+        cpu: &mut CPU,
+        address_bus: &mut Bus,
+        data_bus: &mut Bus,
+        rw_line: &mut bool,
+    ) {
+        let lines = CPULines::new(address_bus, data_bus, rw_line);
+        cpu.tick_falling(lines);
     }
 }
