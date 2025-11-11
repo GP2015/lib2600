@@ -24,6 +24,7 @@ pub struct CPU {
     addressing_cycle: usize,
     finished_addressing: bool,
     mid_instruction_address_hold: u16,
+    page_boundary_crossed: bool,
 }
 
 impl CPU {
@@ -42,6 +43,7 @@ impl CPU {
             addressing_cycle: 0,
             finished_addressing: false,
             mid_instruction_address_hold: 0,
+            page_boundary_crossed: false,
         }
     }
 
@@ -59,17 +61,21 @@ impl CPU {
 
     pub fn reset(&mut self) {
         self.current_instruction = Instruction::Reset;
-        self.reset_cycle_counters();
+        self.reset_instruction_vars();
+    }
+
+    fn end_addressing(&mut self) {
+        self.finished_addressing = true;
     }
 
     fn end_instruction(&mut self) {
         self.current_instruction = Instruction::Fetch;
-        self.finished_addressing = false;
-        self.reset_cycle_counters();
+        self.reset_instruction_vars();
     }
 
-    fn reset_cycle_counters(&mut self) {
+    fn reset_instruction_vars(&mut self) {
         self.instruction_cycle = 0;
         self.addressing_cycle = 0;
+        self.finished_addressing = false;
     }
 }

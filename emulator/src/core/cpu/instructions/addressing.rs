@@ -5,7 +5,7 @@ use crate::core::cpu::instructions::Register;
 pub fn imm_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
     address_bus.set_combined(cpu.program_counter as usize);
     cpu.increment_program_counter();
-    cpu.finished_addressing = true;
+    cpu.end_addressing();
 }
 
 pub fn abs_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
@@ -20,7 +20,7 @@ pub fn abs_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
         }
         2 => {
             address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
-            cpu.finished_addressing = true;
+            cpu.end_addressing();
         }
         _ => (),
     }
@@ -42,6 +42,60 @@ pub fn abs_falling_edge(cpu: &mut CPU, data_bus: &mut Bus) {
     cpu.addressing_cycle += 1;
 }
 
+pub fn abs_indexed_rising_edge(cpu: &mut CPU, address_bus: &mut Bus, reg: Register) {
+    match cpu.addressing_cycle {
+        0 => {
+            address_bus.set_combined(cpu.program_counter as usize);
+            cpu.increment_program_counter();
+        }
+        1 => {
+            address_bus.set_combined(cpu.program_counter as usize);
+            cpu.increment_program_counter();
+        }
+        2 => {
+            if !cpu.page_boundary_crossed {
+                address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
+                cpu.end_addressing();
+            }
+        }
+        3 => {
+            address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
+            cpu.end_addressing();
+        }
+        _ => (),
+    }
+}
+
+pub fn abs_indexed_falling_edge(cpu: &mut CPU, data_bus: &mut Bus, reg: Register) {
+    match cpu.addressing_cycle {
+        0 => {
+            // Grab the low byte of the address.
+            cpu.mid_instruction_address_hold = data_bus.get_combined() as u16;
+        }
+        1 => {
+            // OR in the high byte of the address.
+            cpu.mid_instruction_address_hold |= (data_bus.get_combined() as u16) << 8;
+
+            let reg_value = match reg {
+                Register::X => cpu.x_register,
+                Register::Y => cpu.y_register,
+            };
+
+            let new_address = cpu
+                .mid_instruction_address_hold
+                .wrapping_add(reg_value as u16);
+
+            cpu.page_boundary_crossed =
+                new_address & 0xFF00 != cpu.mid_instruction_address_hold & 0xFF00;
+
+            cpu.mid_instruction_address_hold = new_address;
+        }
+        _ => (),
+    }
+
+    cpu.addressing_cycle += 1;
+}
+
 pub fn zpg_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
     match cpu.addressing_cycle {
         0 => {
@@ -50,7 +104,7 @@ pub fn zpg_rising_edge(cpu: &mut CPU, address_bus: &mut Bus) {
         }
         1 => {
             address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
-            cpu.finished_addressing = true;
+            cpu.end_addressing();
         }
         _ => (),
     }
@@ -76,7 +130,7 @@ pub fn zpg_indexed_rising_edge(cpu: &mut CPU, address_bus: &mut Bus, reg: Regist
         }
         2 => {
             address_bus.set_combined(cpu.mid_instruction_address_hold as usize);
-            cpu.finished_addressing = true;
+            cpu.end_addressing();
         }
         _ => (),
     }
@@ -145,6 +199,78 @@ mod tests {
 
         cpu.tick_rising_edge(&mut address_bus);
         assert_eq!(address_bus.get_combined(), 0x0123);
+        assert_eq!(cpu.program_counter, 0x69);
+    }
+
+    #[test]
+    fn abs_x_indexed() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.x_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::AbsX;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x23);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x68);
+        data_bus.set_combined(0x01);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0125);
+        assert_eq!(cpu.program_counter, 0x69);
+    }
+
+    #[test]
+    fn abs_y_indexed() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.y_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::AbsY;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0x23);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x68);
+        data_bus.set_combined(0x01);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0125);
+        assert_eq!(cpu.program_counter, 0x69);
+    }
+
+    #[test]
+    fn abs_indexed_page_cross() {
+        let (mut address_bus, mut data_bus, mut cpu) = create_valid_objects();
+        cpu.program_counter = 0x67;
+        cpu.x_register = 2;
+        cpu.current_instruction = Instruction::LDA;
+        cpu.current_addressing_mode = AddressingMode::AbsX;
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        data_bus.set_combined(0xFF);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x68);
+        data_bus.set_combined(0x00);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        cpu.tick_falling_edge(&mut data_bus);
+
+        cpu.tick_rising_edge(&mut address_bus);
+        assert_eq!(address_bus.get_combined(), 0x0101);
         assert_eq!(cpu.program_counter, 0x69);
     }
 
