@@ -1,3 +1,2 @@
 Finish addressing modes.
 Implement flag interaction for instructions.
-Turn reads and writes into separate functions (and control the r/w line).
