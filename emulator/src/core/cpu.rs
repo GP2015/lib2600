@@ -64,6 +64,7 @@ impl CPU {
 
     fn end_instruction(&mut self) {
         self.current_instruction = Instruction::Fetch;
+        self.finished_addressing = false;
         self.reset_cycle_counters();
     }
 
