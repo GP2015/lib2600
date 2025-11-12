@@ -83,13 +83,28 @@ impl CPU {
         instructions::execute_instruction_falling(self, &mut lines);
     }
 
-    pub fn increment_program_counter(&mut self) {
-        self.program_counter = self.program_counter.wrapping_add(1);
-    }
-
     pub fn reset(&mut self) {
         self.current_instruction = Instruction::Reset;
         self.reset_instruction_vars();
+    }
+
+    fn end_addressing(&mut self) {
+        self.finished_addressing = true;
+    }
+
+    fn end_instruction(&mut self) {
+        self.current_instruction = Instruction::Fetch;
+        self.reset_instruction_vars();
+    }
+
+    fn reset_instruction_vars(&mut self) {
+        self.instruction_cycle = 0;
+        self.addressing_cycle = 0;
+        self.finished_addressing = false;
+    }
+
+    fn increment_program_counter(&mut self) {
+        self.program_counter = self.program_counter.wrapping_add(1);
     }
 
     fn write_to_address(&mut self, addr: u16, value: u8, lines: &mut CPULines) {
@@ -107,19 +122,22 @@ impl CPU {
         lines.data_bus.get_combined() as u8
     }
 
-    fn end_addressing(&mut self) {
-        self.finished_addressing = true;
+    fn set_accumulator(&mut self, value: u8) {
+        self.accumulator = value;
+        self.set_negative_flag_from_byte(value);
+        self.set_zero_flag_from_byte(value);
     }
 
-    fn end_instruction(&mut self) {
-        self.current_instruction = Instruction::Fetch;
-        self.reset_instruction_vars();
+    fn set_x_register(&mut self, value: u8) {
+        self.x_register = value;
+        self.set_negative_flag_from_byte(value);
+        self.set_zero_flag_from_byte(value);
     }
 
-    fn reset_instruction_vars(&mut self) {
-        self.instruction_cycle = 0;
-        self.addressing_cycle = 0;
-        self.finished_addressing = false;
+    fn set_y_register(&mut self, value: u8) {
+        self.y_register = value;
+        self.set_negative_flag_from_byte(value);
+        self.set_zero_flag_from_byte(value);
     }
 
     fn set_status_line(&mut self, line: u8, state: bool) {
@@ -143,7 +161,7 @@ impl CPU {
     }
 
     fn set_zero_flag_from_byte(&mut self, byte: u8) {
-        self.set_status_line(NEGATIVE_FLAG_BIT, byte == 0);
+        self.set_status_line(ZERO_FLAG_BIT, byte == 0);
     }
 
     fn get_zero_flag(&self) -> bool {
