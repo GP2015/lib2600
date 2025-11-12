@@ -1,8 +1,10 @@
 mod cpu;
 mod lines;
 
+pub use lines::Bus;
+
 use cpu::{CPU, CPULines};
-pub use lines::{Bus, ReadOrWrite};
+use lines::ReadOrWrite;
 
 /// A cartridge that the console can interact with.
 pub trait Cartridge {
