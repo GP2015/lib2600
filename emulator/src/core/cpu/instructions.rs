@@ -428,7 +428,7 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
 
 fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.current_addressing_mode {
-        AddressingMode::Imm => addressing::imm_rising(cpu, lines),
+        AddressingMode::Imm => addressing::imm_rising(cpu),
         AddressingMode::Abs => addressing::abs_rising(cpu, lines),
         AddressingMode::AbsX => addressing::abs_indexed_rising(cpu, lines),
         AddressingMode::AbsY => addressing::abs_indexed_rising(cpu, lines),

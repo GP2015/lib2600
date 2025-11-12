@@ -3,6 +3,10 @@ use crate::core::cpu::{CPU, CPULines};
 
 pub fn load_rising(cpu: &mut CPU, lines: &mut CPULines) {
     instructions::execute_addressing_rising(cpu, lines);
+
+    if cpu.finished_addressing {
+        cpu.read_from_address(cpu.effective_address, lines);
+    }
 }
 
 pub fn load_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
