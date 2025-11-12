@@ -386,14 +386,6 @@ pub fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     }
 }
 
-enum Register {
-    A,
-    X,
-    Y,
-    SR,
-    SP,
-}
-
 pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.current_instruction {
         Instruction::Reset => non_opcode::reset_rising(cpu, lines),
@@ -405,6 +397,12 @@ pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::STA => transfer::store_rising(Register::A, cpu, lines),
         Instruction::STX => transfer::store_rising(Register::X, cpu, lines),
         Instruction::STY => transfer::store_rising(Register::Y, cpu, lines),
+        Instruction::TAX => transfer::transfer_rising(Register::A, Register::X, cpu, lines),
+        Instruction::TAY => transfer::transfer_rising(Register::A, Register::Y, cpu, lines),
+        Instruction::TSX => transfer::transfer_rising(Register::SP, Register::X, cpu, lines),
+        Instruction::TXA => transfer::transfer_rising(Register::X, Register::A, cpu, lines),
+        Instruction::TXS => transfer::transfer_rising(Register::X, Register::SP, cpu, lines),
+        Instruction::TYA => transfer::transfer_rising(Register::Y, Register::A, cpu, lines),
 
         _ => (),
     }
@@ -421,6 +419,12 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::STA => transfer::store_falling(cpu, lines),
         Instruction::STX => transfer::store_falling(cpu, lines),
         Instruction::STY => transfer::store_falling(cpu, lines),
+        Instruction::TAX => transfer::transfer_falling(cpu, lines),
+        Instruction::TAY => transfer::transfer_falling(cpu, lines),
+        Instruction::TSX => transfer::transfer_falling(cpu, lines),
+        Instruction::TXA => transfer::transfer_falling(cpu, lines),
+        Instruction::TXS => transfer::transfer_falling(cpu, lines),
+        Instruction::TYA => transfer::transfer_falling(cpu, lines),
 
         _ => (),
     }
@@ -443,7 +447,7 @@ fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) -> bool {
         _ => cpu.finished_addressing = true,
     }
 
-    return cpu.finished_addressing;
+    cpu.finished_addressing
 }
 
 fn execute_addressing_falling(cpu: &mut CPU, lines: &mut CPULines) {
@@ -460,4 +464,12 @@ fn execute_addressing_falling(cpu: &mut CPU, lines: &mut CPULines) {
         // AddressingMode::Rel => addressing::rel_falling(cpu, lines),
         _ => panic!("Invalid addressing mode reached on clock falling edge."),
     }
+}
+
+enum Register {
+    A,
+    X,
+    Y,
+    SR,
+    SP,
 }
