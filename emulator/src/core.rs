@@ -1,8 +1,8 @@
-mod bus;
 mod cpu;
+mod lines;
 
-pub use bus::Bus;
 use cpu::{CPU, CPULines};
+pub use lines::{Bus, ReadOrWrite};
 
 /// A cartridge that the console can interact with.
 pub trait Cartridge {
@@ -38,7 +38,7 @@ pub struct Console {
     cartridge: Option<Box<dyn Cartridge>>,
     address_bus: Bus,
     data_bus: Bus,
-    rw_line: bool,
+    rw_line: ReadOrWrite,
     game_select: bool,
     game_reset: bool,
     left_difficulty: Difficulty,
@@ -54,7 +54,7 @@ impl Console {
             cartridge: None,
             address_bus: Bus::new(13),
             data_bus: Bus::new(8),
-            rw_line: false,
+            rw_line: ReadOrWrite::READ,
             game_select: false,
             game_reset: false,
             left_difficulty: Difficulty::A,

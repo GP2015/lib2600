@@ -86,3 +86,9 @@ mod tests {
         assert_eq!(bus.get_combined(), 0b1010);
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ReadOrWrite {
+    READ,
+    WRITE,
+}

@@ -1,6 +1,6 @@
 mod instructions;
 
-use crate::core::bus::Bus;
+use crate::core::lines::{Bus, ReadOrWrite};
 use instructions::{AddressingMode, Instruction};
 
 const PROGRAM_COUNTER_RESET_VALUE: u16 = 0x0000;
@@ -21,11 +21,15 @@ const CARRY_FLAG_BIT: u8 = 0;
 pub struct CPULines<'a> {
     address_bus: &'a mut Bus,
     data_bus: &'a mut Bus,
-    rw_line: &'a mut bool,
+    rw_line: &'a mut ReadOrWrite,
 }
 
 impl<'a> CPULines<'a> {
-    pub fn new(address_bus: &'a mut Bus, data_bus: &'a mut Bus, rw_line: &'a mut bool) -> Self {
+    pub fn new(
+        address_bus: &'a mut Bus,
+        data_bus: &'a mut Bus,
+        rw_line: &'a mut ReadOrWrite,
+    ) -> Self {
         Self {
             address_bus,
             data_bus,
@@ -91,12 +95,12 @@ impl CPU {
     fn write_to_address(&mut self, addr: u16, value: u8, lines: &mut CPULines) {
         lines.address_bus.set_combined(addr as usize);
         lines.data_bus.set_combined(value as usize);
-        *lines.rw_line = false;
+        *lines.rw_line = ReadOrWrite::WRITE;
     }
 
     fn read_from_address(&mut self, addr: u16, lines: &mut CPULines) {
         lines.address_bus.set_combined(addr as usize);
-        *lines.rw_line = true;
+        *lines.rw_line = ReadOrWrite::READ;
     }
 
     fn read_from_data_bus(&mut self, lines: &mut CPULines) -> u8 {
@@ -151,11 +155,11 @@ impl CPU {
 mod test_functions {
     use super::*;
 
-    pub fn create_test_objects() -> (CPU, Bus, Bus, bool) {
+    pub fn create_test_objects() -> (CPU, Bus, Bus, ReadOrWrite) {
         let cpu = CPU::new();
         let address_bus = Bus::new(13);
         let data_bus = Bus::new(8);
-        let rw_line = false;
+        let rw_line = ReadOrWrite::READ;
         (cpu, address_bus, data_bus, rw_line)
     }
 
@@ -163,7 +167,7 @@ mod test_functions {
         cpu: &mut CPU,
         address_bus: &mut Bus,
         data_bus: &mut Bus,
-        rw_line: &mut bool,
+        rw_line: &mut ReadOrWrite,
     ) {
         let lines = CPULines::new(address_bus, data_bus, rw_line);
         cpu.tick_rising(lines);
@@ -173,7 +177,7 @@ mod test_functions {
         cpu: &mut CPU,
         address_bus: &mut Bus,
         data_bus: &mut Bus,
-        rw_line: &mut bool,
+        rw_line: &mut ReadOrWrite,
     ) {
         let lines = CPULines::new(address_bus, data_bus, rw_line);
         cpu.tick_falling(lines);

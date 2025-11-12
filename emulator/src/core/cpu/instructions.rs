@@ -2,8 +2,8 @@ mod addressing;
 mod non_opcode;
 mod transfer;
 
-use crate::core::bus::Bus;
 use crate::core::cpu::{CPU, CPULines};
+use crate::core::lines::Bus;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AddressingMode {
@@ -402,9 +402,9 @@ pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::LDA => transfer::load_rising(cpu, lines),
         Instruction::LDX => transfer::load_rising(cpu, lines),
         Instruction::LDY => transfer::load_rising(cpu, lines),
-        Instruction::STA => transfer::store_rising(cpu, lines),
-        Instruction::STX => transfer::store_rising(cpu, lines),
-        Instruction::STY => transfer::store_rising(cpu, lines),
+        Instruction::STA => transfer::store_rising(Register::A, cpu, lines),
+        Instruction::STX => transfer::store_rising(Register::X, cpu, lines),
+        Instruction::STY => transfer::store_rising(Register::Y, cpu, lines),
 
         _ => (),
     }
@@ -418,15 +418,16 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::LDA => transfer::load_falling(Register::A, cpu, lines),
         Instruction::LDX => transfer::load_falling(Register::X, cpu, lines),
         Instruction::LDY => transfer::load_falling(Register::Y, cpu, lines),
-        Instruction::STA => transfer::store_falling(Register::A, cpu, lines),
-        Instruction::STX => transfer::store_falling(Register::X, cpu, lines),
-        Instruction::STY => transfer::store_falling(Register::Y, cpu, lines),
+        Instruction::STA => transfer::store_falling(cpu, lines),
+        Instruction::STX => transfer::store_falling(cpu, lines),
+        Instruction::STY => transfer::store_falling(cpu, lines),
 
         _ => (),
     }
 }
 
-fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) {
+// Return true if addressing is finished, for convenience.
+fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) -> bool {
     match cpu.current_addressing_mode {
         AddressingMode::Imm => addressing::imm_rising(cpu),
         AddressingMode::Abs => addressing::abs_rising(cpu, lines),
@@ -441,6 +442,8 @@ fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) {
         // AddressingMode::Rel => addressing::rel_rising(cpu, lines),
         _ => cpu.finished_addressing = true,
     }
+
+    return cpu.finished_addressing;
 }
 
 fn execute_addressing_falling(cpu: &mut CPU, lines: &mut CPULines) {
