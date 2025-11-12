@@ -56,19 +56,32 @@ impl Bus {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ReadOrWrite {
+    READ,
+    WRITE,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn get_combined_value() {
+    fn get_and_set_combined() {
         let mut bus = Bus::new(8);
         bus.set_combined(0x67);
         assert_eq!(bus.get_combined(), 0x67);
     }
 
     #[test]
-    fn get_line_value() {
+    fn set_combined_wrapping() {
+        let mut bus = Bus::new(13);
+        bus.set_combined(0xfffc);
+        assert_eq!(bus.get_combined(), 0x1ffc);
+    }
+
+    #[test]
+    fn get_line() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b0110);
         assert_eq!(bus.get_line(2), true);
@@ -76,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn set_line_value() {
+    fn set_line() {
         let mut bus = Bus::new(4);
         bus.set_combined(0b1100);
         bus.set_line(0, false);
@@ -85,10 +98,4 @@ mod tests {
         bus.set_line(3, true);
         assert_eq!(bus.get_combined(), 0b1010);
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ReadOrWrite {
-    READ,
-    WRITE,
 }
