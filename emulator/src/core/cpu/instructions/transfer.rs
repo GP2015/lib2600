@@ -129,6 +129,9 @@ mod tests {
             },
             0b10010110
         );
+
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
     }
 
     #[test]
@@ -172,6 +175,9 @@ mod tests {
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
+
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
     }
 
     #[test]
@@ -243,5 +249,8 @@ mod tests {
             },
             0b10010110
         );
+
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
     }
 }

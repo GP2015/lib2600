@@ -28,6 +28,7 @@ pub fn reset_falling(cpu: &mut CPU, lines: &mut CPULines) {
             cpu.program_counter &= 0x00FF;
             cpu.program_counter |= (cpu.read_from_data_bus(lines) as u16) << 8;
             cpu.end_instruction();
+            return;
         }
         _ => {}
     }
@@ -73,6 +74,8 @@ mod tests {
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
     }
 
     #[test]
@@ -91,5 +94,7 @@ mod tests {
         assert_eq!(cpu.current_instruction, Instruction::NOP);
         assert_eq!(cpu.current_addressing_mode, AddressingMode::Impl);
         assert_eq!(cpu.program_counter, 0x68);
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
     }
 }
