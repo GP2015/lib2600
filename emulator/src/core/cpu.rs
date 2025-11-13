@@ -201,3 +201,85 @@ mod test_functions {
         cpu.tick_falling(lines);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::cpu::test_functions::*;
+
+    #[test]
+    fn reset() {
+        let (mut cpu, _, _, _) = create_test_objects();
+        cpu.current_instruction = Instruction::NOP;
+
+        cpu.reset();
+
+        assert_eq!(cpu.current_instruction, Instruction::Reset);
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
+        assert!(!cpu.finished_addressing);
+    }
+
+    #[test]
+    fn end_instruction() {
+        let (mut cpu, _, _, _) = create_test_objects();
+        cpu.current_instruction = Instruction::NOP;
+
+        cpu.end_instruction();
+
+        assert_eq!(cpu.current_instruction, Instruction::Fetch);
+        assert_eq!(cpu.instruction_cycle, 0);
+        assert_eq!(cpu.addressing_cycle, 0);
+        assert!(!cpu.finished_addressing);
+    }
+
+    #[test]
+    fn increment_program_counter() {
+        let (mut cpu, _, _, _) = create_test_objects();
+        cpu.program_counter = 0x67;
+
+        cpu.increment_program_counter();
+
+        assert_eq!(cpu.program_counter, 0x68);
+    }
+
+    #[test]
+    fn increment_program_counter_wrapping() {
+        let (mut cpu, _, _, _) = create_test_objects();
+        cpu.program_counter = 0xFFFF;
+
+        cpu.increment_program_counter();
+
+        assert_eq!(cpu.program_counter, 0x0000);
+    }
+
+    #[test]
+    fn write_to_address() {
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
+        let mut lines = CPULines::new(&mut address_bus, &mut data_bus, &mut rw_line);
+
+        cpu.write_to_address(0x1234, 0x67, &mut lines);
+        assert_eq!(address_bus.get_combined(), 0x1234);
+        assert_eq!(data_bus.get_combined(), 0x67);
+        assert_eq!(rw_line, ReadOrWrite::WRITE);
+    }
+
+    #[test]
+    fn read_from_address() {
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
+        let mut lines = CPULines::new(&mut address_bus, &mut data_bus, &mut rw_line);
+
+        cpu.read_from_address(0x1234, &mut lines);
+        assert_eq!(address_bus.get_combined(), 0x1234);
+        assert_eq!(rw_line, ReadOrWrite::READ);
+    }
+
+    #[test]
+    fn read_from_data_bus() {
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
+        data_bus.set_combined(0x67);
+        let mut lines = CPULines::new(&mut address_bus, &mut data_bus, &mut rw_line);
+
+        assert_eq!(cpu.read_from_data_bus(&mut lines), 0x67);
+    }
+}

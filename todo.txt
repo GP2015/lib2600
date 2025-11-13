@@ -1,2 +1,2 @@
+Add the remaining CPU unit tests.
 Finish addressing modes.
-Implement flag interaction for instructions.
