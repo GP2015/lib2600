@@ -1,5 +1,6 @@
 mod addressing;
 mod non_opcode;
+mod stack;
 mod transfer;
 
 use crate::core::cpu::{CPU, CPULines};
@@ -404,6 +405,11 @@ pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::TXS => transfer::transfer_rising(Register::X, Register::SP, cpu, lines),
         Instruction::TYA => transfer::transfer_rising(Register::Y, Register::A, cpu, lines),
 
+        Instruction::PHA => stack::push_rising(Register::A, cpu, lines),
+        Instruction::PHP => stack::push_rising(Register::SP, cpu, lines),
+        Instruction::PLA => stack::pull_rising(Register::A, cpu, lines),
+        Instruction::PLP => stack::pull_rising(Register::SP, cpu, lines),
+
         _ => (),
     }
 }
@@ -425,6 +431,11 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::TXA => transfer::transfer_falling(cpu, lines),
         Instruction::TXS => transfer::transfer_falling(cpu, lines),
         Instruction::TYA => transfer::transfer_falling(cpu, lines),
+
+        Instruction::PHA => stack::push_falling(Register::A, cpu, lines),
+        Instruction::PHP => stack::push_falling(Register::SP, cpu, lines),
+        Instruction::PLA => stack::pull_falling(Register::A, cpu, lines),
+        Instruction::PLP => stack::pull_falling(Register::SP, cpu, lines),
 
         _ => (),
     }
