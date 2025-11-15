@@ -13,6 +13,9 @@ https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets
 MOS 6502 instruction set:
 https://www.masswerk.at/6502/6502_instruction_set.html
 
+MOS 6502 per-instruction cycle breakdown:
+https://www.nesdev.org/6502_cpu.txt
+
 MOS 6532 (RIOT) datasheet:
 https://web.archive.org/web/20160329090844if_/http://archive.6502.org/datasheets/mos_6532_riot.pdf
 
