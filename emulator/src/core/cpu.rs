@@ -52,6 +52,7 @@ pub struct CPU {
     addressing_cycle: usize,
     finished_addressing: bool,
     effective_address: u16,
+    mid_instruction_byte_hold: u8,
     page_boundary_crossed: bool,
 }
 
@@ -71,6 +72,7 @@ impl CPU {
             addressing_cycle: 0,
             finished_addressing: false,
             effective_address: 0,
+            mid_instruction_byte_hold: 0,
             page_boundary_crossed: false,
         }
     }

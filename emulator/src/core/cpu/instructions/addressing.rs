@@ -51,7 +51,10 @@ pub fn abs_indexed_rising(cpu: &mut CPU, lines: &mut CPULines) {
             cpu.increment_program_counter();
         }
         2 => {
-            if !cpu.page_boundary_crossed {
+            if cpu.page_boundary_crossed {
+                // Dummy read
+                cpu.read_from_address(cpu.effective_address, lines);
+            } else {
                 cpu.end_addressing();
             }
         }
@@ -78,9 +81,19 @@ pub fn abs_indexed_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
                 _ => panic!("Error: Invalid register."),
             };
 
-            let new_address = cpu.effective_address.wrapping_add(reg_value as u16);
-            cpu.page_boundary_crossed = new_address & 0xFF00 != cpu.effective_address & 0xFF00;
-            cpu.effective_address = new_address;
+            let old_address = cpu.effective_address;
+            let new_address = old_address.wrapping_add(reg_value as u16);
+            cpu.page_boundary_crossed = old_address & 0xFF00 != new_address & 0xFF00;
+
+            // Only update the low byte of the effective address.
+            // Store the high byte separately (will be used if a page cross occurred).
+            // This is because the page-cross dummy read uses the old high byte.
+            cpu.mid_instruction_byte_hold = ((new_address & 0xFF00) >> 8) as u8;
+            cpu.effective_address &= 0xFF00;
+            cpu.effective_address |= new_address & 0x00FF;
+        }
+        2 => {
+            cpu.effective_address |= (cpu.mid_instruction_byte_hold as u16) << 8;
         }
         _ => (),
     }
@@ -256,6 +269,7 @@ mod tests {
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x0001);
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0101);
