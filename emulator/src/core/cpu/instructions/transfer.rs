@@ -51,9 +51,8 @@ pub fn store_falling(cpu: &mut CPU, lines: &mut CPULines) {
 }
 
 pub fn transfer_rising(from_reg: Register, to_reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
-    if !instructions::execute_addressing_rising(cpu, lines) {
-        return;
-    }
+    // Dummy read
+    cpu.read_from_address(cpu.program_counter, lines);
 
     let value = match from_reg {
         Register::A => cpu.accumulator,
@@ -72,11 +71,7 @@ pub fn transfer_rising(from_reg: Register, to_reg: Register, cpu: &mut CPU, line
     }
 }
 
-pub fn transfer_falling(cpu: &mut CPU, lines: &mut CPULines) {
-    if !cpu.finished_addressing {
-        instructions::execute_addressing_falling(cpu, lines);
-    }
-
+pub fn transfer_falling(cpu: &mut CPU, _: &mut CPULines) {
     cpu.end_instruction();
 }
 
@@ -103,6 +98,7 @@ mod tests {
 
     fn ld_generic(reg: Register) {
         let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
+        cpu.program_counter = 0x67;
         cpu.current_addressing_mode = AddressingMode::Imm;
 
         cpu.current_instruction = match reg {
@@ -113,10 +109,13 @@ mod tests {
         };
 
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        assert_eq!(rw_line, ReadOrWrite::READ);
         data_bus.set_combined(0b10010110);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
+        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
+        assert_eq!(cpu.program_counter, 0x68);
         assert_eq!(cpu.get_negative_flag(), true);
         assert_eq!(cpu.get_zero_flag(), false);
 
@@ -175,7 +174,7 @@ mod tests {
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
-
+        assert_eq!(cpu.program_counter, 0x68);
         assert_eq!(cpu.instruction_cycle, 0);
         assert_eq!(cpu.addressing_cycle, 0);
     }
@@ -227,6 +226,9 @@ mod tests {
         };
 
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        assert_eq!(rw_line, ReadOrWrite::READ);
+
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
