@@ -407,8 +407,8 @@ pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
 
         Instruction::PHA => stack::push_rising(Register::A, cpu, lines),
         Instruction::PHP => stack::push_rising(Register::SP, cpu, lines),
-        Instruction::PLA => stack::pull_rising(Register::A, cpu, lines),
-        Instruction::PLP => stack::pull_rising(Register::SP, cpu, lines),
+        Instruction::PLA => stack::pull_rising(cpu, lines),
+        Instruction::PLP => stack::pull_rising(cpu, lines),
 
         _ => (),
     }
@@ -432,8 +432,8 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::TXS => transfer::transfer_falling(cpu),
         Instruction::TYA => transfer::transfer_falling(cpu),
 
-        Instruction::PHA => stack::push_falling(Register::A, cpu, lines),
-        Instruction::PHP => stack::push_falling(Register::SP, cpu, lines),
+        Instruction::PHA => stack::push_falling(cpu),
+        Instruction::PHP => stack::push_falling(cpu),
         Instruction::PLA => stack::pull_falling(Register::A, cpu, lines),
         Instruction::PLP => stack::pull_falling(Register::SP, cpu, lines),
 

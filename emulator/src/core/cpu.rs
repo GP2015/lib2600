@@ -124,6 +124,18 @@ impl CPU {
         lines.data_bus.get_combined() as u8
     }
 
+    fn increment_stack_pointer(&mut self) {
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
+    }
+
+    fn decrement_stack_pointer(&mut self) {
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+    }
+
+    fn get_stack_address(&mut self) -> u16 {
+        (self.stack_pointer as u16) | 0x100
+    }
+
     fn set_accumulator(&mut self, value: u8) {
         self.accumulator = value;
         self.set_negative_flag_from_byte(value);
