@@ -71,7 +71,7 @@ pub fn transfer_rising(from_reg: Register, to_reg: Register, cpu: &mut CPU, line
     }
 }
 
-pub fn transfer_falling(cpu: &mut CPU, _: &mut CPULines) {
+pub fn transfer_falling(cpu: &mut CPU) {
     cpu.end_instruction();
 }
 
