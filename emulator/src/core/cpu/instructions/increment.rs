@@ -67,8 +67,7 @@ mod tests {
         cpu.current_instruction = instruction;
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.program_counter, 0x67);

@@ -99,23 +99,18 @@ mod tests {
         };
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x0112);
-        assert_eq!(rw_line, ReadOrWrite::Write);
 
-        match reg {
-            Register::A => {
-                assert_eq!(data_bus.get_combined(), 0xab);
-            }
-            Register::SR => {
-                assert_eq!(data_bus.get_combined(), 0xcd);
-            }
+        let data = match reg {
+            Register::A => 0xab,
+            Register::SR => 0xcd,
             _ => panic!(),
-        }
+        };
+
+        check_addr_write(0x0112, data, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.program_counter, 0x67);
@@ -146,20 +141,16 @@ mod tests {
         };
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x0112);
-        assert_eq!(rw_line, ReadOrWrite::Read);
-
+        check_addr_read(0x0112, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.stack_pointer, 0x13);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x0113);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x0113, &mut address_bus, &mut rw_line);
         data_bus.set_combined(0b10010110);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);

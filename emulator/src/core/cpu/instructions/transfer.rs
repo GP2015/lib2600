@@ -109,8 +109,7 @@ mod tests {
         };
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
         data_bus.set_combined(0b10010110);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
@@ -168,9 +167,7 @@ mod tests {
         };
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(data_bus.get_combined(), 0x12);
-        assert_eq!(rw_line, ReadOrWrite::Write);
+        check_addr_write(0x67, 0x12, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
@@ -226,9 +223,7 @@ mod tests {
         };
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Read);
-
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);

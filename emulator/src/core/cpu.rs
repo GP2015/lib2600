@@ -214,6 +214,23 @@ mod test_functions {
         let lines = CPULines::new(address_bus, data_bus, rw_line);
         cpu.tick_fall(lines);
     }
+
+    pub fn check_addr_read(addr: u16, address_bus: &mut Bus, rw_line: &mut ReadOrWrite) {
+        assert_eq!(address_bus.get_combined(), addr as usize);
+        assert_eq!(*rw_line, ReadOrWrite::Read);
+    }
+
+    pub fn check_addr_write(
+        addr: u16,
+        data: u8,
+        address_bus: &mut Bus,
+        data_bus: &mut Bus,
+        rw_line: &mut ReadOrWrite,
+    ) {
+        assert_eq!(address_bus.get_combined(), addr as usize);
+        assert_eq!(*rw_line, ReadOrWrite::Write);
+        assert_eq!(data_bus.get_combined(), data as usize);
+    }
 }
 
 #[cfg(test)]
@@ -231,7 +248,7 @@ mod tests {
         assert_eq!(cpu.current_instruction, Instruction::Reset);
         assert_eq!(cpu.instruction_cycle, 0);
         assert_eq!(cpu.addressing_cycle, 0);
-        assert!(!cpu.finished_addressing);
+        assert_eq!(cpu.finished_addressing, false);
     }
 
     #[test]
@@ -244,7 +261,7 @@ mod tests {
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
         assert_eq!(cpu.instruction_cycle, 0);
         assert_eq!(cpu.addressing_cycle, 0);
-        assert!(!cpu.finished_addressing);
+        assert_eq!(cpu.finished_addressing, false);
     }
 
     #[test]
@@ -273,9 +290,7 @@ mod tests {
         let mut lines = CPULines::new(&mut address_bus, &mut data_bus, &mut rw_line);
 
         cpu.write_to_address(0x1234, 0x67, &mut lines);
-        assert_eq!(address_bus.get_combined(), 0x1234);
-        assert_eq!(data_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::Write);
+        check_addr_write(0x1234, 0x67, &mut address_bus, &mut data_bus, &mut rw_line);
     }
 
     #[test]
@@ -284,8 +299,7 @@ mod tests {
         let mut lines = CPULines::new(&mut address_bus, &mut data_bus, &mut rw_line);
 
         cpu.read_from_address(0x1234, &mut lines);
-        assert_eq!(address_bus.get_combined(), 0x1234);
-        assert_eq!(rw_line, ReadOrWrite::Read);
+        check_addr_read(0x1234, &mut address_bus, &mut rw_line);
     }
 
     #[test]
