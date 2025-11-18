@@ -411,7 +411,9 @@ pub fn execute_instruction_rise(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::PLP => stack::pull_rise(cpu, lines),
 
         Instruction::INX => increment::inc_reg_rise(Register::X, increment::Type::Inc, cpu, lines),
-        Instruction::INY => increment::inc_reg_rise(Register::Y, increment::Type::Dec, cpu, lines),
+        Instruction::INY => increment::inc_reg_rise(Register::Y, increment::Type::Inc, cpu, lines),
+        Instruction::DEX => increment::inc_reg_rise(Register::X, increment::Type::Dec, cpu, lines),
+        Instruction::DEY => increment::inc_reg_rise(Register::Y, increment::Type::Dec, cpu, lines),
 
         _ => (),
     }
@@ -442,6 +444,8 @@ pub fn execute_instruction_fall(cpu: &mut CPU, lines: &mut CPULines) {
 
         Instruction::INX => increment::inc_reg_fall(cpu),
         Instruction::INY => increment::inc_reg_fall(cpu),
+        Instruction::DEX => increment::inc_reg_fall(cpu),
+        Instruction::DEY => increment::inc_reg_fall(cpu),
 
         _ => (),
     }
