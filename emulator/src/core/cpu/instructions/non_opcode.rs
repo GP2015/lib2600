@@ -66,11 +66,11 @@ mod tests {
         }
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x1ffc);
+        check_addr_read(0x1ffc, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x1ffd);
+        check_addr_read(0x1ffd, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
@@ -86,8 +86,7 @@ mod tests {
         cpu.current_addressing_mode = AddressingMode::A;
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        assert_eq!(address_bus.get_combined(), 0x67);
-
+        check_addr_read(0x67, &mut address_bus, &mut rw_line);
         data_bus.set_combined(0xea);
 
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
