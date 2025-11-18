@@ -118,20 +118,64 @@ mod tests {
         }
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(cpu.program_counter, 0x67);
+        assert_eq!(cpu.stack_pointer, 0x11);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
     }
 
-    // fn pl_generic(reg: Register) {
-    //     match reg {
-    //         Register::A => {
-    //             assert_eq!(cpu.accumulator, 0b10010110);
-    //             assert_eq!(cpu.get_negative_flag(), true);
-    //             assert_eq!(cpu.get_zero_flag(), false);
-    //         }
-    //         Register::SR => {
-    //             assert_eq!(cpu.status_register, 0b10010110);
-    //         }
-    //         _ => panic!(),
-    //     }
-    // }
+    #[test]
+    fn pla() {
+        pl_generic(Register::A);
+    }
+
+    #[test]
+    fn plp() {
+        pl_generic(Register::SR);
+    }
+
+    fn pl_generic(reg: Register) {
+        let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
+        cpu.program_counter = 0x67;
+        cpu.stack_pointer = 0x12;
+        cpu.current_addressing_mode = AddressingMode::Impl;
+
+        cpu.current_instruction = match reg {
+            Register::A => Instruction::PLA,
+            Register::SR => Instruction::PLP,
+            _ => panic!(),
+        };
+
+        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x67);
+        assert_eq!(rw_line, ReadOrWrite::READ);
+        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+
+        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x0112);
+        assert_eq!(rw_line, ReadOrWrite::READ);
+
+        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(cpu.stack_pointer, 0x13);
+
+        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(address_bus.get_combined(), 0x0113);
+        assert_eq!(rw_line, ReadOrWrite::READ);
+        data_bus.set_combined(0b10010110);
+
+        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        assert_eq!(cpu.program_counter, 0x67);
+        assert_eq!(cpu.current_instruction, Instruction::Fetch);
+
+        match reg {
+            Register::A => {
+                assert_eq!(cpu.accumulator, 0b10010110);
+                assert_eq!(cpu.get_negative_flag(), true);
+                assert_eq!(cpu.get_zero_flag(), false);
+            }
+            Register::SR => {
+                assert_eq!(cpu.status_register, 0b10010110);
+            }
+            _ => panic!(),
+        }
+    }
 }
