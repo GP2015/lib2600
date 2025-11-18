@@ -112,12 +112,12 @@ impl CPU {
     fn write_to_address(&mut self, addr: u16, value: u8, lines: &mut CPULines) {
         lines.address_bus.set_combined(addr as usize);
         lines.data_bus.set_combined(value as usize);
-        *lines.rw_line = ReadOrWrite::WRITE;
+        *lines.rw_line = ReadOrWrite::Write;
     }
 
     fn read_from_address(&mut self, addr: u16, lines: &mut CPULines) {
         lines.address_bus.set_combined(addr as usize);
-        *lines.rw_line = ReadOrWrite::READ;
+        *lines.rw_line = ReadOrWrite::Read;
     }
 
     fn read_from_data_bus(&mut self, lines: &mut CPULines) -> u8 {
@@ -191,7 +191,7 @@ mod test_functions {
         let cpu = CPU::new();
         let address_bus = Bus::new(13);
         let data_bus = Bus::new(8);
-        let rw_line = ReadOrWrite::READ;
+        let rw_line = ReadOrWrite::Read;
         (cpu, address_bus, data_bus, rw_line)
     }
 
@@ -275,7 +275,7 @@ mod tests {
         cpu.write_to_address(0x1234, 0x67, &mut lines);
         assert_eq!(address_bus.get_combined(), 0x1234);
         assert_eq!(data_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::WRITE);
+        assert_eq!(rw_line, ReadOrWrite::Write);
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod tests {
 
         cpu.read_from_address(0x1234, &mut lines);
         assert_eq!(address_bus.get_combined(), 0x1234);
-        assert_eq!(rw_line, ReadOrWrite::READ);
+        assert_eq!(rw_line, ReadOrWrite::Read);
     }
 
     #[test]

@@ -58,8 +58,8 @@ impl Bus {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ReadOrWrite {
-    READ,
-    WRITE,
+    Read,
+    Write,
 }
 
 #[cfg(test)]

@@ -110,7 +110,7 @@ mod tests {
 
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::READ);
+        assert_eq!(rw_line, ReadOrWrite::Read);
         data_bus.set_combined(0b10010110);
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
@@ -170,7 +170,7 @@ mod tests {
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(data_bus.get_combined(), 0x12);
-        assert_eq!(rw_line, ReadOrWrite::WRITE);
+        assert_eq!(rw_line, ReadOrWrite::Write);
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
@@ -227,7 +227,7 @@ mod tests {
 
         tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
-        assert_eq!(rw_line, ReadOrWrite::READ);
+        assert_eq!(rw_line, ReadOrWrite::Read);
 
         tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 

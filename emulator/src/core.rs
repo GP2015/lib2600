@@ -56,7 +56,7 @@ impl Console {
             cartridge: None,
             address_bus: Bus::new(13),
             data_bus: Bus::new(8),
-            rw_line: ReadOrWrite::READ,
+            rw_line: ReadOrWrite::Read,
             game_select: false,
             game_reset: false,
             left_difficulty: Difficulty::A,
