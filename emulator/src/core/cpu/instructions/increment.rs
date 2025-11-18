@@ -34,7 +34,6 @@ pub fn inc_reg_fall(cpu: &mut CPU) {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ReadOrWrite;
     use crate::core::cpu::instructions::increment::Type;
     use crate::core::cpu::instructions::{Instruction, Register};
     use crate::core::cpu::test_functions::*;

@@ -70,7 +70,6 @@ pub fn pull_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ReadOrWrite;
     use crate::core::cpu::instructions::{AddressingMode, Instruction, Register};
     use crate::core::cpu::test_functions::*;
 
