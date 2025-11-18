@@ -1,10 +1,10 @@
 mod addressing;
+mod increment;
 mod non_opcode;
 mod stack;
 mod transfer;
 
 use crate::core::cpu::{CPU, CPULines};
-use crate::core::lines::Bus;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AddressingMode {
@@ -410,6 +410,13 @@ pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::PLA => stack::pull_rising(cpu, lines),
         Instruction::PLP => stack::pull_rising(cpu, lines),
 
+        Instruction::INX => {
+            increment::inc_reg_rising(Register::X, increment::Type::Inc, cpu, lines)
+        }
+        Instruction::INY => {
+            increment::inc_reg_rising(Register::Y, increment::Type::Dec, cpu, lines)
+        }
+
         _ => (),
     }
 }
@@ -436,6 +443,9 @@ pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
         Instruction::PHP => stack::push_falling(cpu),
         Instruction::PLA => stack::pull_falling(Register::A, cpu, lines),
         Instruction::PLP => stack::pull_falling(Register::SR, cpu, lines),
+
+        Instruction::INX => increment::inc_reg_falling(cpu),
+        Instruction::INY => increment::inc_reg_falling(cpu),
 
         _ => (),
     }
