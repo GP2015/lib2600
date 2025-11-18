@@ -1,7 +1,7 @@
 use crate::core::cpu::instructions::Register;
 use crate::core::cpu::{CPU, CPULines};
 
-pub fn push_rising(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn push_rise(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.instruction_cycle {
         0 => {
             // Dummy read
@@ -23,7 +23,7 @@ pub fn push_rising(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn push_falling(cpu: &mut CPU) {
+pub fn push_fall(cpu: &mut CPU) {
     if cpu.instruction_cycle == 1 {
         cpu.end_instruction();
     }
@@ -31,7 +31,7 @@ pub fn push_falling(cpu: &mut CPU) {
     cpu.instruction_cycle += 1;
 }
 
-pub fn pull_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn pull_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.instruction_cycle {
         0 => {
             // Dummy read
@@ -52,7 +52,7 @@ pub fn pull_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn pull_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn pull_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     if cpu.instruction_cycle == 2 {
         let reg_value = cpu.read_from_data_bus(lines);
 
@@ -98,12 +98,12 @@ mod tests {
             _ => panic!(),
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(rw_line, ReadOrWrite::Read);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0112);
         assert_eq!(rw_line, ReadOrWrite::Write);
 
@@ -117,7 +117,7 @@ mod tests {
             _ => panic!(),
         }
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.program_counter, 0x67);
         assert_eq!(cpu.stack_pointer, 0x11);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
@@ -145,24 +145,24 @@ mod tests {
             _ => panic!(),
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(rw_line, ReadOrWrite::Read);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0112);
         assert_eq!(rw_line, ReadOrWrite::Read);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.stack_pointer, 0x13);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0113);
         assert_eq!(rw_line, ReadOrWrite::Read);
         data_bus.set_combined(0b10010110);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.program_counter, 0x67);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
 

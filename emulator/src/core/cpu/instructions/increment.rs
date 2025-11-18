@@ -6,7 +6,7 @@ pub enum Type {
     Dec,
 }
 
-pub fn inc_reg_rising(reg: Register, inc_type: Type, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn inc_reg_rise(reg: Register, inc_type: Type, cpu: &mut CPU, lines: &mut CPULines) {
     // Dummy read
     cpu.read_from_address(cpu.program_counter, lines);
 
@@ -28,6 +28,6 @@ pub fn inc_reg_rising(reg: Register, inc_type: Type, cpu: &mut CPU, lines: &mut 
     }
 }
 
-pub fn inc_reg_falling(cpu: &mut CPU) {
+pub fn inc_reg_fall(cpu: &mut CPU) {
     cpu.end_instruction();
 }

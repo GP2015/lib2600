@@ -4,7 +4,7 @@ use crate::core::cpu::{CPU, CPULines};
 const PC_RESET_ADDR_LOW_BYTE: u16 = 0xfffc;
 const PC_RESET_ADDR_HIGH_BYTE: u16 = 0xfffd;
 
-pub fn reset_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn reset_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.instruction_cycle {
         5 => {
             cpu.read_from_address(PC_RESET_ADDR_LOW_BYTE, lines);
@@ -16,7 +16,7 @@ pub fn reset_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn reset_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn reset_fall(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.instruction_cycle {
         5 => {
             // Set the low byte of the program counter
@@ -36,11 +36,11 @@ pub fn reset_falling(cpu: &mut CPU, lines: &mut CPULines) {
     cpu.instruction_cycle += 1;
 }
 
-pub fn fetch_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn fetch_rise(cpu: &mut CPU, lines: &mut CPULines) {
     cpu.read_from_address(cpu.program_counter, lines);
 }
 
-pub fn fetch_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn fetch_fall(cpu: &mut CPU, lines: &mut CPULines) {
     let opcode = cpu.read_from_data_bus(lines);
     let (instruction, addressing_mode) = instructions::fetch_instruction(opcode);
 
@@ -61,17 +61,17 @@ mod tests {
         let (mut cpu, mut address_bus, mut data_bus, mut rw_line) = create_test_objects();
 
         for _ in 0..5 {
-            tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-            tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+            tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+            tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         }
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffc);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x1ffd);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
         assert_eq!(cpu.instruction_cycle, 0);
@@ -85,12 +85,12 @@ mod tests {
         cpu.current_instruction = Instruction::Fetch;
         cpu.current_addressing_mode = AddressingMode::A;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
 
         data_bus.set_combined(0xea);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::NOP);
         assert_eq!(cpu.current_addressing_mode, AddressingMode::Impl);
         assert_eq!(cpu.program_counter, 0x68);

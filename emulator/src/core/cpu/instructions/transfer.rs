@@ -1,17 +1,17 @@
 use crate::core::cpu::instructions::{self, Register};
 use crate::core::cpu::{CPU, CPULines};
 
-pub fn load_rising(cpu: &mut CPU, lines: &mut CPULines) {
-    if !instructions::execute_addressing_rising(cpu, lines) {
+pub fn load_rise(cpu: &mut CPU, lines: &mut CPULines) {
+    if !instructions::execute_addressing_rise(cpu, lines) {
         return;
     }
 
     cpu.read_from_address(cpu.effective_address, lines);
 }
 
-pub fn load_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn load_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     if !cpu.finished_addressing {
-        instructions::execute_addressing_falling(cpu, lines);
+        instructions::execute_addressing_fall(cpu, lines);
         return;
     }
 
@@ -27,8 +27,8 @@ pub fn load_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     cpu.end_instruction();
 }
 
-pub fn store_rising(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
-    if !instructions::execute_addressing_rising(cpu, lines) {
+pub fn store_rise(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+    if !instructions::execute_addressing_rise(cpu, lines) {
         return;
     }
 
@@ -42,15 +42,15 @@ pub fn store_rising(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     cpu.write_to_address(cpu.effective_address, reg_value, lines);
 }
 
-pub fn store_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn store_fall(cpu: &mut CPU, lines: &mut CPULines) {
     if !cpu.finished_addressing {
-        instructions::execute_addressing_falling(cpu, lines);
+        instructions::execute_addressing_fall(cpu, lines);
     }
 
     cpu.end_instruction();
 }
 
-pub fn transfer_rising(from_reg: Register, to_reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn transfer_rise(from_reg: Register, to_reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     // Dummy read
     cpu.read_from_address(cpu.program_counter, lines);
 
@@ -71,7 +71,7 @@ pub fn transfer_rising(from_reg: Register, to_reg: Register, cpu: &mut CPU, line
     }
 }
 
-pub fn transfer_falling(cpu: &mut CPU) {
+pub fn transfer_fall(cpu: &mut CPU) {
     cpu.end_instruction();
 }
 
@@ -108,12 +108,12 @@ mod tests {
             _ => panic!(),
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(rw_line, ReadOrWrite::Read);
         data_bus.set_combined(0b10010110);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
         assert_eq!(cpu.program_counter, 0x68);
         assert_eq!(cpu.get_negative_flag(), true);
@@ -167,12 +167,12 @@ mod tests {
             _ => panic!(),
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(data_bus.get_combined(), 0x12);
         assert_eq!(rw_line, ReadOrWrite::Write);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
         assert_eq!(cpu.program_counter, 0x68);
         assert_eq!(cpu.instruction_cycle, 0);
@@ -225,11 +225,11 @@ mod tests {
             _ => panic!(),
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         assert_eq!(rw_line, ReadOrWrite::Read);
 
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.current_instruction, Instruction::Fetch);
 

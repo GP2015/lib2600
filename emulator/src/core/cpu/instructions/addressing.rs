@@ -1,13 +1,13 @@
 use crate::core::cpu::instructions::Register;
 use crate::core::cpu::{CPU, CPULines};
 
-pub fn imm_rising(cpu: &mut CPU) {
+pub fn imm_rise(cpu: &mut CPU) {
     cpu.effective_address = cpu.program_counter;
     cpu.increment_program_counter();
     cpu.end_addressing();
 }
 
-pub fn abs_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn abs_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             cpu.read_from_address(cpu.program_counter, lines);
@@ -24,7 +24,7 @@ pub fn abs_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn abs_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn abs_fall(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the low byte of the address.
@@ -40,7 +40,7 @@ pub fn abs_falling(cpu: &mut CPU, lines: &mut CPULines) {
     cpu.addressing_cycle += 1;
 }
 
-pub fn abs_indexed_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn abs_indexed_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             cpu.read_from_address(cpu.program_counter, lines);
@@ -65,7 +65,7 @@ pub fn abs_indexed_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn abs_indexed_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn abs_indexed_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the low byte of the address.
@@ -101,7 +101,7 @@ pub fn abs_indexed_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     cpu.addressing_cycle += 1;
 }
 
-pub fn zpg_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn zpg_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             cpu.read_from_address(cpu.program_counter, lines);
@@ -114,7 +114,7 @@ pub fn zpg_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn zpg_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn zpg_fall(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the zeropage address.
@@ -126,7 +126,7 @@ pub fn zpg_falling(cpu: &mut CPU, lines: &mut CPULines) {
     cpu.addressing_cycle += 1;
 }
 
-pub fn zpg_indexed_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn zpg_indexed_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             cpu.read_from_address(cpu.program_counter, lines);
@@ -139,7 +139,7 @@ pub fn zpg_indexed_rising(cpu: &mut CPU, lines: &mut CPULines) {
     }
 }
 
-pub fn zpg_indexed_falling(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
+pub fn zpg_indexed_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.addressing_cycle {
         0 => {
             // Grab the zeropage address.
@@ -178,7 +178,7 @@ mod tests {
         cpu.current_instruction = Instruction::LDA;
         cpu.current_addressing_mode = AddressingMode::Imm;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
         assert_eq!(cpu.effective_address, 0x67);
         assert_eq!(cpu.program_counter, 0x68);
@@ -191,20 +191,20 @@ mod tests {
         cpu.current_instruction = Instruction::LDA;
         cpu.current_addressing_mode = AddressingMode::Abs;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x23);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x01);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0123);
         assert_eq!(cpu.program_counter, 0x69);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 
@@ -233,20 +233,20 @@ mod tests {
             XOrY::Y => AddressingMode::AbsY,
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x23);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x01);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0125);
         assert_eq!(cpu.program_counter, 0x69);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 
@@ -258,24 +258,24 @@ mod tests {
         cpu.current_instruction = Instruction::LDA;
         cpu.current_addressing_mode = AddressingMode::AbsX;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0xFF);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x68);
         data_bus.set_combined(0x00);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x0001);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0101);
         assert_eq!(cpu.program_counter, 0x69);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 
@@ -286,15 +286,15 @@ mod tests {
         cpu.current_instruction = Instruction::LDA;
         cpu.current_addressing_mode = AddressingMode::Zpg;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x12);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0012);
         assert_eq!(cpu.program_counter, 0x68);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 
@@ -323,18 +323,18 @@ mod tests {
             XOrY::Y => AddressingMode::ZpgY,
         };
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0x12);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0014);
         assert_eq!(cpu.program_counter, 0x68);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 
@@ -346,18 +346,18 @@ mod tests {
         cpu.current_instruction = Instruction::LDA;
         cpu.current_addressing_mode = AddressingMode::ZpgX;
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert_eq!(address_bus.get_combined(), 0x67);
         data_bus.set_combined(0xFF);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
-        tick_falling_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0001);
         assert_eq!(cpu.program_counter, 0x68);
 
-        tick_rising_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
         assert!(cpu.finished_addressing);
     }
 }

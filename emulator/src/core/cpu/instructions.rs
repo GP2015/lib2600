@@ -387,102 +387,98 @@ pub fn fetch_instruction(opcode: u8) -> (Instruction, AddressingMode) {
     }
 }
 
-pub fn execute_instruction_rising(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn execute_instruction_rise(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.current_instruction {
-        Instruction::Reset => non_opcode::reset_rising(cpu, lines),
-        Instruction::Fetch => non_opcode::fetch_rising(cpu, lines),
+        Instruction::Reset => non_opcode::reset_rise(cpu, lines),
+        Instruction::Fetch => non_opcode::fetch_rise(cpu, lines),
 
-        Instruction::LDA => transfer::load_rising(cpu, lines),
-        Instruction::LDX => transfer::load_rising(cpu, lines),
-        Instruction::LDY => transfer::load_rising(cpu, lines),
-        Instruction::STA => transfer::store_rising(Register::A, cpu, lines),
-        Instruction::STX => transfer::store_rising(Register::X, cpu, lines),
-        Instruction::STY => transfer::store_rising(Register::Y, cpu, lines),
-        Instruction::TAX => transfer::transfer_rising(Register::A, Register::X, cpu, lines),
-        Instruction::TAY => transfer::transfer_rising(Register::A, Register::Y, cpu, lines),
-        Instruction::TSX => transfer::transfer_rising(Register::SP, Register::X, cpu, lines),
-        Instruction::TXA => transfer::transfer_rising(Register::X, Register::A, cpu, lines),
-        Instruction::TXS => transfer::transfer_rising(Register::X, Register::SP, cpu, lines),
-        Instruction::TYA => transfer::transfer_rising(Register::Y, Register::A, cpu, lines),
+        Instruction::LDA => transfer::load_rise(cpu, lines),
+        Instruction::LDX => transfer::load_rise(cpu, lines),
+        Instruction::LDY => transfer::load_rise(cpu, lines),
+        Instruction::STA => transfer::store_rise(Register::A, cpu, lines),
+        Instruction::STX => transfer::store_rise(Register::X, cpu, lines),
+        Instruction::STY => transfer::store_rise(Register::Y, cpu, lines),
+        Instruction::TAX => transfer::transfer_rise(Register::A, Register::X, cpu, lines),
+        Instruction::TAY => transfer::transfer_rise(Register::A, Register::Y, cpu, lines),
+        Instruction::TSX => transfer::transfer_rise(Register::SP, Register::X, cpu, lines),
+        Instruction::TXA => transfer::transfer_rise(Register::X, Register::A, cpu, lines),
+        Instruction::TXS => transfer::transfer_rise(Register::X, Register::SP, cpu, lines),
+        Instruction::TYA => transfer::transfer_rise(Register::Y, Register::A, cpu, lines),
 
-        Instruction::PHA => stack::push_rising(Register::A, cpu, lines),
-        Instruction::PHP => stack::push_rising(Register::SR, cpu, lines),
-        Instruction::PLA => stack::pull_rising(cpu, lines),
-        Instruction::PLP => stack::pull_rising(cpu, lines),
+        Instruction::PHA => stack::push_rise(Register::A, cpu, lines),
+        Instruction::PHP => stack::push_rise(Register::SR, cpu, lines),
+        Instruction::PLA => stack::pull_rise(cpu, lines),
+        Instruction::PLP => stack::pull_rise(cpu, lines),
 
-        Instruction::INX => {
-            increment::inc_reg_rising(Register::X, increment::Type::Inc, cpu, lines)
-        }
-        Instruction::INY => {
-            increment::inc_reg_rising(Register::Y, increment::Type::Dec, cpu, lines)
-        }
+        Instruction::INX => increment::inc_reg_rise(Register::X, increment::Type::Inc, cpu, lines),
+        Instruction::INY => increment::inc_reg_rise(Register::Y, increment::Type::Dec, cpu, lines),
 
         _ => (),
     }
 }
 
-pub fn execute_instruction_falling(cpu: &mut CPU, lines: &mut CPULines) {
+pub fn execute_instruction_fall(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.current_instruction {
-        Instruction::Reset => non_opcode::reset_falling(cpu, lines),
-        Instruction::Fetch => non_opcode::fetch_falling(cpu, lines),
+        Instruction::Reset => non_opcode::reset_fall(cpu, lines),
+        Instruction::Fetch => non_opcode::fetch_fall(cpu, lines),
 
-        Instruction::LDA => transfer::load_falling(Register::A, cpu, lines),
-        Instruction::LDX => transfer::load_falling(Register::X, cpu, lines),
-        Instruction::LDY => transfer::load_falling(Register::Y, cpu, lines),
-        Instruction::STA => transfer::store_falling(cpu, lines),
-        Instruction::STX => transfer::store_falling(cpu, lines),
-        Instruction::STY => transfer::store_falling(cpu, lines),
-        Instruction::TAX => transfer::transfer_falling(cpu),
-        Instruction::TAY => transfer::transfer_falling(cpu),
-        Instruction::TSX => transfer::transfer_falling(cpu),
-        Instruction::TXA => transfer::transfer_falling(cpu),
-        Instruction::TXS => transfer::transfer_falling(cpu),
-        Instruction::TYA => transfer::transfer_falling(cpu),
+        Instruction::LDA => transfer::load_fall(Register::A, cpu, lines),
+        Instruction::LDX => transfer::load_fall(Register::X, cpu, lines),
+        Instruction::LDY => transfer::load_fall(Register::Y, cpu, lines),
+        Instruction::STA => transfer::store_fall(cpu, lines),
+        Instruction::STX => transfer::store_fall(cpu, lines),
+        Instruction::STY => transfer::store_fall(cpu, lines),
+        Instruction::TAX => transfer::transfer_fall(cpu),
+        Instruction::TAY => transfer::transfer_fall(cpu),
+        Instruction::TSX => transfer::transfer_fall(cpu),
+        Instruction::TXA => transfer::transfer_fall(cpu),
+        Instruction::TXS => transfer::transfer_fall(cpu),
+        Instruction::TYA => transfer::transfer_fall(cpu),
 
-        Instruction::PHA => stack::push_falling(cpu),
-        Instruction::PHP => stack::push_falling(cpu),
-        Instruction::PLA => stack::pull_falling(Register::A, cpu, lines),
-        Instruction::PLP => stack::pull_falling(Register::SR, cpu, lines),
+        Instruction::PHA => stack::push_fall(cpu),
+        Instruction::PHP => stack::push_fall(cpu),
+        Instruction::PLA => stack::pull_fall(Register::A, cpu, lines),
+        Instruction::PLP => stack::pull_fall(Register::SR, cpu, lines),
 
-        Instruction::INX => increment::inc_reg_falling(cpu),
-        Instruction::INY => increment::inc_reg_falling(cpu),
+        Instruction::INX => increment::inc_reg_fall(cpu),
+        Instruction::INY => increment::inc_reg_fall(cpu),
 
         _ => (),
     }
 }
 
 // Return true if addressing is finished, for convenience.
-fn execute_addressing_rising(cpu: &mut CPU, lines: &mut CPULines) -> bool {
+fn execute_addressing_rise(cpu: &mut CPU, lines: &mut CPULines) -> bool {
     match cpu.current_addressing_mode {
-        AddressingMode::Imm => addressing::imm_rising(cpu),
-        AddressingMode::Abs => addressing::abs_rising(cpu, lines),
-        AddressingMode::AbsX => addressing::abs_indexed_rising(cpu, lines),
-        AddressingMode::AbsY => addressing::abs_indexed_rising(cpu, lines),
-        AddressingMode::Zpg => addressing::zpg_rising(cpu, lines),
-        AddressingMode::ZpgX => addressing::zpg_indexed_rising(cpu, lines),
-        AddressingMode::ZpgY => addressing::zpg_indexed_rising(cpu, lines),
-        // AddressingMode::Ind => addressing::ind_rising(cpu, lines),
-        // AddressingMode::XInd => addressing::xind_rising(cpu, lines),
-        // AddressingMode::IndY => addressing::indy_rising(cpu, lines),
-        // AddressingMode::Rel => addressing::rel_rising(cpu, lines),
+        AddressingMode::Imm => addressing::imm_rise(cpu),
+        AddressingMode::Abs => addressing::abs_rise(cpu, lines),
+        AddressingMode::AbsX => addressing::abs_indexed_rise(cpu, lines),
+        AddressingMode::AbsY => addressing::abs_indexed_rise(cpu, lines),
+        AddressingMode::Zpg => addressing::zpg_rise(cpu, lines),
+        AddressingMode::ZpgX => addressing::zpg_indexed_rise(cpu, lines),
+        AddressingMode::ZpgY => addressing::zpg_indexed_rise(cpu, lines),
+        // AddressingMode::Ind => addressing::ind_rise(cpu, lines),
+        // AddressingMode::XInd => addressing::xind_rise(cpu, lines),
+        // AddressingMode::IndY => addressing::indy_rise(cpu, lines),
+        // AddressingMode::Rel => addressing::rel_rise(cpu, lines),
         _ => cpu.finished_addressing = true,
     }
 
     cpu.finished_addressing
 }
 
-fn execute_addressing_falling(cpu: &mut CPU, lines: &mut CPULines) {
+fn execute_addressing_fall(cpu: &mut CPU, lines: &mut CPULines) {
     match cpu.current_addressing_mode {
-        AddressingMode::Abs => addressing::abs_falling(cpu, lines),
-        AddressingMode::AbsX => addressing::abs_indexed_falling(Register::X, cpu, lines),
-        AddressingMode::AbsY => addressing::abs_indexed_falling(Register::Y, cpu, lines),
-        AddressingMode::Zpg => addressing::zpg_falling(cpu, lines),
-        AddressingMode::ZpgX => addressing::zpg_indexed_falling(Register::X, cpu, lines),
-        AddressingMode::ZpgY => addressing::zpg_indexed_falling(Register::Y, cpu, lines),
-        // AddressingMode::Ind => addressing::ind_falling(cpu, lines),
-        // AddressingMode::XInd => addressing::xind_falling(cpu, lines),
-        // AddressingMode::IndY => addressing::indy_falling(cpu, lines),
-        // AddressingMode::Rel => addressing::rel_falling(cpu, lines),
+        AddressingMode::Abs => addressing::abs_fall(cpu, lines),
+        AddressingMode::AbsX => addressing::abs_indexed_fall(Register::X, cpu, lines),
+        AddressingMode::AbsY => addressing::abs_indexed_fall(Register::Y, cpu, lines),
+        AddressingMode::Zpg => addressing::zpg_fall(cpu, lines),
+        AddressingMode::ZpgX => addressing::zpg_indexed_fall(Register::X, cpu, lines),
+        AddressingMode::ZpgY => addressing::zpg_indexed_fall(Register::Y, cpu, lines),
+        // AddressingMode::Ind => addressing::ind_fall(cpu, lines),
+        // AddressingMode::XInd => addressing::xind_fall(cpu, lines),
+        // AddressingMode::IndY => addressing::indy_fall(cpu, lines),
+        // AddressingMode::Rel => addressing::rel_fall(cpu, lines),
         _ => panic!("Invalid addressing mode reached on clock falling edge."),
     }
 }

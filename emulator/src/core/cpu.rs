@@ -77,12 +77,12 @@ impl CPU {
         }
     }
 
-    pub fn tick_rising(&mut self, mut lines: CPULines) {
-        instructions::execute_instruction_rising(self, &mut lines);
+    pub fn tick_rise(&mut self, mut lines: CPULines) {
+        instructions::execute_instruction_rise(self, &mut lines);
     }
 
-    pub fn tick_falling(&mut self, mut lines: CPULines) {
-        instructions::execute_instruction_falling(self, &mut lines);
+    pub fn tick_fall(&mut self, mut lines: CPULines) {
+        instructions::execute_instruction_fall(self, &mut lines);
     }
 
     pub fn reset(&mut self) {
@@ -195,24 +195,24 @@ mod test_functions {
         (cpu, address_bus, data_bus, rw_line)
     }
 
-    pub fn tick_rising_test(
+    pub fn tick_rise_test(
         cpu: &mut CPU,
         address_bus: &mut Bus,
         data_bus: &mut Bus,
         rw_line: &mut ReadOrWrite,
     ) {
         let lines = CPULines::new(address_bus, data_bus, rw_line);
-        cpu.tick_rising(lines);
+        cpu.tick_rise(lines);
     }
 
-    pub fn tick_falling_test(
+    pub fn tick_fall_test(
         cpu: &mut CPU,
         address_bus: &mut Bus,
         data_bus: &mut Bus,
         rw_line: &mut ReadOrWrite,
     ) {
         let lines = CPULines::new(address_bus, data_bus, rw_line);
-        cpu.tick_falling(lines);
+        cpu.tick_fall(lines);
     }
 }
 
