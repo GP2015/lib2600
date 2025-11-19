@@ -132,6 +132,10 @@ pub fn zpg_indexed_rise(cpu: &mut CPU, lines: &mut CPULines) {
             cpu.read_from_address(cpu.program_counter, lines);
             cpu.increment_program_counter();
         }
+        1 => {
+            // Dummy read
+            cpu.read_from_address(cpu.effective_address, lines);
+        }
         2 => {
             cpu.end_addressing();
         }
@@ -152,6 +156,7 @@ pub fn zpg_indexed_fall(reg: Register, cpu: &mut CPU, lines: &mut CPULines) {
                 _ => panic!("Error: Invalid register."),
             };
 
+            // Reset the high byte, in case it was changed by the addition.
             cpu.effective_address %= 256;
         }
         _ => (),
@@ -329,6 +334,7 @@ mod tests {
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        check_addr_read(0x12, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0014);
@@ -352,6 +358,7 @@ mod tests {
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         tick_rise_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
+        check_addr_read(0xFF, &mut address_bus, &mut rw_line);
         tick_fall_test(&mut cpu, &mut address_bus, &mut data_bus, &mut rw_line);
 
         assert_eq!(cpu.effective_address, 0x0001);

@@ -1,3 +1,3 @@
-Add the remaining stack instruction unit tests.
 Add the remaining CPU unit tests.
+Add per-instruction addressing modes variations.
 Finish addressing modes.
