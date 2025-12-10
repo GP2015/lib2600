@@ -11,25 +11,25 @@ pub enum MapperError {
 }
 
 macro_rules! define_mappers {
-    (
-        $(
-            $string:literal => $variant:ident => $module:ident :: $struct_name:ident
-        ),* $(,)?
-    ) => {
+    ($(($de_str:literal, $enum_name:ident, $map_mod:ident::$map_struct:ident)),* $(,)?) => {
         #[derive(Copy, Clone, Debug, serde::Deserialize, clap::ValueEnum)]
         pub enum MapperKind {
             $(
-                #[value(name = $string)]
-                #[serde(rename = $string)]
-                $variant
+                #[value(name = $de_str)]
+                #[serde(rename = $de_str)]
+                $enum_name
             ),*
         }
 
         impl MapperKind {
-            pub fn to_cartridge(self, program: Vec<u8>) -> Result<Box<dyn Cartridge>, MapperError> {
+            pub fn to_cartridge(
+                self,
+                program: Vec<u8>
+            ) -> Result<Box<dyn Cartridge>, MapperError> {
                 match self {
                     $(
-                        MapperKind::$variant => Ok(Box::new($module::$struct_name::new(program)?)),
+                        MapperKind::$enum_name =>
+                            Ok(Box::new($map_mod::$map_struct::new(program)?)),
                     )*
                 }
             }
@@ -38,6 +38,6 @@ macro_rules! define_mappers {
 }
 
 define_mappers! {
-    "2k" => M2K => m2k::Mapper2K,
-    "4k" => M4K => m4k::Mapper4K,
+    ("2k", M2K, m2k::Mapper2K),
+    ("4k", M4K, m4k::Mapper4K),
 }
