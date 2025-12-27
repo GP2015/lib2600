@@ -145,3 +145,41 @@ impl CPU {
         self.pin.phi2
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_bit_of_usize_test() {
+        assert_eq!(get_bit_of_usize(0b101, 0), true);
+        assert_eq!(get_bit_of_usize(0b101, 1), false);
+        assert_eq!(get_bit_of_usize(0b101, 7), false);
+    }
+
+    #[test]
+    fn set_bit_of_usize_test() {
+        assert_eq!(set_bit_of_usize(0b101, 0, false), 0b100);
+        assert_eq!(set_bit_of_usize(0b101, 0, true), 0b101);
+        assert_eq!(set_bit_of_usize(0b101, 1, false), 0b101);
+        assert_eq!(set_bit_of_usize(0b101, 1, true), 0b111);
+        assert_eq!(set_bit_of_usize(0b101, 4, false), 0b101);
+        assert_eq!(set_bit_of_usize(0b101, 4, true), 0b10101);
+    }
+
+    #[test]
+    fn val_exceeds_bit_count_test() {
+        assert_eq!(val_exceeds_bit_count(0b1011, 3), true);
+        assert_eq!(val_exceeds_bit_count(0b1011, 4), false);
+        assert_eq!(val_exceeds_bit_count(0b1011, 5), false);
+    }
+
+    #[test]
+    fn get_low_bits_of_usize_test() {
+        assert_eq!(get_low_bits_of_usize(0b1011, 0), 0);
+        assert_eq!(get_low_bits_of_usize(0b1011, 1), 1);
+        assert_eq!(get_low_bits_of_usize(0b1011, 2), 0b11);
+        assert_eq!(get_low_bits_of_usize(0b1011, 3), 0b11);
+        assert_eq!(get_low_bits_of_usize(0b1011, 7), 0b1011);
+    }
+}
