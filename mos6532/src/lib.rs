@@ -21,10 +21,10 @@ struct Pins {
 impl Pins {
     pub fn new() -> Self {
         Self {
-            a: Bus::new(0, 7),
-            db: Bus::new(0, 8),
-            pa: Bus::new(0, 8),
-            pb: Bus::new(0, 8),
+            a: Bus::new(7),
+            db: Bus::new(8),
+            pa: Bus::new(8),
+            pb: Bus::new(8),
             cs1: false,
             cs2: false,
             phi2: false,
