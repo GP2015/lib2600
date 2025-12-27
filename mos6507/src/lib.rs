@@ -182,4 +182,112 @@ mod tests {
         assert_eq!(get_low_bits_of_usize(0b1011, 3), 0b11);
         assert_eq!(get_low_bits_of_usize(0b1011, 7), 0b1011);
     }
+
+    #[test]
+    fn drive_reset_pin() {
+        let mut cpu = CPU::new();
+        cpu.drv_res(true);
+        assert_eq!(cpu.pin.res, true);
+        cpu.drv_res(false);
+        assert_eq!(cpu.pin.res, false);
+    }
+
+    #[test]
+    fn drive_ready_pin() {
+        let mut cpu = CPU::new();
+        cpu.drv_rdy(true);
+        assert_eq!(cpu.pin.rdy, true);
+        cpu.drv_rdy(false);
+        assert_eq!(cpu.pin.rdy, false);
+    }
+
+    #[test]
+    fn read_address_bus() {
+        let mut cpu = CPU::new();
+        cpu.pin.a = 0x67;
+        assert_eq!(cpu.rd_a(), 0x67);
+    }
+
+    #[test]
+    fn read_address_bus_bits() {
+        let mut cpu = CPU::new();
+        cpu.pin.a = 0b11010110;
+        assert_eq!(cpu.rd_a_bit(0).unwrap(), false);
+        assert_eq!(cpu.rd_a_bit(4).unwrap(), true);
+        assert!(cpu.rd_a_bit(13).is_err());
+    }
+
+    #[test]
+    fn drive_data_bus() {
+        let mut cpu = CPU::new();
+        assert!(cpu.drv_d(0x67).is_ok());
+        assert!(cpu.drv_d(0x678).is_err());
+    }
+
+    #[test]
+    fn read_data_bus() {
+        let mut cpu = CPU::new();
+        cpu.drv_d(0x67).unwrap();
+        assert_eq!(cpu.rd_d(), 0x67);
+    }
+
+    #[test]
+    fn read_data_bus_bits() {
+        let mut cpu = CPU::new();
+        cpu.drv_d(0b11010110).unwrap();
+        assert_eq!(cpu.rd_d_bit(0).unwrap(), false);
+        assert_eq!(cpu.rd_d_bit(4).unwrap(), true);
+        assert!(cpu.rd_d_bit(8).is_err());
+    }
+
+    #[test]
+    fn drive_data_bus_bits() {
+        let mut cpu = CPU::new();
+        cpu.drv_d(0b11010110).unwrap();
+        cpu.drv_d_bit(0, false).unwrap();
+        assert_eq!(cpu.rd_d(), 0b11010110);
+        cpu.drv_d_bit(1, false).unwrap();
+        assert_eq!(cpu.rd_d(), 0b11010100);
+        cpu.drv_d_bit(2, true).unwrap();
+        assert_eq!(cpu.rd_d(), 0b11010100);
+        cpu.drv_d_bit(3, true).unwrap();
+        assert_eq!(cpu.rd_d(), 0b11011100);
+        assert!(cpu.drv_d_bit(8, true).is_err());
+    }
+
+    #[test]
+    fn drive_data_bus_wrapped() {
+        let mut cpu = CPU::new();
+        cpu.drv_d_wrap(0x567);
+        assert_eq!(cpu.rd_d(), 0x67);
+        cpu.drv_d_wrap(0x89);
+        assert_eq!(cpu.rd_d(), 0x89);
+    }
+
+    #[test]
+    fn read_rw_pin() {
+        let mut cpu = CPU::new();
+        cpu.pin.rw = true;
+        assert_eq!(cpu.rd_rw(), true);
+        cpu.pin.rw = false;
+        assert_eq!(cpu.rd_rw(), false);
+    }
+
+    #[test]
+    fn drive_phi0_pin() {
+        let mut cpu = CPU::new();
+        cpu.drv_phi0(true);
+        assert_eq!(cpu.pin.phi0, true);
+        cpu.drv_phi0(false);
+        assert_eq!(cpu.pin.phi0, false);
+    }
+
+    #[test]
+    fn read_phi2_pin() {
+        let mut cpu = CPU::new();
+        cpu.pin.phi2 = true;
+        assert_eq!(cpu.rd_phi2(), true);
+        cpu.pin.phi2 = false;
+        assert_eq!(cpu.rd_phi2(), false);
+    }
 }
