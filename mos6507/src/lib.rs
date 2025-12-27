@@ -41,6 +41,20 @@ struct Pins {
     phi2: bool,
 }
 
+impl Pins {
+    pub fn new() -> Self {
+        Self {
+            res: false,
+            rdy: false,
+            a: 0,
+            d: 0,
+            rw: false,
+            phi0: false,
+            phi2: false,
+        }
+    }
+}
+
 struct Registers {
     a: u8,
     x: u8,
@@ -48,6 +62,19 @@ struct Registers {
     pc: u16,
     sp: u8,
     sr: u8,
+}
+
+impl Registers {
+    pub fn new() -> Self {
+        Self {
+            a: 0,
+            x: 0,
+            y: 0,
+            pc: 0,
+            sp: 0,
+            sr: 0,
+        }
+    }
 }
 
 pub struct CPU {
@@ -58,24 +85,8 @@ pub struct CPU {
 impl CPU {
     pub fn new() -> Self {
         Self {
-            pin: Pins {
-                res: false,
-                rdy: false,
-                a: 0,
-                d: 0,
-                rw: false,
-                phi0: false,
-                phi2: false,
-            },
-
-            reg: Registers {
-                a: 0,
-                x: 0,
-                y: 0,
-                pc: 0,
-                sp: 0,
-                sr: 0,
-            },
+            pin: Pins::new(),
+            reg: Registers::new(),
         }
     }
 
