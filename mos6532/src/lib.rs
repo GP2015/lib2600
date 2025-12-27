@@ -1,40 +1,10 @@
 mod bus;
+mod control;
 mod error;
+mod vars;
 
-use bus::Bus;
 use error::RIOTError;
-
-struct Pins {
-    a: Bus,
-    pa: Bus,
-    pb: Bus,
-    irq: bool,
-    db: Bus,
-    res: bool,
-    rw: bool,
-    rs: bool,
-    cs2: bool,
-    cs1: bool,
-    phi2: bool,
-}
-
-impl Pins {
-    pub fn new() -> Self {
-        Self {
-            a: Bus::new(7),
-            db: Bus::new(8),
-            pa: Bus::new(8),
-            pb: Bus::new(8),
-            cs1: false,
-            cs2: false,
-            phi2: false,
-            rw: false,
-            res: false,
-            rs: false,
-            irq: false,
-        }
-    }
-}
+use vars::Pins;
 
 pub struct RIOT {
     pin: Pins,
@@ -81,7 +51,7 @@ impl RIOT {
         self.pin.db.drive_bit(bit, state)
     }
 
-    // Peripheral Data A operations
+    // Peripheral A Data operations
 
     pub fn rd_pa(&self) -> usize {
         self.pin.pa.read()
@@ -103,7 +73,7 @@ impl RIOT {
         self.pin.pa.drive_bit(bit, state)
     }
 
-    // Peripheral Data B operations
+    // Peripheral B Data operations
 
     pub fn rd_pb(&self) -> usize {
         self.pin.pb.read()
@@ -127,16 +97,16 @@ impl RIOT {
 
     // Other pin operations
 
+    pub fn drv_phi2(&mut self, state: bool) {
+        self.update_phi2(state);
+    }
+
     pub fn drv_cs1(&mut self, state: bool) {
         self.pin.cs1 = state;
     }
 
     pub fn drv_cs2(&mut self, state: bool) {
         self.pin.cs2 = state;
-    }
-
-    pub fn drv_phi2(&mut self, state: bool) {
-        self.pin.phi2 = state;
     }
 
     pub fn drv_rw(&mut self, state: bool) {
