@@ -12,23 +12,29 @@ pub struct Pins {
     pub rs: Pin,
     pub cs2: Pin,
     pub cs1: Pin,
-    pub phi2: Pin,
 }
 
 impl Pins {
     pub fn new() -> Self {
         Self {
-            a: Bus::new(7),
-            db: Bus::new(8),
-            pa: Bus::new(8),
-            pb: Bus::new(8),
-            cs1: Pin::new(),
-            cs2: Pin::new(),
-            phi2: Pin::new(),
-            rw: Pin::new(),
-            res: Pin::new(),
-            rs: Pin::new(),
-            irq: Pin::new(),
+            a: Bus::new(7, String::from("A")),
+            db: Bus::new(8, String::from("DB")),
+            pa: Bus::new(8, String::from("PA")),
+            pb: Bus::new(8, String::from("PB")),
+            cs1: Pin::new(String::from("CS1")),
+            cs2: Pin::new(String::from("/CS2")),
+            rw: Pin::new(String::from("R/W")),
+            res: Pin::new(String::from("/RES")),
+            rs: Pin::new(String::from("/RS")),
+            irq: Pin::new(String::from("/IRQ")),
         }
+    }
+}
+
+pub struct TemporaryData {}
+
+impl TemporaryData {
+    pub fn new() -> Self {
+        Self {}
     }
 }

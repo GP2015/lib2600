@@ -4,8 +4,8 @@ mod error;
 mod pin;
 mod vars;
 
-pub use error::RIOTError;
-use vars::Pins;
+pub use crate::error::RIOTError;
+use crate::vars::{Pins, TemporaryData};
 
 // NOTE TO SELF:
 
@@ -33,12 +33,16 @@ use vars::Pins;
 /// and must be driven with some value before they can be read.
 pub struct RIOT {
     pin: Pins,
+    temp: TemporaryData,
 }
 
 impl RIOT {
     /// Create a new MOS 6532 RIOT chip, with all pins and registers uninitialised.
     pub fn new() -> Self {
-        Self { pin: Pins::new() }
+        Self {
+            pin: Pins::new(),
+            temp: TemporaryData::new(),
+        }
     }
 
     // Address Bus operations
@@ -54,8 +58,9 @@ impl RIOT {
 
     /// Drive the address bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drv_a_wrap(&mut self, val: usize) {
+    pub fn drv_a_wrap(&mut self, val: usize) -> Result<(), RIOTError> {
         self.pin.a.drive_wrap(val);
+        Ok(())
     }
 
     /// Drive bit `bit` of the address bus with state `state`.
@@ -200,13 +205,9 @@ impl RIOT {
 
     // Other pin operations
 
-    /// Drive the input clock pin (PHI2) with state `state`.
-    ///
-    /// If the pin is currently uninitialised,
-    /// `state = true` will be treated as a rising edge,
-    /// whereas `state = false` will *not* be treated as a falling edge.
-    pub fn drv_phi2(&mut self, state: bool) {
-        self.update_phi2(state);
+    /// Pulse the input clock pin (PHI2).
+    pub fn pulse_phi2(&mut self) {
+        self.tick().unwrap();
     }
 
     /// Drive the Chip Select 1 pin with state `state`.
