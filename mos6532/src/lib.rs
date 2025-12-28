@@ -3,7 +3,7 @@ mod control;
 mod error;
 mod vars;
 
-use error::RIOTError;
+pub use error::RIOTError;
 use vars::Pins;
 
 pub struct RIOT {
@@ -31,7 +31,7 @@ impl RIOT {
 
     // Data Bus operations
 
-    pub fn rd_db(&self) -> usize {
+    pub fn rd_db(&self) -> Result<usize, RIOTError> {
         self.pin.db.read()
     }
 
@@ -53,7 +53,7 @@ impl RIOT {
 
     // Peripheral A Data operations
 
-    pub fn rd_pa(&self) -> usize {
+    pub fn rd_pa(&self) -> Result<usize, RIOTError> {
         self.pin.pa.read()
     }
 
@@ -75,7 +75,7 @@ impl RIOT {
 
     // Peripheral B Data operations
 
-    pub fn rd_pb(&self) -> usize {
+    pub fn rd_pb(&self) -> Result<usize, RIOTError> {
         self.pin.pb.read()
     }
 
