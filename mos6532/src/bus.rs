@@ -4,7 +4,7 @@ fn get_bit_of_usize(val: usize, bit: usize) -> bool {
     (val >> bit) & 1 == 1
 }
 
-fn val_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
+fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
     val >> bit_count != 0
 }
 
@@ -30,7 +30,7 @@ impl Bus {
 
         for bit in (0..self.size).rev() {
             let Some(val) = self.bits[bit] else {
-                return Err(RIOTError::UninitialisedBusBit(bit));
+                return Err(RIOTError::UninitialisedBusBit { bit });
             };
 
             combined <<= 1;
@@ -42,19 +42,25 @@ impl Bus {
 
     pub fn read_bit(&self, bit: usize) -> Result<bool, RIOTError> {
         if bit >= self.size {
-            return Err(RIOTError::BusBitOutOfRange(bit));
+            return Err(RIOTError::BusBitOutOfRange {
+                bit,
+                bus_size: self.size,
+            });
         }
 
         let Some(val) = self.bits[bit] else {
-            return Err(RIOTError::UninitialisedBusBit(bit));
+            return Err(RIOTError::UninitialisedBusBit { bit });
         };
 
         Ok(val)
     }
 
     pub fn drive(&mut self, val: usize) -> Result<(), RIOTError> {
-        if val_exceeds_bit_count(val, self.size) {
-            return Err(RIOTError::BusDriveValueTooLarge(val));
+        if usize_exceeds_bit_count(val, self.size) {
+            return Err(RIOTError::BusDriveValueTooLarge {
+                value: val,
+                bus_size: self.size,
+            });
         }
 
         for bit in 0..self.size {
@@ -70,7 +76,10 @@ impl Bus {
 
     pub fn drive_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
         if bit >= self.size {
-            return Err(RIOTError::BusBitOutOfRange(bit));
+            return Err(RIOTError::BusBitOutOfRange {
+                bit,
+                bus_size: self.size,
+            });
         }
 
         self.bits[bit] = Some(state);
@@ -90,10 +99,10 @@ mod tests {
     }
 
     #[test]
-    fn val_exceeds_bit_count_test() {
-        assert_eq!(val_exceeds_bit_count(0b1011, 3), true);
-        assert_eq!(val_exceeds_bit_count(0b1011, 4), false);
-        assert_eq!(val_exceeds_bit_count(0b1011, 5), false);
+    fn usize_exceeds_bit_count_test() {
+        assert_eq!(usize_exceeds_bit_count(0b1011, 3), true);
+        assert_eq!(usize_exceeds_bit_count(0b1011, 4), false);
+        assert_eq!(usize_exceeds_bit_count(0b1011, 5), false);
     }
 
     #[test]
