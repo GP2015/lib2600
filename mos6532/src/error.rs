@@ -2,6 +2,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RIOTError {
+    #[error("pin is uninitialised")]
+    UninitialisedPin,
+
     #[error("cannot read bit {bit} of {bus_size}-bit bus")]
     BusBitOutOfRange { bit: usize, bus_size: usize },
 

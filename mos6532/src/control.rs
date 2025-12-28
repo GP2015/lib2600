@@ -2,8 +2,12 @@ use crate::RIOT;
 
 impl RIOT {
     pub fn update_phi2(&mut self, state: bool) {
-        let prev_state = self.pin.phi2;
-        self.pin.phi2 = state;
+        let prev_state = match self.pin.phi2.read() {
+            Ok(val) => val,
+            Err(_) => false,
+        };
+
+        self.pin.phi2.drive(state);
 
         match (prev_state, state) {
             (false, true) => self.phi2_rise(),

@@ -1,6 +1,7 @@
 mod bus;
 mod control;
 mod error;
+mod pin;
 mod vars;
 
 pub use error::RIOTError;
@@ -102,26 +103,26 @@ impl RIOT {
     }
 
     pub fn drv_cs1(&mut self, state: bool) {
-        self.pin.cs1 = state;
+        self.pin.cs1.drive(state)
     }
 
     pub fn drv_cs2(&mut self, state: bool) {
-        self.pin.cs2 = state;
+        self.pin.cs2.drive(state)
     }
 
     pub fn drv_rw(&mut self, state: bool) {
-        self.pin.rw = state;
+        self.pin.rw.drive(state)
     }
 
     pub fn drv_res(&mut self, state: bool) {
-        self.pin.res = state;
+        self.pin.res.drive(state)
     }
 
     pub fn drv_rs(&mut self, state: bool) {
-        self.pin.rs = state;
+        self.pin.rs.drive(state)
     }
 
-    pub fn rd_irq(&self) -> bool {
-        self.pin.irq
+    pub fn rd_irq(&self) -> Result<bool, RIOTError> {
+        self.pin.irq.read()
     }
 }

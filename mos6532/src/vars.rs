@@ -1,17 +1,18 @@
 use crate::bus::Bus;
+use crate::pin::Pin;
 
 pub struct Pins {
     pub a: Bus,
     pub pa: Bus,
     pub pb: Bus,
-    pub irq: bool,
+    pub irq: Pin,
     pub db: Bus,
-    pub res: bool,
-    pub rw: bool,
-    pub rs: bool,
-    pub cs2: bool,
-    pub cs1: bool,
-    pub phi2: bool,
+    pub res: Pin,
+    pub rw: Pin,
+    pub rs: Pin,
+    pub cs2: Pin,
+    pub cs1: Pin,
+    pub phi2: Pin,
 }
 
 impl Pins {
@@ -21,13 +22,13 @@ impl Pins {
             db: Bus::new(8),
             pa: Bus::new(8),
             pb: Bus::new(8),
-            cs1: false,
-            cs2: false,
-            phi2: false,
-            rw: false,
-            res: false,
-            rs: false,
-            irq: false,
+            cs1: Pin::new(),
+            cs2: Pin::new(),
+            phi2: Pin::new(),
+            rw: Pin::new(),
+            res: Pin::new(),
+            rs: Pin::new(),
+            irq: Pin::new(),
         }
     }
 }
