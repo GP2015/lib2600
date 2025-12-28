@@ -113,12 +113,33 @@ mod tests {
     }
 
     #[test]
+    fn read_uninitialised_bus() {
+        let mut bus = Bus::new(8);
+
+        for i in 0..7 {
+            bus.drive_bit(i, true).unwrap();
+        }
+        assert!(bus.read().is_err());
+
+        bus.drive_bit(7, true).unwrap();
+        assert_eq!(bus.read().unwrap(), 0b11111111);
+    }
+
+    #[test]
     fn read_bus_bits() {
         let mut bus = Bus::new(8);
         bus.drive(0b11010110).unwrap();
         assert_eq!(bus.read_bit(0).unwrap(), false);
         assert_eq!(bus.read_bit(4).unwrap(), true);
         assert!(bus.read_bit(8).is_err());
+    }
+
+    #[test]
+    fn read_uninitialised_bus_bits() {
+        let mut bus = Bus::new(8);
+        assert!(bus.read_bit(6).is_err());
+        bus.drive_bit(6, true).unwrap();
+        assert_eq!(bus.read_bit(6).unwrap(), true);
     }
 
     #[test]
