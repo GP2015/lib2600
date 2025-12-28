@@ -13,13 +13,15 @@ fn get_low_bits_of_usize(val: usize, bit_count: usize) -> usize {
 }
 
 pub struct Bus {
+    name: String,
     bits: Vec<Option<bool>>,
     size: usize,
 }
 
 impl Bus {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize, name: String) -> Self {
         Self {
+            name,
             bits: vec![None; size],
             size,
         }
@@ -30,7 +32,11 @@ impl Bus {
 
         for bit in (0..self.size).rev() {
             let Some(val) = self.bits[bit] else {
-                return Err(RIOTError::UninitialisedBusBit { bit });
+                return Err(RIOTError::UninitialisedBusBit {
+                    bus_name: self.name.clone(),
+                    bit,
+                    bus_size: self.size,
+                });
             };
 
             combined <<= 1;
@@ -43,13 +49,18 @@ impl Bus {
     pub fn read_bit(&self, bit: usize) -> Result<bool, RIOTError> {
         if bit >= self.size {
             return Err(RIOTError::BusBitOutOfRange {
+                bus_name: self.name.clone(),
                 bit,
                 bus_size: self.size,
             });
         }
 
         let Some(val) = self.bits[bit] else {
-            return Err(RIOTError::UninitialisedBusBit { bit });
+            return Err(RIOTError::UninitialisedBusBit {
+                bus_name: self.name.clone(),
+                bit,
+                bus_size: self.size,
+            });
         };
 
         Ok(val)
@@ -58,6 +69,7 @@ impl Bus {
     pub fn drive(&mut self, val: usize) -> Result<(), RIOTError> {
         if usize_exceeds_bit_count(val, self.size) {
             return Err(RIOTError::BusDriveValueTooLarge {
+                bus_name: self.name.clone(),
                 value: val,
                 bus_size: self.size,
             });
@@ -77,6 +89,7 @@ impl Bus {
     pub fn drive_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
         if bit >= self.size {
             return Err(RIOTError::BusBitOutOfRange {
+                bus_name: self.name.clone(),
                 bit,
                 bus_size: self.size,
             });
@@ -116,14 +129,14 @@ mod tests {
 
     #[test]
     fn read_bus() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         bus.drive(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
     }
 
     #[test]
     fn read_uninitialised_bus() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
 
         for i in 0..7 {
             bus.drive_bit(i, true).unwrap();
@@ -136,7 +149,7 @@ mod tests {
 
     #[test]
     fn read_bus_bits() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         bus.drive(0b11010110).unwrap();
         assert_eq!(bus.read_bit(0).unwrap(), false);
         assert_eq!(bus.read_bit(4).unwrap(), true);
@@ -145,7 +158,7 @@ mod tests {
 
     #[test]
     fn read_uninitialised_bus_bits() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         assert!(bus.read_bit(6).is_err());
         bus.drive_bit(6, true).unwrap();
         assert_eq!(bus.read_bit(6).unwrap(), true);
@@ -153,14 +166,14 @@ mod tests {
 
     #[test]
     fn drive_bus() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         assert!(bus.drive(0x67).is_ok());
         assert!(bus.drive(0x678).is_err());
     }
 
     #[test]
     fn drive_bus_wrapped() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         bus.drive_wrap(0x567);
         assert_eq!(bus.read().unwrap(), 0x67);
         bus.drive_wrap(0x89);
@@ -169,7 +182,7 @@ mod tests {
 
     #[test]
     fn drive_bus_bits() {
-        let mut bus = Bus::new(8);
+        let mut bus = Bus::new(8, String::new());
         bus.drive(0b11010110).unwrap();
         bus.drive_bit(0, false).unwrap();
         assert_eq!(bus.read().unwrap(), 0b11010110);

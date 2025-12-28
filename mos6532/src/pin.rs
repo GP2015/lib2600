@@ -1,18 +1,21 @@
 use crate::error::RIOTError;
 
 pub struct Pin {
+    name: String,
     state: Option<bool>,
 }
 
 impl Pin {
-    pub fn new() -> Self {
-        Self { state: None }
+    pub fn new(name: String) -> Self {
+        Self { name, state: None }
     }
 
     pub fn read(&self) -> Result<bool, RIOTError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RIOTError::UninitialisedPin),
+            None => Err(RIOTError::UninitialisedPin {
+                pin_name: self.name.clone(),
+            }),
         }
     }
 
@@ -27,7 +30,7 @@ mod tests {
 
     #[test]
     fn drive_read_pin() {
-        let mut pin = Pin::new();
+        let mut pin = Pin::new(String::new());
         pin.drive(true);
         assert_eq!(pin.read().unwrap(), true);
         pin.drive(false);
@@ -36,7 +39,7 @@ mod tests {
 
     #[test]
     fn read_uninitialised_pin() {
-        let pin = Pin::new();
+        let pin = Pin::new(String::new());
         assert!(pin.read().is_err());
     }
 }
