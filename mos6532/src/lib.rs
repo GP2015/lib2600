@@ -2,10 +2,15 @@ mod bus;
 mod control;
 mod error;
 mod pin;
+mod ram;
 mod vars;
 
 pub use crate::error::RIOTError;
-use crate::vars::{Pins, TemporaryData};
+
+use crate::{
+    ram::RAM,
+    vars::{Pins, Registers},
+};
 
 // NOTE TO SELF:
 
@@ -26,14 +31,15 @@ use crate::vars::{Pins, TemporaryData};
 /// To avoid emulating non-deterministic behaviour,
 /// all pins start in an uninitialised state.
 /// All inputs must be driven with some value before the chip can use them internally
-/// and all outputs be driven by the chip internally before they can be read.
+/// and all outputs must be driven by the chip internally before they can be read.
 /// Violations of this rule will return some [`RIOTError`] error variant.
 ///
 /// Similarly, all internal registers start in an uninitialised state
 /// and must be driven with some value before they can be read.
 pub struct RIOT {
     pin: Pins,
-    temp: TemporaryData,
+    reg: Registers,
+    ram: RAM,
 }
 
 impl RIOT {
@@ -41,7 +47,8 @@ impl RIOT {
     pub fn new() -> Self {
         Self {
             pin: Pins::new(),
-            temp: TemporaryData::new(),
+            reg: Registers::new(),
+            ram: RAM::new(),
         }
     }
 
@@ -58,9 +65,8 @@ impl RIOT {
 
     /// Drive the address bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drv_a_wrap(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drv_a_wrap(&mut self, val: usize) {
         self.pin.a.drive_wrap(val);
-        Ok(())
     }
 
     /// Drive bit `bit` of the address bus with state `state`.

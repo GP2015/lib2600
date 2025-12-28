@@ -64,4 +64,13 @@ pub enum RIOTError {
         /// The predefined number of bits in the bus.
         bus_size: usize,
     },
+
+    /// Indicates an attempt to read a byte from RAM before the byte was initialised.
+    ///
+    /// Bytes of RAM must first have a value written to them before they can be read.
+    #[error("cannot read RAM byte at {address:x} as it is uninitialised ")]
+    UninitialisedRAMByte {
+        /// The address being read from.
+        address: usize,
+    },
 }
