@@ -31,10 +31,20 @@ impl Pins {
     }
 }
 
-pub struct TemporaryData {}
+pub struct Registers {
+    pub ddra: Option<u8>,
+    pub ddrb: Option<u8>,
+    pub ora: Option<u8>,
+    pub orb: Option<u8>,
+}
 
-impl TemporaryData {
+impl Registers {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            ddra: None,
+            ddrb: None,
+            ora: None,
+            orb: None,
+        }
     }
 }

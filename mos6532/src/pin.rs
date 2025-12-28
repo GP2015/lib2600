@@ -10,6 +10,10 @@ impl Pin {
         Self { name, state: None }
     }
 
+    pub fn reset(&mut self) {
+        self.state = None;
+    }
+
     pub fn read(&self) -> Result<bool, RIOTError> {
         match self.state {
             Some(state) => Ok(state),
