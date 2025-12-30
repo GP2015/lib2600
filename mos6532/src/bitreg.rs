@@ -1,11 +1,11 @@
 use crate::error::RIOTError;
 
-pub struct Pin {
+pub struct BitReg {
     name: String,
     state: Option<bool>,
 }
 
-impl Pin {
+impl BitReg {
     pub fn new(name: String) -> Self {
         Self { name, state: None }
     }
@@ -17,8 +17,8 @@ impl Pin {
     pub fn read(&self) -> Result<bool, RIOTError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RIOTError::UninitialisedPin {
-                pin_name: self.name.clone(),
+            None => Err(RIOTError::UninitialisedBitReg {
+                reg_name: self.name.clone(),
             }),
         }
     }
@@ -33,17 +33,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn drive_read_pin() {
-        let mut pin = Pin::new(String::new());
-        pin.drive(true);
-        assert_eq!(pin.read().unwrap(), true);
-        pin.drive(false);
-        assert_eq!(pin.read().unwrap(), false);
+    fn drive_read() {
+        let mut bit = BitReg::new(String::new());
+        bit.drive(true);
+        assert_eq!(bit.read().unwrap(), true);
+        bit.drive(false);
+        assert_eq!(bit.read().unwrap(), false);
     }
 
     #[test]
-    fn read_uninitialised_pin() {
-        let pin = Pin::new(String::new());
-        assert!(pin.read().is_err());
+    fn read_uninitialised() {
+        let bit = BitReg::new(String::new());
+        assert!(bit.read().is_err());
     }
 }

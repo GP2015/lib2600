@@ -1,50 +1,50 @@
-use crate::bus::Bus;
-use crate::pin::Pin;
+use crate::bitreg::BitReg;
+use crate::mbitreg::MBitReg;
 
-pub struct Pins {
-    pub a: Bus,
-    pub pa: Bus,
-    pub pb: Bus,
-    pub irq: Pin,
-    pub db: Bus,
-    pub res: Pin,
-    pub rw: Pin,
-    pub rs: Pin,
-    pub cs2: Pin,
-    pub cs1: Pin,
+pub struct Buffers {
+    pub a: MBitReg,
+    pub pa: MBitReg,
+    pub pb: MBitReg,
+    pub irq: BitReg,
+    pub db: MBitReg,
+    pub res: BitReg,
+    pub rw: BitReg,
+    pub rs: BitReg,
+    pub cs2: BitReg,
+    pub cs1: BitReg,
 }
 
-impl Pins {
+impl Buffers {
     pub fn new() -> Self {
         Self {
-            a: Bus::new(7, String::from("A")),
-            db: Bus::new(8, String::from("DB")),
-            pa: Bus::new(8, String::from("PA")),
-            pb: Bus::new(8, String::from("PB")),
-            cs1: Pin::new(String::from("CS1")),
-            cs2: Pin::new(String::from("/CS2")),
-            rw: Pin::new(String::from("R/W")),
-            res: Pin::new(String::from("/RES")),
-            rs: Pin::new(String::from("/RS")),
-            irq: Pin::new(String::from("/IRQ")),
+            a: MBitReg::new(7, String::from("A")),
+            db: MBitReg::new(8, String::from("DB")),
+            pa: MBitReg::new(8, String::from("PA")),
+            pb: MBitReg::new(8, String::from("PB")),
+            cs1: BitReg::new(String::from("CS1")),
+            cs2: BitReg::new(String::from("/CS2")),
+            rw: BitReg::new(String::from("R/W")),
+            res: BitReg::new(String::from("/RES")),
+            rs: BitReg::new(String::from("/RS")),
+            irq: BitReg::new(String::from("/IRQ")),
         }
     }
 }
 
 pub struct Registers {
-    pub ddra: Option<u8>,
-    pub ddrb: Option<u8>,
-    pub ora: Option<u8>,
-    pub orb: Option<u8>,
+    pub ddra: MBitReg,
+    pub ddrb: MBitReg,
+    pub ora: MBitReg,
+    pub orb: MBitReg,
 }
 
 impl Registers {
     pub fn new() -> Self {
         Self {
-            ddra: None,
-            ddrb: None,
-            ora: None,
-            orb: None,
+            ddra: MBitReg::new(8, String::from("DDRA")),
+            ddrb: MBitReg::new(8, String::from("DDRB")),
+            ora: MBitReg::new(8, String::from("ORA")),
+            orb: MBitReg::new(8, String::from("ORB")),
         }
     }
 }
