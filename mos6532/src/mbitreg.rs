@@ -99,6 +99,10 @@ impl MBitReg {
         self.bits[bit] = Some(state);
         Ok(())
     }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
 }
 
 #[cfg(test)]
