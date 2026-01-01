@@ -1,4 +1,4 @@
-use crate::{bitreg::BitReg, mbitreg::MBitReg};
+use crate::data::{bitreg::BitReg, mbitreg::MBitReg};
 
 pub struct Buffers {
     pub a: MBitReg,
@@ -26,24 +26,6 @@ impl Buffers {
             res: BitReg::new(String::from("/RES")),
             rs: BitReg::new(String::from("/RS")),
             irq: BitReg::new(String::from("/IRQ")),
-        }
-    }
-}
-
-pub struct Registers {
-    pub ddra: MBitReg,
-    pub ddrb: MBitReg,
-    pub ora: MBitReg,
-    pub orb: MBitReg,
-}
-
-impl Registers {
-    pub fn new() -> Self {
-        Self {
-            ddra: MBitReg::new(8, String::from("DDRA")),
-            ddrb: MBitReg::new(8, String::from("DDRB")),
-            ora: MBitReg::new(8, String::from("ORA")),
-            orb: MBitReg::new(8, String::from("ORB")),
         }
     }
 }

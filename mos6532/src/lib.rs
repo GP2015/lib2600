@@ -1,16 +1,9 @@
-mod bitreg;
 mod control;
+mod data;
 mod error;
-mod mbitreg;
-mod ram;
-mod vars;
 
+use crate::data::{Buffers, RAM, Registers};
 pub use crate::error::RIOTError;
-
-use crate::{
-    ram::RAM,
-    vars::{Buffers, Registers},
-};
 
 // NOTE TO SELF:
 
