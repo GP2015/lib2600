@@ -13,14 +13,14 @@ impl RAM {
         }
     }
 
-    pub fn write_byte(&mut self, addr: usize, byte: u8) {
-        self.bytes[addr] = Some(byte);
+    pub fn write_byte(&mut self, address: usize, byte: u8) {
+        self.bytes[address] = Some(byte);
     }
 
-    pub fn read_byte(&self, addr: usize) -> Result<u8, RIOTError> {
-        match self.bytes[addr] {
+    pub fn read_byte(&self, address: usize) -> Result<u8, RIOTError> {
+        match self.bytes[address] {
             Some(byte) => Ok(byte),
-            None => Err(RIOTError::UninitialisedRAMByte { address: addr }),
+            None => Err(RIOTError::UninitialisedRAMByte { address }),
         }
     }
 }
