@@ -205,8 +205,8 @@ impl RIOT {
     // Other pin operations
 
     /// Pulse the input clock pin (PHI2).
-    pub fn pulse_phi2(&mut self) {
-        self.tick().unwrap();
+    pub fn pulse_phi2(&mut self) -> Result<(), RIOTError> {
+        self.tick()
     }
 
     /// Drive the Chip Select 1 pin with state `state`.
