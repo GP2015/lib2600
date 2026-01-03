@@ -1,7 +1,7 @@
 use crate::{RIOT, RIOTError, data::AOrB};
 
 impl RIOT {
-    pub(crate) fn write_ddr(&mut self, reg: AOrB) -> Result<(), RIOTError> {
+    pub(super) fn write_ddr(&mut self, reg: AOrB) -> Result<(), RIOTError> {
         let byte = self.buf.db.read()?;
 
         match reg {
@@ -14,7 +14,7 @@ impl RIOT {
         Ok(())
     }
 
-    pub(crate) fn read_ddr(&mut self, reg: AOrB) -> Result<(), RIOTError> {
+    pub(super) fn read_ddr(&mut self, reg: AOrB) -> Result<(), RIOTError> {
         let byte = match reg {
             AOrB::A => &self.reg.ddra,
             AOrB::B => &self.reg.ddrb,
@@ -25,7 +25,7 @@ impl RIOT {
         Ok(())
     }
 
-    pub(crate) fn write_or(&mut self, reg: AOrB) -> Result<(), RIOTError> {
+    pub(super) fn write_or(&mut self, reg: AOrB) -> Result<(), RIOTError> {
         let byte = self.buf.db.read()?;
 
         match reg {
@@ -38,7 +38,7 @@ impl RIOT {
         Ok(())
     }
 
-    pub(crate) fn read_ora(&mut self) -> Result<(), RIOTError> {
+    pub(super) fn read_ora(&mut self) -> Result<(), RIOTError> {
         for bit in 0..8 {
             let state = match self.reg.ddra.read_bit(bit)? {
                 true => self.reg.ora.read_bit(bit)?,
@@ -50,13 +50,13 @@ impl RIOT {
         Ok(())
     }
 
-    pub(crate) fn read_orb(&mut self) -> Result<(), RIOTError> {
+    pub(super) fn read_orb(&mut self) -> Result<(), RIOTError> {
         let byte = self.reg.orb.read()?;
         self.buf.db.drive(byte).unwrap();
         Ok(())
     }
 
-    pub(crate) fn update_peripheral(&mut self, peripheral: AOrB) -> Result<(), RIOTError> {
+    pub(super) fn update_peripheral(&mut self, peripheral: AOrB) -> Result<(), RIOTError> {
         for bit in 0..8 {
             match peripheral {
                 AOrB::A => {
