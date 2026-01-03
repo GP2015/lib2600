@@ -26,6 +26,13 @@ impl BitReg {
     pub fn drive(&mut self, state: bool) {
         self.state = Some(state);
     }
+
+    pub fn is_driven(&self) -> bool {
+        match self.state {
+            Some(_) => true,
+            None => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -34,16 +41,24 @@ mod tests {
 
     #[test]
     fn drive_read() {
-        let mut bit = BitReg::new(String::new());
-        bit.drive(true);
-        assert_eq!(bit.read().unwrap(), true);
-        bit.drive(false);
-        assert_eq!(bit.read().unwrap(), false);
+        let mut bit_reg = BitReg::new(String::new());
+        bit_reg.drive(true);
+        assert_eq!(bit_reg.read().unwrap(), true);
+        bit_reg.drive(false);
+        assert_eq!(bit_reg.read().unwrap(), false);
     }
 
     #[test]
     fn read_uninitialised() {
-        let bit = BitReg::new(String::new());
-        assert!(bit.read().is_err());
+        let bit_reg = BitReg::new(String::new());
+        assert!(bit_reg.read().is_err());
+    }
+
+    #[test]
+    fn is_driven() {
+        let mut bit_reg = BitReg::new(String::new());
+        assert_eq!(bit_reg.is_driven(), false);
+        bit_reg.drive(true);
+        assert_eq!(bit_reg.is_driven(), true);
     }
 }
