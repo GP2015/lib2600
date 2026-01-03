@@ -15,30 +15,64 @@ impl RIOT {
             return Ok(());
         }
 
-        let rs = self.buf.rs.read()? as u8;
-        let rw = self.buf.rw.read()? as u8;
-        let a4 = self.buf.a.read_bit(4)? as u8;
-        let a3 = self.buf.a.read_bit(3)? as u8;
-        let a2 = self.buf.a.read_bit(2)? as u8;
-        let a1 = self.buf.a.read_bit(1)? as u8;
-        let a0 = self.buf.a.read_bit(0)? as u8;
-
-        match (rs, rw, a4, a3, a2, a1, a0) {
-            (0, 0, _, _, _, _, _) => self.write_ram()?,
-            (0, 1, _, _, _, _, _) => self.read_ram()?,
-            (1, 0, _, _, 0, 0, 1) => self.write_ddr(AOrB::A)?,
-            (1, 1, _, _, 0, 0, 1) => self.read_ddr(AOrB::A)?,
-            (1, 0, _, _, 0, 1, 1) => self.write_ddr(AOrB::B)?,
-            (1, 1, _, _, 0, 1, 1) => self.read_ddr(AOrB::B)?,
-            (1, 0, _, _, 0, 0, 0) => self.write_or(AOrB::A)?,
-            (1, 1, _, _, 0, 0, 0) => self.read_ora()?,
-            (1, 0, _, _, 0, 1, 0) => self.write_or(AOrB::B)?,
-            (1, 1, _, _, 0, 1, 0) => self.read_orb()?,
-            _ => (),
-        }
+        self.decode_execute_instruction()?;
 
         self.update_peripheral(AOrB::A)?;
         self.update_peripheral(AOrB::B)?;
+
+        Ok(())
+    }
+
+    fn decode_execute_instruction(&mut self) -> Result<(), RIOTError> {
+        match self.buf.rs.read()? {
+            false => match self.buf.rw.read()? {
+                false => self.write_ram()?,
+                true => self.read_ram()?,
+            },
+            true => match self.buf.a.read_bit(2)? {
+                false => match self.buf.a.read_bit(0)? {
+                    false => match self.buf.a.read_bit(1)? {
+                        false => match self.buf.rw.read()? {
+                            false => self.write_or(AOrB::A)?,
+                            true => self.read_ora()?,
+                        },
+                        true => match self.buf.rw.read()? {
+                            false => self.write_or(AOrB::B)?,
+                            true => self.read_orb()?,
+                        },
+                    },
+                    true => match self.buf.a.read_bit(1)? {
+                        false => match self.buf.rw.read()? {
+                            false => self.write_ddr(AOrB::A)?,
+                            true => self.read_ddr(AOrB::A)?,
+                        },
+                        true => match self.buf.rw.read()? {
+                            false => self.write_ddr(AOrB::B)?,
+                            true => self.read_ddr(AOrB::B)?,
+                        },
+                    },
+                },
+                true => match self.buf.rw.read()? {
+                    false => match self.buf.a.read_bit(4)? {
+                        false => (), // Write edge detect control (uses A1 and A0)
+                        true => match self.buf.a.read_bit(1)? {
+                            false => match self.buf.a.read_bit(0)? {
+                                false => (), // Write timer +1T (uses A3)
+                                true => (),  // Write timer +8T (uses A3)
+                            },
+                            true => match self.buf.a.read_bit(0)? {
+                                false => (), // Write timer +64T (uses A3)
+                                true => (),  // Write timer +1024T (uses A3)
+                            },
+                        },
+                    },
+                    true => match self.buf.a.read_bit(0)? {
+                        false => (), // Read timer (uses A3)
+                        true => (),  // Read interrupt flags
+                    },
+                },
+            },
+        };
 
         Ok(())
     }
