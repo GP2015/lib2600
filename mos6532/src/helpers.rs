@@ -1,5 +1,11 @@
 use crate::RIOT;
 
+/// Some extra helper methods to help reduce boilerplate.
+/// Instead of setting the pins individually for each operation,
+/// you can call these methods and they will handle the pins for you.
+///
+/// These methods are simply abstractions over the core methods.
+/// They do not provide any extra functionality.
 impl RIOT {
     pub fn reset_pulse(&mut self) {
         self.drive_res(false);
@@ -8,8 +14,8 @@ impl RIOT {
     }
 
     pub fn select(&mut self) {
-        self.buf.cs1.drive(true);
-        self.buf.cs2.drive(false);
+        self.drive_cs1(true);
+        self.drive_cs2(false);
     }
 
     fn general_pulse(&mut self) {

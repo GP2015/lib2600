@@ -36,6 +36,8 @@ pub struct RIOT {
     ram: RAM,
 }
 
+/// The core methods used to control the RIOT chip.
+/// Each of the pins & buses are driven individually.
 impl RIOT {
     /// Create a new MOS 6532 RIOT chip, with all pins and registers uninitialised.
     pub fn new() -> Self {
