@@ -1,6 +1,7 @@
 mod control;
 mod data;
 mod error;
+mod helpers;
 
 use crate::data::{Buffers, RAM, Registers};
 pub use crate::error::RIOTError;

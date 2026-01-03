@@ -1,0 +1,88 @@
+use crate::RIOT;
+
+impl RIOT {
+    pub fn reset_pulse(&mut self) {
+        self.drive_res(false);
+        self.pulse_phi2().unwrap();
+        self.drive_res(true);
+    }
+
+    pub fn select(&mut self) {
+        self.buf.cs1.drive(true);
+        self.buf.cs2.drive(false);
+    }
+
+    fn general_pulse(&mut self) {
+        self.drive_res(true);
+        self.select();
+        self.pulse_phi2().unwrap();
+    }
+
+    fn general_ram_pulse(&mut self, rw: bool, address: usize) {
+        self.drive_rw(rw);
+        self.drive_rs(false);
+        self.drive_a_wrap(address);
+        self.general_pulse();
+    }
+
+    pub fn write_ram_pulse(&mut self, address: usize, data: usize) {
+        self.drive_db_wrap(data);
+        self.general_ram_pulse(false, address);
+    }
+
+    pub fn read_ram_pulse(&mut self, address: usize) -> usize {
+        self.general_ram_pulse(true, address);
+        self.read_db().unwrap()
+    }
+
+    fn general_io_pulse(&mut self, a0: bool, a1: bool, rw: bool) {
+        self.drive_a_bit(0, a0).unwrap();
+        self.drive_a_bit(1, a1).unwrap();
+        self.drive_rw(rw);
+        self.drive_rs(true);
+        self.drive_a_bit(2, false).unwrap();
+        self.general_pulse();
+    }
+
+    pub fn write_ora_pulse(&mut self, data: usize) {
+        self.drive_db_wrap(data);
+        self.general_io_pulse(false, false, false);
+    }
+
+    pub fn read_ora_pulse(&mut self) -> usize {
+        self.general_io_pulse(false, false, true);
+        self.read_db().unwrap()
+    }
+
+    pub fn write_orb_pulse(&mut self, data: usize) {
+        self.drive_db_wrap(data);
+        self.general_io_pulse(false, true, false);
+    }
+
+    pub fn read_orb_pulse(&mut self) -> usize {
+        self.general_io_pulse(false, true, true);
+        self.read_db().unwrap()
+    }
+
+    pub fn write_ddra_pulse(&mut self, data: usize) {
+        self.drive_db_wrap(data);
+        self.general_io_pulse(true, false, false);
+    }
+
+    pub fn read_ddra_pulse(&mut self) -> usize {
+        self.general_io_pulse(true, false, true);
+        self.read_db().unwrap()
+    }
+
+    pub fn write_ddrb_pulse(&mut self, data: usize) {
+        self.drive_db_wrap(data);
+        self.general_io_pulse(true, true, false);
+    }
+
+    pub fn read_ddrb_pulse(&mut self) -> usize {
+        self.general_io_pulse(true, true, true);
+        self.read_db().unwrap()
+    }
+
+    // Add timer and interrupt control methods here.
+}
