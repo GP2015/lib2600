@@ -11,6 +11,8 @@ impl RIOT {
         .drive(byte)
         .unwrap();
 
+        self.update_peripheral(reg)?;
+
         Ok(())
     }
 
@@ -35,24 +37,26 @@ impl RIOT {
         .drive(byte)
         .unwrap();
 
+        self.update_peripheral(reg)?;
+
         Ok(())
     }
 
     pub(super) fn read_ora(&mut self) -> Result<(), RIOTError> {
-        for bit in 0..8 {
-            let state = match self.reg.ddra.read_bit(bit)? {
-                true => self.reg.ora.read_bit(bit)?,
-                false => self.buf.pa.read_bit(bit)?,
-            };
-            self.buf.db.drive_bit(bit, state).unwrap();
-        }
-
+        let byte = self.buf.pa.read()?;
+        self.buf.db.drive(byte).unwrap();
         Ok(())
     }
 
     pub(super) fn read_orb(&mut self) -> Result<(), RIOTError> {
-        let byte = self.reg.orb.read()?;
-        self.buf.db.drive(byte).unwrap();
+        for bit in 0..8 {
+            let state = match self.reg.ddrb.read_bit(bit)? {
+                true => self.reg.orb.read_bit(bit)?,
+                false => self.buf.pb.read_bit(bit)?,
+            };
+            self.buf.db.drive_bit(bit, state).unwrap();
+        }
+
         Ok(())
     }
 

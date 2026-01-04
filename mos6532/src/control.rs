@@ -17,9 +17,6 @@ impl RIOT {
 
         self.decode_execute_instruction()?;
 
-        self.update_peripheral(AOrB::A)?;
-        self.update_peripheral(AOrB::B)?;
-
         Ok(())
     }
 
