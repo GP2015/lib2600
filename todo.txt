@@ -1,3 +1,2 @@
-Add the remaining CPU unit tests.
-Add per-instruction addressing modes variations.
-Finish addressing modes.
+-- RIOT --
+Don't allow the user to drive a line already being driven.
