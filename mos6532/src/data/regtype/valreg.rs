@@ -1,11 +1,15 @@
 use crate::error::RIOTError;
+use num_traits::{NumOps, One};
 
-pub struct ValueReg<T: Copy> {
+pub struct ValueReg<T> {
     name: String,
     value: Option<T>,
 }
 
-impl<T: Copy> ValueReg<T> {
+impl<T> ValueReg<T>
+where
+    T: Copy + NumOps + One,
+{
     pub fn new(name: String) -> Self {
         Self { name, value: None }
     }
@@ -30,6 +34,28 @@ impl<T: Copy> ValueReg<T> {
             Some(_) => true,
             None => false,
         }
+    }
+
+    pub fn increment(&mut self) -> Result<(), RIOTError> {
+        let Some(val) = self.value else {
+            return Err(RIOTError::UninitialisedValueReg {
+                reg_name: self.name.clone(),
+            });
+        };
+
+        self.value = Some(val + T::one());
+        Ok(())
+    }
+
+    pub fn decrement(&mut self) -> Result<(), RIOTError> {
+        let Some(val) = self.value else {
+            return Err(RIOTError::UninitialisedValueReg {
+                reg_name: self.name.clone(),
+            });
+        };
+
+        self.value = Some(val - T::one());
+        Ok(())
     }
 }
 
@@ -62,5 +88,21 @@ mod tests {
         assert_eq!(reg.is_driven(), false);
         assert!(reg.drive(0x67).is_ok());
         assert_eq!(reg.is_driven(), true);
+    }
+
+    #[test]
+    fn increment() {
+        let mut reg = ValueReg::new(String::new());
+        reg.drive(0x67).unwrap();
+        reg.increment().unwrap();
+        assert_eq!(reg.read().unwrap(), 0x68);
+    }
+
+    #[test]
+    fn decrement() {
+        let mut reg = ValueReg::new(String::new());
+        reg.drive(0x67).unwrap();
+        reg.decrement().unwrap();
+        assert_eq!(reg.read().unwrap(), 0x66);
     }
 }
