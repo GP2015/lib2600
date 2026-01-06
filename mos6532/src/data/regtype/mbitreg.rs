@@ -139,83 +139,83 @@ mod tests {
 
     #[test]
     fn read() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        mbit_reg.drive(0x67).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0x67);
+        let mut reg = MBitReg::new(8, String::new());
+        reg.drive(0x67).unwrap();
+        assert_eq!(reg.read().unwrap(), 0x67);
     }
 
     #[test]
     fn read_uninitialised() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
+        let mut reg = MBitReg::new(8, String::new());
 
         for i in 0..7 {
-            mbit_reg.drive_bit(i, true).unwrap();
+            reg.drive_bit(i, true).unwrap();
         }
-        assert!(mbit_reg.read().is_err());
+        assert!(reg.read().is_err());
 
-        mbit_reg.drive_bit(7, true).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0b11111111);
+        reg.drive_bit(7, true).unwrap();
+        assert_eq!(reg.read().unwrap(), 0b11111111);
     }
 
     #[test]
     fn read_bits() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        mbit_reg.drive(0b11010110).unwrap();
-        assert_eq!(mbit_reg.read_bit(0).unwrap(), false);
-        assert_eq!(mbit_reg.read_bit(4).unwrap(), true);
-        assert!(mbit_reg.read_bit(8).is_err());
+        let mut reg = MBitReg::new(8, String::new());
+        reg.drive(0b11010110).unwrap();
+        assert_eq!(reg.read_bit(0).unwrap(), false);
+        assert_eq!(reg.read_bit(4).unwrap(), true);
+        assert!(reg.read_bit(8).is_err());
     }
 
     #[test]
     fn read_uninitialised_bits() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        assert!(mbit_reg.read_bit(6).is_err());
-        mbit_reg.drive_bit(6, true).unwrap();
-        assert_eq!(mbit_reg.read_bit(6).unwrap(), true);
+        let mut reg = MBitReg::new(8, String::new());
+        assert!(reg.read_bit(6).is_err());
+        reg.drive_bit(6, true).unwrap();
+        assert_eq!(reg.read_bit(6).unwrap(), true);
     }
 
     #[test]
     fn drive() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        assert!(mbit_reg.drive(0x67).is_ok());
-        assert!(mbit_reg.drive(0x678).is_err());
+        let mut reg = MBitReg::new(8, String::new());
+        assert!(reg.drive(0x67).is_ok());
+        assert!(reg.drive(0x678).is_err());
     }
 
     #[test]
     fn drive_wrapped() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        mbit_reg.drive_wrap(0x567);
-        assert_eq!(mbit_reg.read().unwrap(), 0x67);
-        mbit_reg.drive_wrap(0x89);
-        assert_eq!(mbit_reg.read().unwrap(), 0x89);
+        let mut reg = MBitReg::new(8, String::new());
+        reg.drive_wrap(0x567);
+        assert_eq!(reg.read().unwrap(), 0x67);
+        reg.drive_wrap(0x89);
+        assert_eq!(reg.read().unwrap(), 0x89);
     }
 
     #[test]
     fn drive_bits() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        mbit_reg.drive(0b11010110).unwrap();
-        mbit_reg.drive_bit(0, false).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0b11010110);
-        mbit_reg.drive_bit(1, false).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0b11010100);
-        mbit_reg.drive_bit(2, true).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0b11010100);
-        mbit_reg.drive_bit(3, true).unwrap();
-        assert_eq!(mbit_reg.read().unwrap(), 0b11011100);
-        assert!(mbit_reg.drive_bit(8, true).is_err());
+        let mut reg = MBitReg::new(8, String::new());
+        reg.drive(0b11010110).unwrap();
+        reg.drive_bit(0, false).unwrap();
+        assert_eq!(reg.read().unwrap(), 0b11010110);
+        reg.drive_bit(1, false).unwrap();
+        assert_eq!(reg.read().unwrap(), 0b11010100);
+        reg.drive_bit(2, true).unwrap();
+        assert_eq!(reg.read().unwrap(), 0b11010100);
+        reg.drive_bit(3, true).unwrap();
+        assert_eq!(reg.read().unwrap(), 0b11011100);
+        assert!(reg.drive_bit(8, true).is_err());
     }
 
     #[test]
     fn is_driven() {
-        let mut mbit_reg = MBitReg::new(8, String::new());
-        assert_eq!(mbit_reg.is_driven(), false);
+        let mut reg = MBitReg::new(8, String::new());
+        assert_eq!(reg.is_driven(), false);
 
         for i in 0..7 {
-            mbit_reg.drive_bit(i, true).unwrap();
+            reg.drive_bit(i, true).unwrap();
         }
-        assert_eq!(mbit_reg.is_driven(), false);
+        assert_eq!(reg.is_driven(), false);
 
-        mbit_reg.drive_bit(7, true).unwrap();
-        assert_eq!(mbit_reg.is_driven(), true);
+        reg.drive_bit(7, true).unwrap();
+        assert_eq!(reg.is_driven(), true);
     }
 }

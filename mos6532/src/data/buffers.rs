@@ -1,4 +1,4 @@
-use crate::data::{bitreg::BitReg, mbitreg::MBitReg};
+use crate::data::regtype::{BitReg, MBitReg};
 
 pub struct Buffers {
     pub a: MBitReg,

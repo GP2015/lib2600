@@ -81,4 +81,14 @@ pub enum RIOTError {
         /// The address being read from.
         address: usize,
     },
+
+    /// Indicates an attempt to access a pin's value before the pin was initialised.
+    ///
+    /// Pins must first be driven with a particular value
+    /// before their value can be accessed (internally or externally).
+    #[error("cannot access {reg_name} as it is uninitialised")]
+    UninitialisedValueReg {
+        /// The name of the pin in question.
+        reg_name: String,
+    },
 }

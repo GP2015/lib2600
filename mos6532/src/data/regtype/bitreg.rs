@@ -41,24 +41,24 @@ mod tests {
 
     #[test]
     fn drive_read() {
-        let mut bit_reg = BitReg::new(String::new());
-        bit_reg.drive(true);
-        assert_eq!(bit_reg.read().unwrap(), true);
-        bit_reg.drive(false);
-        assert_eq!(bit_reg.read().unwrap(), false);
+        let mut reg = BitReg::new(String::new());
+        reg.drive(true);
+        assert_eq!(reg.read().unwrap(), true);
+        reg.drive(false);
+        assert_eq!(reg.read().unwrap(), false);
     }
 
     #[test]
     fn read_uninitialised() {
-        let bit_reg = BitReg::new(String::new());
-        assert!(bit_reg.read().is_err());
+        let reg = BitReg::new(String::new());
+        assert!(reg.read().is_err());
     }
 
     #[test]
     fn is_driven() {
-        let mut bit_reg = BitReg::new(String::new());
-        assert_eq!(bit_reg.is_driven(), false);
-        bit_reg.drive(true);
-        assert_eq!(bit_reg.is_driven(), true);
+        let mut reg = BitReg::new(String::new());
+        assert_eq!(reg.is_driven(), false);
+        reg.drive(true);
+        assert_eq!(reg.is_driven(), true);
     }
 }

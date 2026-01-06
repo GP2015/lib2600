@@ -1,8 +1,7 @@
-mod bitreg;
 mod buffers;
-mod mbitreg;
 mod ram;
 mod registers;
+mod regtype;
 
 pub enum AOrB {
     A,
