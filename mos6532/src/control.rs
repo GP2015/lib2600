@@ -1,6 +1,7 @@
 mod io;
 mod ram;
 mod reset;
+mod timer;
 
 use crate::{RIOT, RIOTError, data::AOrB};
 
