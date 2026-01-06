@@ -1,3 +1,4 @@
+mod edc;
 mod io;
 mod ram;
 mod reset;
@@ -6,9 +7,9 @@ mod timer;
 use crate::{RIOT, RIOTError, data::AOrB};
 
 impl RIOT {
-    pub(crate) fn tick(&mut self) -> Result<(), RIOTError> {
+    pub(super) fn tick(&mut self) -> Result<(), RIOTError> {
         if !self.buf.res.read()? {
-            self.reset();
+            self.reset()?;
             return Ok(());
         }
 
@@ -18,10 +19,12 @@ impl RIOT {
 
         self.decode_execute_instruction()?;
 
+        self.update_edc();
+
         Ok(())
     }
 
-    fn decode_execute_instruction(&mut self) -> Result<(), RIOTError> {
+    pub fn decode_execute_instruction(&mut self) -> Result<(), RIOTError> {
         match self.buf.rs.read()? {
             false => match self.buf.rw.read()? {
                 false => self.write_ram()?,
