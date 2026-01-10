@@ -4,5 +4,5 @@ mod error;
 mod helpers;
 mod riot;
 
-pub use crate::error::RIOTError;
-pub use crate::riot::RIOT;
+pub use crate::error::RiotError;
+pub use crate::riot::Riot;

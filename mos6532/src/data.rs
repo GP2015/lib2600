@@ -9,5 +9,5 @@ pub enum AOrB {
 }
 
 pub use buffers::Buffers;
-pub use ram::RAM;
+pub use ram::Ram;
 pub use registers::Registers;

@@ -1,4 +1,4 @@
-use crate::error::RIOTError;
+use crate::error::RiotError;
 
 pub struct MBitReg {
     name: String,
@@ -24,15 +24,15 @@ impl MBitReg {
     }
 
     fn get_low_bits_of_usize(val: usize, bit_count: usize) -> usize {
-        val & (1 << bit_count) - 1
+        val & ((1 << bit_count) - 1)
     }
 
-    pub fn read(&self) -> Result<usize, RIOTError> {
+    pub fn read(&self) -> Result<usize, RiotError> {
         let mut combined = 0;
 
         for bit in (0..self.size).rev() {
             let Some(val) = self.bits[bit] else {
-                return Err(RIOTError::UninitialisedMBitRegBit {
+                return Err(RiotError::UninitialisedMBitRegBit {
                     reg_name: self.name.clone(),
                     bit,
                     reg_size: self.size,
@@ -46,9 +46,9 @@ impl MBitReg {
         Ok(combined)
     }
 
-    pub fn read_bit(&self, bit: usize) -> Result<bool, RIOTError> {
+    pub fn read_bit(&self, bit: usize) -> Result<bool, RiotError> {
         if bit >= self.size {
-            return Err(RIOTError::MBitRegBitOutOfRange {
+            return Err(RiotError::MBitRegBitOutOfRange {
                 reg_name: self.name.clone(),
                 bit,
                 reg_size: self.size,
@@ -56,7 +56,7 @@ impl MBitReg {
         }
 
         let Some(val) = self.bits[bit] else {
-            return Err(RIOTError::UninitialisedMBitRegBit {
+            return Err(RiotError::UninitialisedMBitRegBit {
                 reg_name: self.name.clone(),
                 bit,
                 reg_size: self.size,
@@ -66,9 +66,9 @@ impl MBitReg {
         Ok(val)
     }
 
-    pub fn drive(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drive(&mut self, val: usize) -> Result<(), RiotError> {
         if Self::usize_exceeds_bit_count(val, self.size) {
-            return Err(RIOTError::MBitRegDriveValueTooLarge {
+            return Err(RiotError::MBitRegDriveValueTooLarge {
                 reg_name: self.name.clone(),
                 value: val,
                 reg_size: self.size,
@@ -87,9 +87,9 @@ impl MBitReg {
             .unwrap();
     }
 
-    pub fn drive_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
+    pub fn drive_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         if bit >= self.size {
-            return Err(RIOTError::MBitRegBitOutOfRange {
+            return Err(RiotError::MBitRegBitOutOfRange {
                 reg_name: self.name.clone(),
                 bit,
                 reg_size: self.size,
@@ -102,7 +102,7 @@ impl MBitReg {
 
     pub fn is_driven(&self) -> bool {
         for bit in 0..self.size {
-            if let None = self.bits[bit] {
+            if self.bits[bit].is_none() {
                 return false;
             }
         }
@@ -116,16 +116,16 @@ mod tests {
 
     #[test]
     fn get_bit_of_usize() {
-        assert_eq!(MBitReg::get_bit_of_usize(0b101, 0), true);
-        assert_eq!(MBitReg::get_bit_of_usize(0b101, 1), false);
-        assert_eq!(MBitReg::get_bit_of_usize(0b101, 7), false);
+        assert!(MBitReg::get_bit_of_usize(0b101, 0));
+        assert!(!MBitReg::get_bit_of_usize(0b101, 1));
+        assert!(!MBitReg::get_bit_of_usize(0b101, 7));
     }
 
     #[test]
     fn usize_exceeds_bit_count() {
-        assert_eq!(MBitReg::usize_exceeds_bit_count(0b1011, 3), true);
-        assert_eq!(MBitReg::usize_exceeds_bit_count(0b1011, 4), false);
-        assert_eq!(MBitReg::usize_exceeds_bit_count(0b1011, 5), false);
+        assert!(MBitReg::usize_exceeds_bit_count(0b1011, 3));
+        assert!(!MBitReg::usize_exceeds_bit_count(0b1011, 4));
+        assert!(!MBitReg::usize_exceeds_bit_count(0b1011, 5));
     }
 
     #[test]
@@ -161,8 +161,8 @@ mod tests {
     fn read_bits() {
         let mut reg = MBitReg::new(8, String::new());
         reg.drive(0b11010110).unwrap();
-        assert_eq!(reg.read_bit(0).unwrap(), false);
-        assert_eq!(reg.read_bit(4).unwrap(), true);
+        assert!(!reg.read_bit(0).unwrap());
+        assert!(reg.read_bit(4).unwrap());
         assert!(reg.read_bit(8).is_err());
     }
 
@@ -171,7 +171,7 @@ mod tests {
         let mut reg = MBitReg::new(8, String::new());
         assert!(reg.read_bit(6).is_err());
         reg.drive_bit(6, true).unwrap();
-        assert_eq!(reg.read_bit(6).unwrap(), true);
+        assert!(reg.read_bit(6).unwrap());
     }
 
     #[test]
@@ -208,14 +208,14 @@ mod tests {
     #[test]
     fn is_driven() {
         let mut reg = MBitReg::new(8, String::new());
-        assert_eq!(reg.is_driven(), false);
+        assert!(!reg.is_driven());
 
         for i in 0..7 {
             reg.drive_bit(i, true).unwrap();
         }
-        assert_eq!(reg.is_driven(), false);
+        assert!(!reg.is_driven());
 
         reg.drive_bit(7, true).unwrap();
-        assert_eq!(reg.is_driven(), true);
+        assert!(reg.is_driven());
     }
 }

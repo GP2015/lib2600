@@ -1,4 +1,4 @@
-use crate::error::RIOTError;
+use crate::error::RiotError;
 use num_traits::{NumOps, One};
 
 pub struct ValueReg<T> {
@@ -14,9 +14,9 @@ where
         Self { name, value: None }
     }
 
-    pub fn read(&self) -> Result<T, RIOTError> {
+    pub fn read(&self) -> Result<T, RiotError> {
         let Some(val) = self.value else {
-            return Err(RIOTError::UninitialisedValueReg {
+            return Err(RiotError::UninitialisedValueReg {
                 reg_name: self.name.clone(),
             });
         };
@@ -24,21 +24,18 @@ where
         Ok(val)
     }
 
-    pub fn drive(&mut self, value: T) -> Result<(), RIOTError> {
+    pub fn drive(&mut self, value: T) -> Result<(), RiotError> {
         self.value = Some(value);
         Ok(())
     }
 
     pub fn is_driven(&self) -> bool {
-        match self.value {
-            Some(_) => true,
-            None => false,
-        }
+        self.value.is_some()
     }
 
-    pub fn increment(&mut self) -> Result<(), RIOTError> {
+    pub fn increment(&mut self) -> Result<(), RiotError> {
         let Some(val) = self.value else {
-            return Err(RIOTError::UninitialisedValueReg {
+            return Err(RiotError::UninitialisedValueReg {
                 reg_name: self.name.clone(),
             });
         };
@@ -47,9 +44,9 @@ where
         Ok(())
     }
 
-    pub fn decrement(&mut self) -> Result<(), RIOTError> {
+    pub fn decrement(&mut self) -> Result<(), RiotError> {
         let Some(val) = self.value else {
-            return Err(RIOTError::UninitialisedValueReg {
+            return Err(RiotError::UninitialisedValueReg {
                 reg_name: self.name.clone(),
             });
         };
@@ -85,9 +82,9 @@ mod tests {
     #[test]
     fn is_driven() {
         let mut reg = ValueReg::new(String::new());
-        assert_eq!(reg.is_driven(), false);
+        assert!(!reg.is_driven());
         assert!(reg.drive(0x67).is_ok());
-        assert_eq!(reg.is_driven(), true);
+        assert!(reg.is_driven());
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::RIOT;
+use crate::Riot;
 
 /// Some extra helper methods to help reduce boilerplate.
 /// Instead of setting the pins individually for each operation,
@@ -6,7 +6,7 @@ use crate::RIOT;
 ///
 /// These methods are simply abstractions over the core methods.
 /// They do not provide any extra functionality.
-impl RIOT {
+impl Riot {
     pub fn reset_pulse(&mut self) {
         self.drive_res(false);
         self.pulse_phi2().unwrap();

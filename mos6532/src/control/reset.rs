@@ -1,7 +1,7 @@
-use crate::{RIOT, RIOTError};
+use crate::{Riot, RiotError};
 
-impl RIOT {
-    pub(super) fn reset(&mut self) -> Result<(), RIOTError> {
+impl Riot {
+    pub(super) fn reset(&mut self) -> Result<(), RiotError> {
         self.reg.old_pa7.drive(self.buf.pa.read_bit(7)?);
 
         self.buf.irq.reset();

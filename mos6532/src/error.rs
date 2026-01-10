@@ -10,7 +10,7 @@ use thiserror::Error;
 
 /// Error indicating some failure within the emulated MOS 6532 RIOT chip.
 #[derive(Error, Debug)]
-pub enum RIOTError {
+pub enum RiotError {
     /// Indicates an attempt to access a pin's value before the pin was initialised.
     ///
     /// Pins must first be driven with a particular value

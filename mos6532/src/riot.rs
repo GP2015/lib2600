@@ -1,5 +1,5 @@
-use crate::RIOTError;
-use crate::data::{Buffers, RAM, Registers};
+use crate::RiotError;
+use crate::data::{Buffers, Ram, Registers};
 
 // NOTE TO SELF:
 
@@ -21,25 +21,31 @@ use crate::data::{Buffers, RAM, Registers};
 /// all pins start in an uninitialised state.
 /// All inputs must be driven with some value before the chip can use them internally
 /// and all outputs must be driven by the chip internally before they can be read.
-/// Violations of this rule will return some [`RIOTError`] error variant.
+/// Violations of this rule will return some [`RiotError`] error variant.
 ///
 /// Similarly, all internal registers start in an uninitialised state
 /// and must be driven with some value before they can be read.
-pub struct RIOT {
+pub struct Riot {
     pub(super) buf: Buffers,
     pub(super) reg: Registers,
-    pub(super) ram: RAM,
+    pub(super) ram: Ram,
+}
+
+impl Default for Riot {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// The core methods used to control the RIOT chip.
 /// Each of the pins & buses are driven individually.
-impl RIOT {
+impl Riot {
     /// Create a new MOS 6532 RIOT chip, with all pins and registers uninitialised.
     pub fn new() -> Self {
         Self {
             buf: Buffers::new(),
             reg: Registers::new(),
-            ram: RAM::new(),
+            ram: Ram::new(),
         }
     }
 
@@ -48,9 +54,9 @@ impl RIOT {
     /// Drive the address bus with the value `val`,
     /// without wrapping.
     ///
-    /// Returns a [`RIOTError::MBitRegDriveValueTooLarge`]
+    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the address bus without wrapping.
-    pub fn drive_a(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drive_a(&mut self, val: usize) -> Result<(), RiotError> {
         self.buf.a.drive(val)
     }
 
@@ -62,9 +68,9 @@ impl RIOT {
 
     /// Drive bit `bit` of the address bus with state `state`.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the address bus has no bit `bit`.
-    pub fn drive_a_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
+    pub fn drive_a_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         self.buf.a.drive_bit(bit, state)
     }
 
@@ -77,29 +83,29 @@ impl RIOT {
 
     /// Read the value on the data bus.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the data bus are still uninitialised.
-    pub fn read_db(&self) -> Result<usize, RIOTError> {
+    pub fn read_db(&self) -> Result<usize, RiotError> {
         self.buf.db.read()
     }
 
     /// Read bit `bit` of the data bus.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the data bus has no bit `bit`.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the data bus are still uninitialised.
-    pub fn read_db_bit(&self, bit: usize) -> Result<bool, RIOTError> {
+    pub fn read_db_bit(&self, bit: usize) -> Result<bool, RiotError> {
         self.buf.db.read_bit(bit)
     }
 
     /// Drive the data bus with the value `val`,
     /// without wrapping.
     ///
-    /// Returns a [`RIOTError::MBitRegDriveValueTooLarge`]
+    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the data bus without wrapping.
-    pub fn drive_db(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drive_db(&mut self, val: usize) -> Result<(), RiotError> {
         self.buf.db.drive(val)
     }
 
@@ -111,9 +117,9 @@ impl RIOT {
 
     /// Drive bit `bit` of the data bus with state `state`.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the data bus has no bit `bit`.
-    pub fn drive_db_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
+    pub fn drive_db_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         self.buf.db.drive_bit(bit, state)
     }
 
@@ -126,29 +132,29 @@ impl RIOT {
 
     /// Read the value on the Peripheral A data bus.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the Peripheral A data bus are still uninitialised.
-    pub fn read_pa(&self) -> Result<usize, RIOTError> {
+    pub fn read_pa(&self) -> Result<usize, RiotError> {
         self.buf.pa.read()
     }
 
     /// Read bit `bit` of the Peripheral A data bus.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral A data bus has no bit `bit`.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the Peripheral A data bus are still uninitialised.
-    pub fn read_pa_bit(&self, bit: usize) -> Result<bool, RIOTError> {
+    pub fn read_pa_bit(&self, bit: usize) -> Result<bool, RiotError> {
         self.buf.pa.read_bit(bit)
     }
 
     /// Drive the Peripheral A data bus with the value `val`,
     /// without wrapping.
     ///
-    /// Returns a [`RIOTError::MBitRegDriveValueTooLarge`]
+    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the Peripheral A data bus without wrapping.
-    pub fn drive_pa(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drive_pa(&mut self, val: usize) -> Result<(), RiotError> {
         self.buf.pa.drive(val)
     }
 
@@ -160,9 +166,9 @@ impl RIOT {
 
     /// Drive bit `bit` of the Peripheral A data bus with state `state`.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral A data bus has no bit `bit`.
-    pub fn drive_pa_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
+    pub fn drive_pa_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         self.buf.pa.drive_bit(bit, state)
     }
 
@@ -175,29 +181,29 @@ impl RIOT {
 
     /// Read the value on the Peripheral B data bus.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the Peripheral B data bus are still uninitialised.
-    pub fn read_pb(&self) -> Result<usize, RIOTError> {
+    pub fn read_pb(&self) -> Result<usize, RiotError> {
         self.buf.pb.read()
     }
 
     /// Read bit `bit` of the Peripheral B data bus.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral B data bus has no bit `bit`.
     ///
-    /// Returns a [`RIOTError::UninitialisedMBitRegBit`]
+    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the Peripheral B data bus are still uninitialised.
-    pub fn read_pb_bit(&self, bit: usize) -> Result<bool, RIOTError> {
+    pub fn read_pb_bit(&self, bit: usize) -> Result<bool, RiotError> {
         self.buf.pb.read_bit(bit)
     }
 
     /// Drive the Peripheral B data bus with the value `val`,
     /// without wrapping.
     ///
-    /// Returns a [`RIOTError::MBitRegDriveValueTooLarge`]
+    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the Peripheral B data bus without wrapping.
-    pub fn drive_pb(&mut self, val: usize) -> Result<(), RIOTError> {
+    pub fn drive_pb(&mut self, val: usize) -> Result<(), RiotError> {
         self.buf.pb.drive(val)
     }
 
@@ -209,9 +215,9 @@ impl RIOT {
 
     /// Drive bit `bit` of the Peripheral B data bus with state `state`.
     ///
-    /// Returns a [`RIOTError::MBitRegBitOutOfRange`]
+    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral B data bus has no bit `bit`.
-    pub fn drive_pb_bit(&mut self, bit: usize, state: bool) -> Result<(), RIOTError> {
+    pub fn drive_pb_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         self.buf.pb.drive_bit(bit, state)
     }
 
@@ -223,7 +229,7 @@ impl RIOT {
     // Other pin operations
 
     /// Pulse the input clock pin (PHI2).
-    pub fn pulse_phi2(&mut self) -> Result<(), RIOTError> {
+    pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.tick()
     }
 
@@ -279,9 +285,9 @@ impl RIOT {
 
     /// Read the Interrupt Request pin.
     ///
-    /// Returns a [`RIOTError::UninitialisedBitReg`]
+    /// Returns a [`RiotError::UninitialisedBitReg`]
     /// if the pin is still uninitialised.
-    pub fn read_irq(&self) -> Result<bool, RIOTError> {
+    pub fn read_irq(&self) -> Result<bool, RiotError> {
         self.buf.irq.read()
     }
 

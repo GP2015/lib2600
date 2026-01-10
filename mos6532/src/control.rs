@@ -4,10 +4,10 @@ mod ram;
 mod reset;
 mod timer;
 
-use crate::{RIOT, RIOTError, data::AOrB};
+use crate::{Riot, RiotError, data::AOrB};
 
-impl RIOT {
-    pub(super) fn tick(&mut self) -> Result<(), RIOTError> {
+impl Riot {
+    pub(super) fn tick(&mut self) -> Result<(), RiotError> {
         if !self.buf.res.read()? {
             self.reset()?;
             return Ok(());
@@ -19,61 +19,129 @@ impl RIOT {
 
         self.decode_execute_instruction()?;
 
-        self.update_edc();
+        self.update_edc()?;
 
         Ok(())
     }
 
-    pub fn decode_execute_instruction(&mut self) -> Result<(), RIOTError> {
-        match self.buf.rs.read()? {
-            false => match self.buf.rw.read()? {
-                false => self.write_ram()?,
-                true => self.read_ram()?,
-            },
-            true => match self.buf.a.read_bit(2)? {
-                false => match self.buf.a.read_bit(0)? {
-                    false => match self.buf.a.read_bit(1)? {
-                        false => match self.buf.rw.read()? {
-                            false => self.write_or(AOrB::A)?,
-                            true => self.read_ora()?,
-                        },
-                        true => match self.buf.rw.read()? {
-                            false => self.write_or(AOrB::B)?,
-                            true => self.read_orb()?,
-                        },
-                    },
-                    true => match self.buf.a.read_bit(1)? {
-                        false => match self.buf.rw.read()? {
-                            false => self.write_ddr(AOrB::A)?,
-                            true => self.read_ddr(AOrB::A)?,
-                        },
-                        true => match self.buf.rw.read()? {
-                            false => self.write_ddr(AOrB::B)?,
-                            true => self.read_ddr(AOrB::B)?,
-                        },
-                    },
-                },
-                true => match self.buf.rw.read()? {
-                    false => match self.buf.a.read_bit(4)? {
-                        false => (), // Write edge detect control (uses A1 and A0)
-                        true => match self.buf.a.read_bit(1)? {
-                            false => match self.buf.a.read_bit(0)? {
-                                false => (), // Write timer +1T (uses A3)
-                                true => (),  // Write timer +8T (uses A3)
-                            },
-                            true => match self.buf.a.read_bit(0)? {
-                                false => (), // Write timer +64T (uses A3)
-                                true => (),  // Write timer +1024T (uses A3)
-                            },
-                        },
-                    },
-                    true => match self.buf.a.read_bit(0)? {
-                        false => (), // Read timer (uses A3)
-                        true => (),  // Read interrupt flags
-                    },
-                },
-            },
-        };
+    pub fn decode_execute_instruction(&mut self) -> Result<(), RiotError> {
+        if self.buf.rs.read()? {
+            if self.buf.a.read_bit(2)? {
+                if self.buf.rw.read()? {
+                    if self.buf.a.read_bit(0)? {
+                        // Read interrupt flags
+                    } else {
+                        // Read timer (uses A3)
+                    }
+                } else if self.buf.a.read_bit(4)? {
+                    if self.buf.a.read_bit(1)? {
+                        if self.buf.a.read_bit(0)? {
+                            // Write timer +1024T (uses A3)
+                        } else {
+                            // Write timer +64T (uses A3)
+                        }
+                    } else if self.buf.a.read_bit(0)? {
+                        // Write timer +8T (uses A3)
+                    } else {
+                        // Write timer +1T (uses A3)
+                    }
+                } else {
+                    // Write edge detect control (uses A1 and A0)
+                }
+            } else if self.buf.a.read_bit(0)? {
+                if self.buf.a.read_bit(1)? {
+                    if self.buf.rw.read()? {
+                        self.read_ddr(AOrB::B)?
+                    } else {
+                        self.write_ddr(AOrB::B)?
+                    }
+                } else if self.buf.rw.read()? {
+                    self.read_ddr(AOrB::A)?
+                } else {
+                    self.write_ddr(AOrB::A)?
+                }
+            } else if self.buf.a.read_bit(0)? {
+                if self.buf.rw.read()? {
+                    self.read_orb()?
+                } else {
+                    self.write_or(AOrB::B)?
+                }
+            } else if self.buf.rw.read()? {
+                self.read_ora()?
+            } else {
+                self.write_or(AOrB::A)?
+            }
+        } else if self.buf.rw.read()? {
+            self.read_ram()?
+        } else {
+            self.write_ram()?
+        }
+
+        // if self.buf.rs.read()? {
+        //     if self.buf.a.read_bit(2)? {
+        //         if self.buf.rw.read()? {
+        //             if self.buf.a.read_bit(0)? {
+        //                 // Read interrupt flags
+        //             } else {
+        //                 // Read timer (uses A3)
+        //             }
+        //         } else {
+        //             if self.buf.a.read_bit(4)? {
+        //                 if self.buf.a.read_bit(1)? {
+        //                     if self.buf.a.read_bit(0)? {
+        //                         // Write timer +1024T (uses A3)
+        //                     } else {
+        //                         // Write timer +64T (uses A3)
+        //                     }
+        //                 } else {
+        //                     if self.buf.a.read_bit(0)? {
+        //                         // Write timer +8T (uses A3)
+        //                     } else {
+        //                         // Write timer +1T (uses A3)
+        //                     }
+        //                 }
+        //             } else {
+        //                 // Write edge detect control (uses A1 and A0)
+        //             }
+        //         }
+        //     } else {
+        //         if self.buf.a.read_bit(0)? {
+        //             if self.buf.a.read_bit(1)? {
+        //                 if self.buf.rw.read()? {
+        //                     self.read_ddr(AOrB::B)?
+        //                 } else {
+        //                     self.write_ddr(AOrB::B)?
+        //                 }
+        //             } else {
+        //                 if self.buf.rw.read()? {
+        //                     self.read_ddr(AOrB::A)?
+        //                 } else {
+        //                     self.write_ddr(AOrB::A)?
+        //                 }
+        //             }
+        //         } else {
+        //             if self.buf.a.read_bit(0)? {
+        //                 if self.buf.rw.read()? {
+        //                     self.read_orb()?
+        //                 } else {
+        //                     self.write_or(AOrB::B)?
+        //                 }
+        //             } else {
+        //                 if self.buf.rw.read()? {
+        //                     self.read_ora()?
+        //                 } else {
+        //                     self.write_or(AOrB::A)?
+        //                 }
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     if self.buf.rw.read()? {
+        //         self.read_ram()?
+        //     } else {
+        //         self.write_ram()?
+        //     }
+        // }
 
         Ok(())
     }

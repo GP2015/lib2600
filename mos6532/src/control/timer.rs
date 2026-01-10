@@ -1,7 +1,7 @@
-use crate::{RIOT, RIOTError};
+use crate::{Riot, RiotError};
 
-impl RIOT {
-    pub(super) fn tick_timer(&mut self) -> Result<(), RIOTError> {
+impl Riot {
+    pub(super) fn tick_timer(&mut self) -> Result<(), RiotError> {
         match self.reg.timer_flag.read()? {
             false => {
                 self.reg.sub_timer.decrement()?;
@@ -24,7 +24,7 @@ impl RIOT {
         Ok(())
     }
 
-    pub(super) fn read_timer(&mut self) -> Result<(), RIOTError> {
+    pub(super) fn read_timer(&mut self) -> Result<(), RiotError> {
         Ok(())
     }
 }

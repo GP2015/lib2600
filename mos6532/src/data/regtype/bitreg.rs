@@ -1,4 +1,4 @@
-use crate::error::RIOTError;
+use crate::error::RiotError;
 
 pub struct BitReg {
     name: String,
@@ -14,10 +14,10 @@ impl BitReg {
         self.state = None;
     }
 
-    pub fn read(&self) -> Result<bool, RIOTError> {
+    pub fn read(&self) -> Result<bool, RiotError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RIOTError::UninitialisedBitReg {
+            None => Err(RiotError::UninitialisedBitReg {
                 reg_name: self.name.clone(),
             }),
         }
@@ -28,10 +28,7 @@ impl BitReg {
     }
 
     pub fn is_driven(&self) -> bool {
-        match self.state {
-            Some(_) => true,
-            None => false,
-        }
+        self.state.is_some()
     }
 }
 
@@ -43,9 +40,9 @@ mod tests {
     fn drive_read() {
         let mut reg = BitReg::new(String::new());
         reg.drive(true);
-        assert_eq!(reg.read().unwrap(), true);
+        assert!(reg.read().unwrap());
         reg.drive(false);
-        assert_eq!(reg.read().unwrap(), false);
+        assert!(!reg.read().unwrap());
     }
 
     #[test]
@@ -57,8 +54,8 @@ mod tests {
     #[test]
     fn is_driven() {
         let mut reg = BitReg::new(String::new());
-        assert_eq!(reg.is_driven(), false);
+        assert!(!reg.is_driven());
         reg.drive(true);
-        assert_eq!(reg.is_driven(), true);
+        assert!(reg.is_driven());
     }
 }

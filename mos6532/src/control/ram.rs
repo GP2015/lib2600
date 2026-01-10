@@ -1,14 +1,14 @@
-use crate::{RIOT, RIOTError};
+use crate::{Riot, RiotError};
 
-impl RIOT {
-    pub(super) fn write_ram(&mut self) -> Result<(), RIOTError> {
+impl Riot {
+    pub(super) fn write_ram(&mut self) -> Result<(), RiotError> {
         let addr = self.buf.a.read()?;
         let byte = self.buf.db.read()? as u8;
         self.ram.write_byte(addr, byte);
         Ok(())
     }
 
-    pub(super) fn read_ram(&mut self) -> Result<(), RIOTError> {
+    pub(super) fn read_ram(&mut self) -> Result<(), RiotError> {
         let addr = self.buf.a.read()?;
         let byte = self.ram.read_byte(addr)?;
         self.buf.db.drive(byte as usize).unwrap();
