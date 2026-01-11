@@ -49,6 +49,13 @@ impl Riot {
         }
     }
 
+    fn usize_res_to_u8_res<E>(res: Result<usize, E>) -> Result<u8, E> {
+        match res {
+            Ok(val) => Ok(u8::try_from(val).unwrap()),
+            Err(e) => Err(e),
+        }
+    }
+
     // Address Bus operations
 
     /// Drive the address bus with the value `val`,
@@ -85,8 +92,8 @@ impl Riot {
     ///
     /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the data bus are still uninitialised.
-    pub fn read_db(&self) -> Result<usize, RiotError> {
-        self.buf.db.read()
+    pub fn read_db(&self) -> Result<u8, RiotError> {
+        Self::usize_res_to_u8_res(self.buf.db.read())
     }
 
     /// Read bit `bit` of the data bus.
@@ -96,8 +103,8 @@ impl Riot {
     ///
     /// Returns a [`RiotError::UninitialisedMBitRegBit`]
     /// if any of the bits on the data bus are still uninitialised.
-    pub fn read_db_bit(&self, bit: usize) -> Result<bool, RiotError> {
-        self.buf.db.read_bit(bit)
+    pub fn read_db_bit(&self, bit: u8) -> Result<bool, RiotError> {
+        self.buf.db.read_bit(bit as usize)
     }
 
     /// Drive the data bus with the value `val`,
@@ -105,22 +112,16 @@ impl Riot {
     ///
     /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the data bus without wrapping.
-    pub fn write_db(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.db.write(val)
-    }
-
-    /// Drive the data bus with the value `val`,
-    /// wrapping if necessary.
-    pub fn write_db_wrap(&mut self, val: usize) {
-        self.buf.db.write_wrap(val);
+    pub fn write_db(&mut self, val: u8) {
+        self.buf.db.write(val as usize).unwrap();
     }
 
     /// Drive bit `bit` of the data bus with state `state`.
     ///
     /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the data bus has no bit `bit`.
-    pub fn write_db_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.db.write_bit(bit, state)
+    pub fn write_db_bit(&mut self, bit: u8, state: bool) {
+        self.buf.db.write_bit(bit as usize, state).unwrap()
     }
 
     /// Returns true if the data bus is being driven with a value.
@@ -130,98 +131,44 @@ impl Riot {
 
     // Peripheral A Data operations
 
-    /// Read the value on the Peripheral A data bus.
-    ///
-    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
-    /// if any of the bits on the Peripheral A data bus are still uninitialised.
-    pub fn read_pa(&self) -> Result<usize, RiotError> {
-        self.buf.pa.read()
+    pub fn read_pa(&self) -> Result<u8, RiotError> {
+        Self::usize_res_to_u8_res(self.buf.pa.read())
     }
 
-    /// Read bit `bit` of the Peripheral A data bus.
-    ///
-    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
-    /// if the Peripheral A data bus has no bit `bit`.
-    ///
-    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
-    /// if any of the bits on the Peripheral A data bus are still uninitialised.
-    pub fn read_pa_bit(&self, bit: usize) -> Result<bool, RiotError> {
-        self.buf.pa.read_bit(bit)
+    pub fn read_pa_bit(&self, bit: u8) -> Result<bool, RiotError> {
+        self.buf.pa.read_bit(bit as usize)
     }
 
-    /// Drive the Peripheral A data bus with the value `val`,
-    /// without wrapping.
-    ///
-    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
-    /// if `val` cannot fit in the Peripheral A data bus without wrapping.
-    pub fn write_pa(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.pa.write(val)
+    pub fn write_pa(&mut self, val: u8) {
+        self.buf.pa.write(val as usize).unwrap();
     }
 
-    /// Drive the Peripheral A data bus with the value `val`,
-    /// wrapping if necessary.
-    pub fn write_pa_wrap(&mut self, val: usize) {
-        self.buf.pa.write_wrap(val);
+    pub fn write_pa_bit(&mut self, bit: u8, state: bool) {
+        self.buf.pa.write_bit(bit as usize, state).unwrap()
     }
 
-    /// Drive bit `bit` of the Peripheral A data bus with state `state`.
-    ///
-    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
-    /// if the Peripheral A data bus has no bit `bit`.
-    pub fn write_pa_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.pa.write_bit(bit, state)
-    }
-
-    /// Returns true if the Peripheral A data bus is being driven with a value.
     pub fn pa_driven(&self) -> bool {
         self.buf.pa.is_written()
     }
 
     // Peripheral B Data operations
 
-    /// Read the value on the Peripheral B data bus.
-    ///
-    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
-    /// if any of the bits on the Peripheral B data bus are still uninitialised.
-    pub fn read_pb(&self) -> Result<usize, RiotError> {
-        self.buf.pb.read()
+    pub fn read_pb(&self) -> Result<u8, RiotError> {
+        Self::usize_res_to_u8_res(self.buf.pb.read())
     }
 
-    /// Read bit `bit` of the Peripheral B data bus.
-    ///
-    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
-    /// if the Peripheral B data bus has no bit `bit`.
-    ///
-    /// Returns a [`RiotError::UninitialisedMBitRegBit`]
-    /// if any of the bits on the Peripheral B data bus are still uninitialised.
-    pub fn read_pb_bit(&self, bit: usize) -> Result<bool, RiotError> {
-        self.buf.pb.read_bit(bit)
+    pub fn read_pb_bit(&self, bit: u8) -> Result<bool, RiotError> {
+        self.buf.pb.read_bit(bit as usize)
     }
 
-    /// Drive the Peripheral B data bus with the value `val`,
-    /// without wrapping.
-    ///
-    /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
-    /// if `val` cannot fit in the Peripheral B data bus without wrapping.
-    pub fn write_pb(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.pb.write(val)
+    pub fn write_pb(&mut self, val: u8) {
+        self.buf.pb.write(val as usize).unwrap();
     }
 
-    /// Drive the Peripheral B data bus with the value `val`,
-    /// wrapping if necessary.
-    pub fn write_pb_wrap(&mut self, val: usize) {
-        self.buf.pb.write_wrap(val);
+    pub fn write_pb_bit(&mut self, bit: u8, state: bool) {
+        self.buf.pb.write_bit(bit as usize, state).unwrap()
     }
 
-    /// Drive bit `bit` of the Peripheral B data bus with state `state`.
-    ///
-    /// Returns a [`RiotError::MBitRegBitOutOfRange`]
-    /// if the Peripheral B data bus has no bit `bit`.
-    pub fn write_pb_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.pb.write_bit(bit, state)
-    }
-
-    /// Returns true if the Peripheral B data bus is being driven with a value.
     pub fn pb_driven(&self) -> bool {
         self.buf.pb.is_written()
     }

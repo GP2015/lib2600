@@ -31,12 +31,12 @@ impl Riot {
         self.general_pulse();
     }
 
-    pub fn write_ram_pulse(&mut self, address: usize, data: usize) {
-        self.write_db_wrap(data);
+    pub fn write_ram_pulse(&mut self, address: usize, data: u8) {
+        self.write_db(data);
         self.general_ram_pulse(false, address);
     }
 
-    pub fn read_ram_pulse(&mut self, address: usize) -> usize {
+    pub fn read_ram_pulse(&mut self, address: usize) -> u8 {
         self.general_ram_pulse(true, address);
         self.read_db().unwrap()
     }
@@ -50,49 +50,49 @@ impl Riot {
         self.general_pulse();
     }
 
-    pub fn write_ora_pulse(&mut self, data: usize) {
-        self.write_db_wrap(data);
+    pub fn write_ora_pulse(&mut self, data: u8) {
+        self.write_db(data);
         self.general_io_pulse(false, false, false);
     }
 
-    pub fn read_ora_pulse(&mut self) -> usize {
+    pub fn read_ora_pulse(&mut self) -> u8 {
         self.general_io_pulse(false, false, true);
         self.read_db().unwrap()
     }
 
-    pub fn write_orb_pulse(&mut self, data: usize) {
-        self.write_db_wrap(data);
+    pub fn write_orb_pulse(&mut self, data: u8) {
+        self.write_db(data);
         self.general_io_pulse(false, true, false);
     }
 
-    pub fn read_orb_pulse(&mut self) -> usize {
+    pub fn read_orb_pulse(&mut self) -> u8 {
         self.general_io_pulse(false, true, true);
         self.read_db().unwrap()
     }
 
-    pub fn write_ddra_pulse(&mut self, data: usize) {
-        self.write_db_wrap(data);
+    pub fn write_ddra_pulse(&mut self, data: u8) {
+        self.write_db(data);
         self.general_io_pulse(true, false, false);
     }
 
-    pub fn read_ddra_pulse(&mut self) -> usize {
+    pub fn read_ddra_pulse(&mut self) -> u8 {
         self.general_io_pulse(true, false, true);
         self.read_db().unwrap()
     }
 
-    pub fn write_ddrb_pulse(&mut self, data: usize) {
-        self.write_db_wrap(data);
+    pub fn write_ddrb_pulse(&mut self, data: u8) {
+        self.write_db(data);
         self.general_io_pulse(true, true, false);
     }
 
-    pub fn read_ddrb_pulse(&mut self) -> usize {
+    pub fn read_ddrb_pulse(&mut self) -> u8 {
         self.general_io_pulse(true, true, true);
         self.read_db().unwrap()
     }
 
     // Add timer control methods here.
 
-    pub fn read_interrupt_flag_pulse(&mut self) -> usize {
+    pub fn read_interrupt_flag_pulse(&mut self) -> u8 {
         self.write_rs(true);
         self.write_rw(true);
         self.write_a_bit(2, true).unwrap();
