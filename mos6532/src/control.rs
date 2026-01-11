@@ -1,7 +1,7 @@
 mod edc;
 mod io;
+mod misc;
 mod ram;
-mod reset;
 mod timer;
 
 use crate::{Riot, RiotError, data::AOrB};
@@ -29,7 +29,7 @@ impl Riot {
             if self.buf.a.read_bit(2)? {
                 if self.buf.rw.read()? {
                     if self.buf.a.read_bit(0)? {
-                        // Read interrupt flags
+                        self.read_interrupt_flag()?;
                     } else {
                         // Read timer (uses A3)
                     }

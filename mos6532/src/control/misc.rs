@@ -15,4 +15,16 @@ impl Riot {
 
         Ok(())
     }
+
+    pub(super) fn read_interrupt_flag(&mut self) -> Result<(), RiotError> {
+        let edc_interrupt_flag_usize = self.reg.edc_interrupt_flag.read()? as usize;
+        let timer_flag_usize = self.reg.timer_flag.read()? as usize;
+        let interrupt_reg = (edc_interrupt_flag_usize << 7) | (timer_flag_usize << 6);
+
+        self.buf.db.drive(interrupt_reg).unwrap();
+
+        self.reg.edc_interrupt_flag.drive(false);
+
+        Ok(())
+    }
 }
