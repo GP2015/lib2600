@@ -66,7 +66,7 @@ impl MBitReg {
         Ok(val)
     }
 
-    pub fn drive(&mut self, val: usize) -> Result<(), RiotError> {
+    pub fn write(&mut self, val: usize) -> Result<(), RiotError> {
         if Self::usize_exceeds_bit_count(val, self.size) {
             return Err(RiotError::MBitRegDriveValueTooLarge {
                 reg_name: self.name.clone(),
@@ -82,12 +82,12 @@ impl MBitReg {
         Ok(())
     }
 
-    pub fn drive_wrap(&mut self, val: usize) {
-        self.drive(Self::get_low_bits_of_usize(val, self.size))
+    pub fn write_wrap(&mut self, val: usize) {
+        self.write(Self::get_low_bits_of_usize(val, self.size))
             .unwrap();
     }
 
-    pub fn drive_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
+    pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         if bit >= self.size {
             return Err(RiotError::MBitRegBitOutOfRange {
                 reg_name: self.name.clone(),
@@ -100,7 +100,7 @@ impl MBitReg {
         Ok(())
     }
 
-    pub fn is_driven(&self) -> bool {
+    pub fn is_written(&self) -> bool {
         for bit in 0..self.size {
             if self.bits[bit].is_none() {
                 return false;
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn read() {
         let mut reg = MBitReg::new(8, String::new());
-        reg.drive(0x67).unwrap();
+        reg.write(0x67).unwrap();
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
@@ -149,18 +149,18 @@ mod tests {
         let mut reg = MBitReg::new(8, String::new());
 
         for i in 0..7 {
-            reg.drive_bit(i, true).unwrap();
+            reg.write_bit(i, true).unwrap();
         }
         assert!(reg.read().is_err());
 
-        reg.drive_bit(7, true).unwrap();
+        reg.write_bit(7, true).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11111111);
     }
 
     #[test]
     fn read_bits() {
         let mut reg = MBitReg::new(8, String::new());
-        reg.drive(0b11010110).unwrap();
+        reg.write(0b11010110).unwrap();
         assert!(!reg.read_bit(0).unwrap());
         assert!(reg.read_bit(4).unwrap());
         assert!(reg.read_bit(8).is_err());
@@ -170,52 +170,52 @@ mod tests {
     fn read_uninitialised_bits() {
         let mut reg = MBitReg::new(8, String::new());
         assert!(reg.read_bit(6).is_err());
-        reg.drive_bit(6, true).unwrap();
+        reg.write_bit(6, true).unwrap();
         assert!(reg.read_bit(6).unwrap());
     }
 
     #[test]
-    fn drive() {
+    fn write() {
         let mut reg = MBitReg::new(8, String::new());
-        assert!(reg.drive(0x67).is_ok());
-        assert!(reg.drive(0x678).is_err());
+        assert!(reg.write(0x67).is_ok());
+        assert!(reg.write(0x678).is_err());
     }
 
     #[test]
-    fn drive_wrapped() {
+    fn write_wrapped() {
         let mut reg = MBitReg::new(8, String::new());
-        reg.drive_wrap(0x567);
+        reg.write_wrap(0x567);
         assert_eq!(reg.read().unwrap(), 0x67);
-        reg.drive_wrap(0x89);
+        reg.write_wrap(0x89);
         assert_eq!(reg.read().unwrap(), 0x89);
     }
 
     #[test]
-    fn drive_bits() {
+    fn write_bits() {
         let mut reg = MBitReg::new(8, String::new());
-        reg.drive(0b11010110).unwrap();
-        reg.drive_bit(0, false).unwrap();
+        reg.write(0b11010110).unwrap();
+        reg.write_bit(0, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010110);
-        reg.drive_bit(1, false).unwrap();
+        reg.write_bit(1, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010100);
-        reg.drive_bit(2, true).unwrap();
+        reg.write_bit(2, true).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010100);
-        reg.drive_bit(3, true).unwrap();
+        reg.write_bit(3, true).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11011100);
-        assert!(reg.drive_bit(8, true).is_err());
+        assert!(reg.write_bit(8, true).is_err());
     }
 
     #[test]
-    fn is_driven() {
+    fn is_written() {
         let mut reg = MBitReg::new(8, String::new());
-        assert!(!reg.is_driven());
+        assert!(!reg.is_written());
 
         for i in 0..7 {
-            reg.drive_bit(i, true).unwrap();
+            reg.write_bit(i, true).unwrap();
         }
-        assert!(!reg.is_driven());
+        assert!(!reg.is_written());
 
-        reg.drive_bit(7, true).unwrap();
-        assert!(reg.is_driven());
+        reg.write_bit(7, true).unwrap();
+        assert!(reg.is_written());
     }
 }

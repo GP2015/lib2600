@@ -24,12 +24,12 @@ where
         Ok(val)
     }
 
-    pub fn drive(&mut self, value: T) -> Result<(), RiotError> {
+    pub fn write(&mut self, value: T) -> Result<(), RiotError> {
         self.value = Some(value);
         Ok(())
     }
 
-    pub fn is_driven(&self) -> bool {
+    pub fn is_written(&self) -> bool {
         self.value.is_some()
     }
 
@@ -63,7 +63,7 @@ mod tests {
     #[test]
     fn read() {
         let mut reg = ValueReg::new(String::new());
-        reg.drive(0x67).unwrap();
+        reg.write(0x67).unwrap();
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
@@ -74,23 +74,23 @@ mod tests {
     }
 
     #[test]
-    fn drive() {
+    fn write() {
         let mut reg = ValueReg::new(String::new());
-        assert!(reg.drive(0x67).is_ok());
+        assert!(reg.write(0x67).is_ok());
     }
 
     #[test]
-    fn is_driven() {
+    fn is_written() {
         let mut reg = ValueReg::new(String::new());
-        assert!(!reg.is_driven());
-        assert!(reg.drive(0x67).is_ok());
-        assert!(reg.is_driven());
+        assert!(!reg.is_written());
+        assert!(reg.write(0x67).is_ok());
+        assert!(reg.is_written());
     }
 
     #[test]
     fn increment() {
         let mut reg = ValueReg::new(String::new());
-        reg.drive(0x67).unwrap();
+        reg.write(0x67).unwrap();
         reg.increment().unwrap();
         assert_eq!(reg.read().unwrap(), 0x68);
     }
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn decrement() {
         let mut reg = ValueReg::new(String::new());
-        reg.drive(0x67).unwrap();
+        reg.write(0x67).unwrap();
         reg.decrement().unwrap();
         assert_eq!(reg.read().unwrap(), 0x66);
     }

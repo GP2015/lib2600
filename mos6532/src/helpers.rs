@@ -8,31 +8,31 @@ use crate::Riot;
 /// They do not provide any extra functionality.
 impl Riot {
     pub fn reset_pulse(&mut self) {
-        self.drive_res(false);
+        self.write_res(false);
         self.pulse_phi2().unwrap();
-        self.drive_res(true);
+        self.write_res(true);
     }
 
     pub fn select(&mut self) {
-        self.drive_cs1(true);
-        self.drive_cs2(false);
+        self.write_cs1(true);
+        self.write_cs2(false);
     }
 
     fn general_pulse(&mut self) {
-        self.drive_res(true);
+        self.write_res(true);
         self.select();
         self.pulse_phi2().unwrap();
     }
 
     fn general_ram_pulse(&mut self, rw: bool, address: usize) {
-        self.drive_rw(rw);
-        self.drive_rs(false);
-        self.drive_a_wrap(address);
+        self.write_rw(rw);
+        self.write_rs(false);
+        self.write_a_wrap(address);
         self.general_pulse();
     }
 
     pub fn write_ram_pulse(&mut self, address: usize, data: usize) {
-        self.drive_db_wrap(data);
+        self.write_db_wrap(data);
         self.general_ram_pulse(false, address);
     }
 
@@ -42,16 +42,16 @@ impl Riot {
     }
 
     fn general_io_pulse(&mut self, a0: bool, a1: bool, rw: bool) {
-        self.drive_a_bit(0, a0).unwrap();
-        self.drive_a_bit(1, a1).unwrap();
-        self.drive_rw(rw);
-        self.drive_rs(true);
-        self.drive_a_bit(2, false).unwrap();
+        self.write_a_bit(0, a0).unwrap();
+        self.write_a_bit(1, a1).unwrap();
+        self.write_rw(rw);
+        self.write_rs(true);
+        self.write_a_bit(2, false).unwrap();
         self.general_pulse();
     }
 
     pub fn write_ora_pulse(&mut self, data: usize) {
-        self.drive_db_wrap(data);
+        self.write_db_wrap(data);
         self.general_io_pulse(false, false, false);
     }
 
@@ -61,7 +61,7 @@ impl Riot {
     }
 
     pub fn write_orb_pulse(&mut self, data: usize) {
-        self.drive_db_wrap(data);
+        self.write_db_wrap(data);
         self.general_io_pulse(false, true, false);
     }
 
@@ -71,7 +71,7 @@ impl Riot {
     }
 
     pub fn write_ddra_pulse(&mut self, data: usize) {
-        self.drive_db_wrap(data);
+        self.write_db_wrap(data);
         self.general_io_pulse(true, false, false);
     }
 
@@ -81,7 +81,7 @@ impl Riot {
     }
 
     pub fn write_ddrb_pulse(&mut self, data: usize) {
-        self.drive_db_wrap(data);
+        self.write_db_wrap(data);
         self.general_io_pulse(true, true, false);
     }
 

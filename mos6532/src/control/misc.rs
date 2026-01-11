@@ -2,16 +2,16 @@ use crate::{Riot, RiotError};
 
 impl Riot {
     pub(super) fn reset(&mut self) -> Result<(), RiotError> {
-        self.reg.old_pa7.drive(self.buf.pa.read_bit(7)?);
+        self.reg.old_pa7.write(self.buf.pa.read_bit(7)?);
 
         self.buf.irq.reset();
-        self.reg.ddra.drive(0).unwrap();
-        self.reg.ddrb.drive(0).unwrap();
-        self.reg.ora.drive(0).unwrap();
-        self.reg.orb.drive(0).unwrap();
+        self.reg.ddra.write(0).unwrap();
+        self.reg.ddrb.write(0).unwrap();
+        self.reg.ora.write(0).unwrap();
+        self.reg.orb.write(0).unwrap();
 
-        self.reg.edc_enable_irq.drive(false);
-        self.reg.edc_use_pos_edge.drive(false);
+        self.reg.edc_enable_irq.write(false);
+        self.reg.edc_use_pos_edge.write(false);
 
         Ok(())
     }
@@ -21,9 +21,9 @@ impl Riot {
         let timer_flag_usize = self.reg.timer_flag.read()? as usize;
         let interrupt_reg = (edc_interrupt_flag_usize << 7) | (timer_flag_usize << 6);
 
-        self.buf.db.drive(interrupt_reg).unwrap();
+        self.buf.db.write(interrupt_reg).unwrap();
 
-        self.reg.edc_interrupt_flag.drive(false);
+        self.reg.edc_interrupt_flag.write(false);
 
         Ok(())
     }

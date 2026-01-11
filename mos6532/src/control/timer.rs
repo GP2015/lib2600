@@ -13,7 +13,7 @@ impl Riot {
                         self.reg.timer.decrement()?;
                     }
 
-                    self.reg.sub_timer.drive(self.reg.timer_inc.read()?)?;
+                    self.reg.sub_timer.write(self.reg.timer_inc.read()?)?;
                 }
             }
             true => {

@@ -56,27 +56,27 @@ impl Riot {
     ///
     /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the address bus without wrapping.
-    pub fn drive_a(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.a.drive(val)
+    pub fn write_a(&mut self, val: usize) -> Result<(), RiotError> {
+        self.buf.a.write(val)
     }
 
     /// Drive the address bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drive_a_wrap(&mut self, val: usize) {
-        self.buf.a.drive_wrap(val);
+    pub fn write_a_wrap(&mut self, val: usize) {
+        self.buf.a.write_wrap(val);
     }
 
     /// Drive bit `bit` of the address bus with state `state`.
     ///
     /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the address bus has no bit `bit`.
-    pub fn drive_a_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.a.drive_bit(bit, state)
+    pub fn write_a_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
+        self.buf.a.write_bit(bit, state)
     }
 
     /// Returns true if the address bus is being driven with a value.
     pub fn a_driven(&self) -> bool {
-        self.buf.a.is_driven()
+        self.buf.a.is_written()
     }
 
     // Data Bus operations
@@ -105,27 +105,27 @@ impl Riot {
     ///
     /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the data bus without wrapping.
-    pub fn drive_db(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.db.drive(val)
+    pub fn write_db(&mut self, val: usize) -> Result<(), RiotError> {
+        self.buf.db.write(val)
     }
 
     /// Drive the data bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drive_db_wrap(&mut self, val: usize) {
-        self.buf.db.drive_wrap(val);
+    pub fn write_db_wrap(&mut self, val: usize) {
+        self.buf.db.write_wrap(val);
     }
 
     /// Drive bit `bit` of the data bus with state `state`.
     ///
     /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the data bus has no bit `bit`.
-    pub fn drive_db_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.db.drive_bit(bit, state)
+    pub fn write_db_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
+        self.buf.db.write_bit(bit, state)
     }
 
     /// Returns true if the data bus is being driven with a value.
     pub fn db_driven(&self) -> bool {
-        self.buf.db.is_driven()
+        self.buf.db.is_written()
     }
 
     // Peripheral A Data operations
@@ -154,27 +154,27 @@ impl Riot {
     ///
     /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the Peripheral A data bus without wrapping.
-    pub fn drive_pa(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.pa.drive(val)
+    pub fn write_pa(&mut self, val: usize) -> Result<(), RiotError> {
+        self.buf.pa.write(val)
     }
 
     /// Drive the Peripheral A data bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drive_pa_wrap(&mut self, val: usize) {
-        self.buf.pa.drive_wrap(val);
+    pub fn write_pa_wrap(&mut self, val: usize) {
+        self.buf.pa.write_wrap(val);
     }
 
     /// Drive bit `bit` of the Peripheral A data bus with state `state`.
     ///
     /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral A data bus has no bit `bit`.
-    pub fn drive_pa_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.pa.drive_bit(bit, state)
+    pub fn write_pa_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
+        self.buf.pa.write_bit(bit, state)
     }
 
     /// Returns true if the Peripheral A data bus is being driven with a value.
     pub fn pa_driven(&self) -> bool {
-        self.buf.pa.is_driven()
+        self.buf.pa.is_written()
     }
 
     // Peripheral B Data operations
@@ -203,27 +203,27 @@ impl Riot {
     ///
     /// Returns a [`RiotError::MBitRegDriveValueTooLarge`]
     /// if `val` cannot fit in the Peripheral B data bus without wrapping.
-    pub fn drive_pb(&mut self, val: usize) -> Result<(), RiotError> {
-        self.buf.pb.drive(val)
+    pub fn write_pb(&mut self, val: usize) -> Result<(), RiotError> {
+        self.buf.pb.write(val)
     }
 
     /// Drive the Peripheral B data bus with the value `val`,
     /// wrapping if necessary.
-    pub fn drive_pb_wrap(&mut self, val: usize) {
-        self.buf.pb.drive_wrap(val);
+    pub fn write_pb_wrap(&mut self, val: usize) {
+        self.buf.pb.write_wrap(val);
     }
 
     /// Drive bit `bit` of the Peripheral B data bus with state `state`.
     ///
     /// Returns a [`RiotError::MBitRegBitOutOfRange`]
     /// if the Peripheral B data bus has no bit `bit`.
-    pub fn drive_pb_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        self.buf.pb.drive_bit(bit, state)
+    pub fn write_pb_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
+        self.buf.pb.write_bit(bit, state)
     }
 
     /// Returns true if the Peripheral B data bus is being driven with a value.
     pub fn pb_driven(&self) -> bool {
-        self.buf.pb.is_driven()
+        self.buf.pb.is_written()
     }
 
     // Other pin operations
@@ -234,53 +234,53 @@ impl Riot {
     }
 
     /// Drive the Chip Select 1 pin with state `state`.
-    pub fn drive_cs1(&mut self, state: bool) {
-        self.buf.cs1.drive(state)
+    pub fn write_cs1(&mut self, state: bool) {
+        self.buf.cs1.write(state)
     }
 
     /// Returns true if the Chip Select 1 pin is being driven.
     pub fn cs1_driven(&self) -> bool {
-        self.buf.cs1.is_driven()
+        self.buf.cs1.is_written()
     }
 
     /// Drive the Chip Select 2 pin with state `state`.
-    pub fn drive_cs2(&mut self, state: bool) {
-        self.buf.cs2.drive(state)
+    pub fn write_cs2(&mut self, state: bool) {
+        self.buf.cs2.write(state)
     }
 
     /// Returns true if the Chip Select 2 pin is being driven.
     pub fn cs2_driven(&self) -> bool {
-        self.buf.cs2.is_driven()
+        self.buf.cs2.is_written()
     }
 
     /// Drive the Read/Write pin with state `state`.
-    pub fn drive_rw(&mut self, state: bool) {
-        self.buf.rw.drive(state)
+    pub fn write_rw(&mut self, state: bool) {
+        self.buf.rw.write(state)
     }
 
     /// Returns true if the Read/Write pin is being driven.
     pub fn rw_driven(&self) -> bool {
-        self.buf.rw.is_driven()
+        self.buf.rw.is_written()
     }
 
     /// Drive the Reset pin with state `state`.
-    pub fn drive_res(&mut self, state: bool) {
-        self.buf.res.drive(state)
+    pub fn write_res(&mut self, state: bool) {
+        self.buf.res.write(state)
     }
 
     /// Returns true if the Reset pin is being driven.
     pub fn res_driven(&self) -> bool {
-        self.buf.res.is_driven()
+        self.buf.res.is_written()
     }
 
     /// Drive the Ram Select pin with state `state`.
-    pub fn drive_rs(&mut self, state: bool) {
-        self.buf.rs.drive(state)
+    pub fn write_rs(&mut self, state: bool) {
+        self.buf.rs.write(state)
     }
 
     /// Returns true if the Ram Select pin is being driven.
     pub fn rs_driven(&self) -> bool {
-        self.buf.rs.is_driven()
+        self.buf.rs.is_written()
     }
 
     /// Read the Interrupt Request pin.
@@ -293,6 +293,6 @@ impl Riot {
 
     /// Returns true if the Interrupt Request pin is being driven.
     pub fn irq_driven(&self) -> bool {
-        self.buf.irq.is_driven()
+        self.buf.irq.is_written()
     }
 }

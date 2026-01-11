@@ -23,11 +23,11 @@ impl BitReg {
         }
     }
 
-    pub fn drive(&mut self, state: bool) {
+    pub fn write(&mut self, state: bool) {
         self.state = Some(state);
     }
 
-    pub fn is_driven(&self) -> bool {
+    pub fn is_written(&self) -> bool {
         self.state.is_some()
     }
 }
@@ -37,11 +37,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn drive_read() {
+    fn write_read() {
         let mut reg = BitReg::new(String::new());
-        reg.drive(true);
+        reg.write(true);
         assert!(reg.read().unwrap());
-        reg.drive(false);
+        reg.write(false);
         assert!(!reg.read().unwrap());
     }
 
@@ -52,10 +52,10 @@ mod tests {
     }
 
     #[test]
-    fn is_driven() {
+    fn is_writen() {
         let mut reg = BitReg::new(String::new());
-        assert!(!reg.is_driven());
-        reg.drive(true);
-        assert!(reg.is_driven());
+        assert!(!reg.is_written());
+        reg.write(true);
+        assert!(reg.is_written());
     }
 }
