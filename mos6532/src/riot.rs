@@ -82,7 +82,7 @@ impl Riot {
     }
 
     /// Returns true if the address bus is being driven with a value.
-    pub fn a_driven(&self) -> bool {
+    pub fn a_written(&self) -> bool {
         self.buf.a.is_written()
     }
 
@@ -125,7 +125,7 @@ impl Riot {
     }
 
     /// Returns true if the data bus is being driven with a value.
-    pub fn db_driven(&self) -> bool {
+    pub fn db_written(&self) -> bool {
         self.buf.db.is_written()
     }
 
@@ -147,7 +147,7 @@ impl Riot {
         self.buf.pa.write_bit(bit as usize, state).unwrap()
     }
 
-    pub fn pa_driven(&self) -> bool {
+    pub fn pa_written(&self) -> bool {
         self.buf.pa.is_written()
     }
 
@@ -169,7 +169,7 @@ impl Riot {
         self.buf.pb.write_bit(bit as usize, state).unwrap()
     }
 
-    pub fn pb_driven(&self) -> bool {
+    pub fn pb_written(&self) -> bool {
         self.buf.pb.is_written()
     }
 
@@ -186,7 +186,7 @@ impl Riot {
     }
 
     /// Returns true if the Chip Select 1 pin is being driven.
-    pub fn cs1_driven(&self) -> bool {
+    pub fn cs1_written(&self) -> bool {
         self.buf.cs1.is_written()
     }
 
@@ -196,7 +196,7 @@ impl Riot {
     }
 
     /// Returns true if the Chip Select 2 pin is being driven.
-    pub fn cs2_driven(&self) -> bool {
+    pub fn cs2_written(&self) -> bool {
         self.buf.cs2.is_written()
     }
 
@@ -206,7 +206,7 @@ impl Riot {
     }
 
     /// Returns true if the Read/Write pin is being driven.
-    pub fn rw_driven(&self) -> bool {
+    pub fn rw_written(&self) -> bool {
         self.buf.rw.is_written()
     }
 
@@ -216,7 +216,7 @@ impl Riot {
     }
 
     /// Returns true if the Reset pin is being driven.
-    pub fn res_driven(&self) -> bool {
+    pub fn res_written(&self) -> bool {
         self.buf.res.is_written()
     }
 
@@ -226,7 +226,7 @@ impl Riot {
     }
 
     /// Returns true if the Ram Select pin is being driven.
-    pub fn rs_driven(&self) -> bool {
+    pub fn rs_written(&self) -> bool {
         self.buf.rs.is_written()
     }
 
@@ -239,7 +239,7 @@ impl Riot {
     }
 
     /// Returns true if the Interrupt Request pin is being driven.
-    pub fn irq_driven(&self) -> bool {
+    pub fn irq_written(&self) -> bool {
         self.buf.irq.is_written()
     }
 }
