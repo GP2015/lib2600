@@ -46,7 +46,9 @@ impl Riot {
                         // Write timer +1T (uses A3)
                     }
                 } else {
-                    // Write edge detect control (uses A1 and A0)
+                    let enable_irq = self.buf.a.read_bit(1)?;
+                    let use_pos_edge = self.buf.a.read_bit(0)?;
+                    self.write_edc(enable_irq, use_pos_edge);
                 }
             } else if self.buf.a.read_bit(0)? {
                 if self.buf.a.read_bit(1)? {
