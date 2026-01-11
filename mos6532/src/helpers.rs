@@ -28,7 +28,7 @@ impl Riot {
     fn general_ram_pulse(&mut self, rw: bool, address: usize) -> Result<(), RiotError> {
         self.write_rw(rw);
         self.write_rs(false);
-        self.write_a_wrap(address);
+        self.write_a(address)?;
         self.general_pulse()
     }
 
