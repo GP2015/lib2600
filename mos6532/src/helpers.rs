@@ -90,5 +90,24 @@ impl Riot {
         self.read_db().unwrap()
     }
 
-    // Add timer and interrupt control methods here.
+    // Add timer control methods here.
+
+    pub fn read_interrupt_flag_pulse(&mut self) -> usize {
+        self.write_rs(true);
+        self.write_rw(true);
+        self.write_a_bit(2, true).unwrap();
+        self.write_a_bit(0, true).unwrap();
+        self.general_pulse();
+        self.read_db().unwrap()
+    }
+
+    pub fn write_edc_pulse(&mut self, enable_irq: bool, use_pos_edge: bool) {
+        self.write_rs(true);
+        self.write_rw(false);
+        self.write_a_bit(4, false).unwrap();
+        self.write_a_bit(2, true).unwrap();
+        self.write_a_bit(1, enable_irq).unwrap();
+        self.write_a_bit(0, use_pos_edge).unwrap();
+        self.general_pulse();
+    }
 }
