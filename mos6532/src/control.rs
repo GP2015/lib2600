@@ -17,9 +17,9 @@ impl Riot {
             return Ok(());
         }
 
-        self.decode_execute_instruction()?;
-
         self.update_edc()?;
+
+        self.decode_execute_instruction()?;
 
         Ok(())
     }
