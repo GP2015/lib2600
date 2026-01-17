@@ -8,6 +8,19 @@ fn read_write_ram_success() {
 }
 
 #[test]
+fn read_write_ram_success_manual() {
+    let mut riot = common::riot_post_reset_select();
+    riot.write_rs(false);
+    riot.write_rw(false);
+    riot.write_a(0x45).unwrap();
+    riot.write_db(0x67);
+    riot.pulse_phi2().unwrap();
+    riot.write_rw(true);
+    riot.pulse_phi2().unwrap();
+    assert_eq!(riot.read_db().unwrap(), 0x67);
+}
+
+#[test]
 fn read_ram_out_of_bounds() {
     let mut riot = common::riot_post_reset();
     riot.write_ram_pulse(0x45, 0x67).unwrap();
