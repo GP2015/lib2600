@@ -14,12 +14,12 @@ fn read_uninitialised_ddra() {
 }
 
 #[test]
-fn read_ddra_no_rs() {
+fn write_ddra_no_rs() {
     let mut riot = common::riot_post_reset_select();
     riot.write_a_bit(2, false).unwrap();
     riot.write_a_bit(0, true).unwrap();
     riot.write_a_bit(1, false).unwrap();
-    riot.write_a_bit(, false).unwrap();
+    riot.write_rw(false);
     assert!(riot.pulse_phi2().is_err());
 }
 
