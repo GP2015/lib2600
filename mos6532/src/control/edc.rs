@@ -1,10 +1,9 @@
 use crate::{Riot, RiotError};
 
 impl Riot {
-    pub(super) fn write_edc(&mut self) -> Result<(), RiotError> {
-        self.reg.edc_enable_irq.write(self.buf.a.read_bit(1)?);
-        self.reg.edc_use_pos_edge.write(self.buf.a.read_bit(0)?);
-        Ok(())
+    pub(super) fn write_edc(&mut self, enable_irq: bool, use_pos_edge: bool) {
+        self.reg.edc_enable_irq.write(enable_irq);
+        self.reg.edc_use_pos_edge.write(use_pos_edge);
     }
 
     pub(super) fn update_edc(&mut self) -> Result<(), RiotError> {

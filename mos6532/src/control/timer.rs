@@ -28,19 +28,19 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn write_timer_1t(&mut self) -> Result<(), RiotError> {
+    pub(super) fn write_timer_1t(&mut self, enable_irq: bool) -> Result<(), RiotError> {
         Ok(())
     }
 
-    pub(super) fn write_timer_8t(&mut self) -> Result<(), RiotError> {
+    pub(super) fn write_timer_8t(&mut self, enable_irq: bool) -> Result<(), RiotError> {
         Ok(())
     }
 
-    pub(super) fn write_timer_64t(&mut self) -> Result<(), RiotError> {
+    pub(super) fn write_timer_64t(&mut self, enable_irq: bool) -> Result<(), RiotError> {
         Ok(())
     }
 
-    pub(super) fn write_timer_1024t(&mut self) -> Result<(), RiotError> {
+    pub(super) fn write_timer_1024t(&mut self, enable_irq: bool) -> Result<(), RiotError> {
         Ok(())
     }
 }
