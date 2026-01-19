@@ -22,9 +22,7 @@ impl Riot {
         .write(byte)
         .unwrap();
 
-        self.update_peripheral(reg)?;
-
-        Ok(())
+        self.update_peripheral(reg)
     }
 
     pub(super) fn read_ddra(&mut self) -> Result<(), RiotError> {
@@ -64,9 +62,7 @@ impl Riot {
         .write(byte)
         .unwrap();
 
-        self.update_peripheral(reg)?;
-
-        Ok(())
+        self.update_peripheral(reg)
     }
 
     pub(super) fn read_ora(&mut self) -> Result<(), RiotError> {
