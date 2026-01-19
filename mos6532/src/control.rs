@@ -30,7 +30,9 @@ enum Instruction {
     WriteTimer1024T {
         enable_irq: bool,
     },
-    ReadTimer,
+    ReadTimer {
+        enable_irq: bool,
+    },
     ReadInterruptFlag,
     WriteEdc {
         enable_irq: bool,
@@ -62,7 +64,8 @@ impl Riot {
                     if self.buf.a.read_bit(0)? {
                         Instruction::ReadInterruptFlag
                     } else {
-                        Instruction::ReadTimer
+                        let enable_irq = self.buf.a.read_bit(3)?;
+                        Instruction::ReadTimer { enable_irq }
                     }
                 } else if self.buf.a.read_bit(4)? {
                     let enable_irq = self.buf.a.read_bit(3)?;
@@ -134,7 +137,7 @@ impl Riot {
             Instruction::WriteTimer8T { enable_irq } => self.write_timer_8t(enable_irq)?,
             Instruction::WriteTimer64T { enable_irq } => self.write_timer_64t(enable_irq)?,
             Instruction::WriteTimer1024T { enable_irq } => self.write_timer_1024t(enable_irq)?,
-            Instruction::ReadTimer => self.read_timer()?,
+            Instruction::ReadTimer { enable_irq } => self.read_timer(enable_irq)?,
             Instruction::ReadInterruptFlag => self.read_interrupt_flag()?,
             Instruction::WriteEdc {
                 enable_irq,
@@ -148,20 +151,115 @@ impl Riot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::{fixture, rstest};
 
-    #[test]
-    fn address_write_ram() {
-        let mut riot = Riot::new();
+    #[fixture]
+    fn riot() -> Riot {
+        Riot::new()
+    }
+
+    #[rstest]
+    fn address_ram(mut riot: Riot) {
         riot.write_rs(false);
         riot.write_rw(false);
         assert_eq!(riot.decode_instruction().unwrap(), Instruction::WriteRam);
+        riot.write_rw(true);
+        assert_eq!(riot.decode_instruction().unwrap(), Instruction::ReadRam);
+    }
+
+    fn address_io(instr: Instruction, rw: bool, a1: bool, a0: bool) {
+        let mut riot = Riot::new();
+        riot.write_rs(true);
+        riot.write_rw(rw);
+        riot.write_a_bit(2, false).unwrap();
+        riot.write_a_bit(1, a1).unwrap();
+        riot.write_a_bit(0, a0).unwrap();
+        assert_eq!(riot.decode_instruction().unwrap(), instr);
     }
 
     #[test]
-    fn address_read_ram() {
+    fn address_ddrs() {
+        address_io(Instruction::WriteDdra, false, false, true);
+        address_io(Instruction::ReadDdra, true, false, true);
+        address_io(Instruction::WriteDdrb, false, true, true);
+        address_io(Instruction::ReadDdrb, true, true, true);
+    }
+
+    #[test]
+    fn address_ors() {
+        address_io(Instruction::WriteOra, false, false, false);
+        address_io(Instruction::ReadOra, true, false, false);
+        address_io(Instruction::WriteOrb, false, true, false);
+        address_io(Instruction::ReadOrb, true, true, false);
+    }
+
+    fn address_write_timer(instr: Instruction, enable_irq: bool, a1: bool, a0: bool) {
         let mut riot = Riot::new();
-        riot.write_rs(false);
+        riot.write_rs(true);
+        riot.write_rw(false);
+        riot.write_a_bit(4, true).unwrap();
+        riot.write_a_bit(3, enable_irq).unwrap();
+        riot.write_a_bit(2, true).unwrap();
+        riot.write_a_bit(1, a1).unwrap();
+        riot.write_a_bit(0, a0).unwrap();
+        assert_eq!(riot.decode_instruction().unwrap(), instr);
+    }
+
+    #[rstest]
+    #[case(false)]
+    #[case(true)]
+    fn address_write_timers(#[case] enable_irq: bool) {
+        let instruction = Instruction::WriteTimer1T { enable_irq };
+        address_write_timer(instruction, enable_irq, false, false);
+        let instruction = Instruction::WriteTimer8T { enable_irq };
+        address_write_timer(instruction, enable_irq, false, true);
+        let instruction = Instruction::WriteTimer64T { enable_irq };
+        address_write_timer(instruction, enable_irq, true, false);
+        let instruction = Instruction::WriteTimer1024T { enable_irq };
+        address_write_timer(instruction, enable_irq, true, true);
+    }
+
+    #[rstest]
+    #[case(false)]
+    #[case(true)]
+    fn address_read_timer(mut riot: Riot, #[case] enable_irq: bool) {
+        riot.write_rs(true);
         riot.write_rw(true);
-        assert_eq!(riot.decode_instruction().unwrap(), Instruction::ReadRam);
+        riot.write_a_bit(3, enable_irq).unwrap();
+        riot.write_a_bit(2, true).unwrap();
+        riot.write_a_bit(0, false).unwrap();
+        let instruction = Instruction::ReadTimer { enable_irq };
+        assert_eq!(instruction, riot.decode_instruction().unwrap(),);
+    }
+
+    #[rstest]
+    fn address_read_interrupt_flag(mut riot: Riot) {
+        riot.write_rs(true);
+        riot.write_rw(true);
+        riot.write_a_bit(2, true).unwrap();
+        riot.write_a_bit(0, true).unwrap();
+        let instruction = Instruction::ReadInterruptFlag;
+        assert_eq!(instruction, riot.decode_instruction().unwrap());
+    }
+
+    #[rstest]
+    #[case(false, false)]
+    #[case(false, true)]
+    #[case(true, false)]
+    #[case(true, true)]
+    fn address_write_edc(mut riot: Riot, #[case] enable_irq: bool, #[case] use_pos_edge: bool) {
+        riot.write_rs(true);
+        riot.write_rw(false);
+        riot.write_a_bit(4, false).unwrap();
+        riot.write_a_bit(2, true).unwrap();
+        riot.write_a_bit(1, enable_irq).unwrap();
+        riot.write_a_bit(0, use_pos_edge).unwrap();
+
+        let instruction = Instruction::WriteEdc {
+            enable_irq,
+            use_pos_edge,
+        };
+
+        assert_eq!(instruction, riot.decode_instruction().unwrap());
     }
 }
