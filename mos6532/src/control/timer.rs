@@ -24,7 +24,7 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn read_timer(&mut self) -> Result<(), RiotError> {
+    pub(super) fn read_timer(&mut self, enable_irq: bool) -> Result<(), RiotError> {
         Ok(())
     }
 
