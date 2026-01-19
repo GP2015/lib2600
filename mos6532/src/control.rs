@@ -4,7 +4,7 @@ mod misc;
 mod ram;
 mod timer;
 
-use crate::{Riot, RiotError, data::AOrB};
+use crate::{Riot, RiotError};
 
 impl Riot {
     pub(super) fn tick(&mut self) -> Result<(), RiotError> {
@@ -53,25 +53,25 @@ impl Riot {
             } else if self.buf.a.read_bit(0)? {
                 if self.buf.a.read_bit(1)? {
                     if self.buf.rw.read()? {
-                        self.read_ddr(AOrB::B)?
+                        self.read_ddrb()?
                     } else {
-                        self.write_ddr(AOrB::B)?
+                        self.write_ddrb()?
                     }
                 } else if self.buf.rw.read()? {
-                    self.read_ddr(AOrB::A)?
+                    self.read_ddra()?
                 } else {
-                    self.write_ddr(AOrB::A)?
+                    self.write_ddra()?
                 }
             } else if self.buf.a.read_bit(1)? {
                 if self.buf.rw.read()? {
                     self.read_orb()?
                 } else {
-                    self.write_or(AOrB::B)?
+                    self.write_orb()?
                 }
             } else if self.buf.rw.read()? {
                 self.read_ora()?
             } else {
-                self.write_or(AOrB::A)?
+                self.write_ora()?
             }
         } else if self.buf.rw.read()? {
             self.read_ram()?

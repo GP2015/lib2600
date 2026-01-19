@@ -1,12 +1,23 @@
-use crate::{Riot, RiotError, data::AOrB};
+use crate::{Riot, RiotError};
+
+const ATYPE: bool = false;
+const BTYPE: bool = true;
 
 impl Riot {
-    pub(super) fn write_ddr(&mut self, reg: AOrB) -> Result<(), RiotError> {
+    pub(super) fn write_ddra(&mut self) -> Result<(), RiotError> {
+        self.write_ddr(ATYPE)
+    }
+
+    pub(super) fn write_ddrb(&mut self) -> Result<(), RiotError> {
+        self.write_ddr(BTYPE)
+    }
+
+    fn write_ddr(&mut self, reg: bool) -> Result<(), RiotError> {
         let byte = self.buf.db.read()?;
 
         match reg {
-            AOrB::A => &mut self.reg.ddra,
-            AOrB::B => &mut self.reg.ddrb,
+            ATYPE => &mut self.reg.ddra,
+            BTYPE => &mut self.reg.ddrb,
         }
         .write(byte)
         .unwrap();
@@ -16,10 +27,18 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn read_ddr(&mut self, reg: AOrB) -> Result<(), RiotError> {
+    pub(super) fn read_ddra(&mut self) -> Result<(), RiotError> {
+        self.read_ddr(ATYPE)
+    }
+
+    pub(super) fn read_ddrb(&mut self) -> Result<(), RiotError> {
+        self.read_ddr(BTYPE)
+    }
+
+    fn read_ddr(&mut self, reg: bool) -> Result<(), RiotError> {
         let byte = match reg {
-            AOrB::A => &self.reg.ddra,
-            AOrB::B => &self.reg.ddrb,
+            ATYPE => &self.reg.ddra,
+            BTYPE => &self.reg.ddrb,
         }
         .read()?;
 
@@ -27,12 +46,20 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn write_or(&mut self, reg: AOrB) -> Result<(), RiotError> {
+    pub(super) fn write_ora(&mut self) -> Result<(), RiotError> {
+        self.write_or(ATYPE)
+    }
+
+    pub(super) fn write_orb(&mut self) -> Result<(), RiotError> {
+        self.write_or(BTYPE)
+    }
+
+    fn write_or(&mut self, reg: bool) -> Result<(), RiotError> {
         let byte = self.buf.db.read()?;
 
         match reg {
-            AOrB::A => &mut self.reg.ora,
-            AOrB::B => &mut self.reg.orb,
+            ATYPE => &mut self.reg.ora,
+            BTYPE => &mut self.reg.orb,
         }
         .write(byte)
         .unwrap();
@@ -60,17 +87,17 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn update_peripheral(&mut self, peripheral: AOrB) -> Result<(), RiotError> {
+    pub(super) fn update_peripheral(&mut self, peripheral: bool) -> Result<(), RiotError> {
         for bit in 0..8 {
             match peripheral {
-                AOrB::A => {
+                ATYPE => {
                     if self.reg.ddra.read_bit(bit)? {
                         let state = self.reg.ora.read_bit(bit)?;
                         self.buf.pa.write_bit(bit, state).unwrap();
                     }
                 }
 
-                AOrB::B => {
+                BTYPE => {
                     if self.reg.ddrb.read_bit(bit)? {
                         let state = self.reg.orb.read_bit(bit)?;
                         self.buf.pb.write_bit(bit, state).unwrap();
