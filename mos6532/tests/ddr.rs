@@ -5,8 +5,8 @@ use rstest::rstest;
 fn read_write_ddr_success() {
     let mut riot = common::riot_post_reset();
     riot.write_ddra_pulse(0x67).unwrap();
-    assert_eq!(riot.read_ddra_pulse().unwrap(), 0x67);
     riot.write_ddrb_pulse(0x89).unwrap();
+    assert_eq!(riot.read_ddra_pulse().unwrap(), 0x67);
     assert_eq!(riot.read_ddrb_pulse().unwrap(), 0x89);
 }
 
