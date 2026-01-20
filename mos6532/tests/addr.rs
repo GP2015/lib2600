@@ -2,6 +2,22 @@ mod common;
 use rstest::rstest;
 
 #[rstest]
+#[case(false)]
+#[case(true)]
+fn use_ram_no_rs(#[case] rw: bool) {
+    let mut riot = common::riot_post_reset_select();
+    riot.write_rw(rw);
+    assert!(riot.pulse_phi2().is_err());
+}
+
+#[test]
+fn use_ram_no_rw() {
+    let mut riot = common::riot_post_reset_select();
+    riot.write_rs(true);
+    assert!(riot.pulse_phi2().is_err());
+}
+
+#[rstest]
 #[case(false, false, false)]
 #[case(false, false, true)]
 #[case(false, true, false)]
