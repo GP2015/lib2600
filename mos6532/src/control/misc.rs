@@ -4,6 +4,8 @@ impl Riot {
     pub(super) fn reset(&mut self) -> Result<(), RiotError> {
         self.reg.old_pa7.write(self.buf.pa.read_bit(7)?);
 
+        self.ram.reset();
+
         self.buf.irq.reset();
         self.reg.ddra.write(0).unwrap();
         self.reg.ddrb.write(0).unwrap();

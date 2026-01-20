@@ -23,6 +23,10 @@ impl Ram {
             None => Err(RiotError::UninitialisedRAMByte { address }),
         }
     }
+
+    pub fn reset(&mut self) {
+        self.bytes = [None; RAM_SIZE];
+    }
 }
 
 #[cfg(test)]

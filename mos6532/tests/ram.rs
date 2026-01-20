@@ -1,3 +1,5 @@
+use rstest::rstest;
+
 mod common;
 
 #[test]
@@ -41,16 +43,19 @@ fn read_uninitialised_ram() {
 }
 
 #[test]
-fn read_ram_no_rs() {
-    let mut riot = common::riot_post_reset_select();
-    riot.write_rw(false);
-    assert!(riot.pulse_phi2().is_err());
+fn read_reset_ram() {
+    let mut riot = common::riot_post_reset();
+    riot.write_ram_pulse(0x45, 0x67).unwrap();
+    riot.reset_pulse().unwrap();
+    assert!(riot.read_ram_pulse(0x45).is_err());
 }
 
-#[test]
-fn write_ram_no_rs() {
+#[rstest]
+#[case(false)]
+#[case(true)]
+fn use_ram_no_rs(#[case] rw: bool) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rw(true);
+    riot.write_rw(rw);
     assert!(riot.pulse_phi2().is_err());
 }
 
