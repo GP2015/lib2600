@@ -92,7 +92,6 @@ impl Riot {
                         self.buf.pa.write_bit(bit, state).unwrap();
                     }
                 }
-
                 BTYPE => {
                     if self.reg.ddrb.read_bit(bit)? {
                         let state = self.reg.orb.read_bit(bit)?;

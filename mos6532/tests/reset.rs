@@ -11,6 +11,9 @@ fn reset_ram() {
 #[test]
 fn reset_ddr() {
     let mut riot = common::riot_post_reset();
+    riot.write_ddra_pulse(0x67).unwrap();
+    riot.write_ddrb_pulse(0x89).unwrap();
+    riot.reset_pulse().unwrap();
     assert_eq!(riot.read_ddra_pulse().unwrap(), 0);
     assert_eq!(riot.read_ddrb_pulse().unwrap(), 0);
 }
