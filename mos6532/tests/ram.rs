@@ -1,6 +1,5 @@
-use rstest::rstest;
-
 mod common;
+use rstest::rstest;
 
 #[test]
 fn read_write_ram_success() {
@@ -17,7 +16,9 @@ fn read_write_ram_success_manual() {
     riot.write_a(0x45).unwrap();
     riot.write_db(0x67);
     riot.pulse_phi2().unwrap();
+
     riot.write_rw(true);
+    riot.write_db(0x89);
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.read_db().unwrap(), 0x67);
 }
@@ -38,6 +39,7 @@ fn write_ram_deselected() {
 fn read_ram_deselected() {
     let mut riot = common::riot_post_reset();
     riot.write_ram_pulse(0x45, 0x67).unwrap();
+
     riot.write_db(0x89);
     riot.write_cs1(false);
     riot.write_rw(true);
