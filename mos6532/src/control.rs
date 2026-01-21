@@ -208,9 +208,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(false)]
-    #[case(true)]
-    fn address_write_timers(#[case] enable_irq: bool) {
+    fn address_write_timers(#[values(false, true)] enable_irq: bool) {
         let instruction = Instruction::WriteTimer1T { enable_irq };
         address_write_timer(instruction, enable_irq, false, false);
         let instruction = Instruction::WriteTimer8T { enable_irq };
@@ -222,9 +220,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(false)]
-    #[case(true)]
-    fn address_read_timer(mut riot: Riot, #[case] enable_irq: bool) {
+    fn address_read_timer(mut riot: Riot, #[values(false, true)] enable_irq: bool) {
         riot.write_rs(true);
         riot.write_rw(true);
         riot.write_a_bit(3, enable_irq).unwrap();
@@ -245,11 +241,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case(false, false)]
-    #[case(false, true)]
-    #[case(true, false)]
-    #[case(true, true)]
-    fn address_write_edc(mut riot: Riot, #[case] enable_irq: bool, #[case] use_pos_edge: bool) {
+    fn address_write_edc(
+        mut riot: Riot,
+        #[values(false, true)] enable_irq: bool,
+        #[values(false, true)] use_pos_edge: bool,
+    ) {
         riot.write_rs(true);
         riot.write_rw(false);
         riot.write_a_bit(4, false).unwrap();
