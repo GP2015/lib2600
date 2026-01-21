@@ -19,11 +19,6 @@ impl Riot {
         self.write_cs2(false);
     }
 
-    pub fn deselected_pulse(&mut self) -> Result<(), RiotError> {
-        self.write_cs1(false);
-        self.pulse_phi2()
-    }
-
     fn general_pulse(&mut self) -> Result<(), RiotError> {
         self.write_res(true);
         self.select();
