@@ -83,7 +83,12 @@ impl Riot {
         Ok(())
     }
 
-    pub(super) fn update_peripheral(&mut self, peripheral: bool) -> Result<(), RiotError> {
+    pub(super) fn update_peripherals(&mut self) -> Result<(), RiotError> {
+        self.update_peripheral(ATYPE)?;
+        self.update_peripheral(BTYPE)
+    }
+
+    fn update_peripheral(&mut self, peripheral: bool) -> Result<(), RiotError> {
         for bit in 0..8 {
             match peripheral {
                 ATYPE => {

@@ -47,6 +47,8 @@ impl Riot {
             return Ok(());
         }
 
+        self.update_peripherals()?;
+
         if !self.buf.cs1.read()? || self.buf.cs2.read()? {
             return Ok(());
         }
