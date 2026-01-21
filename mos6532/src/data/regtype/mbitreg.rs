@@ -113,6 +113,7 @@ impl MBitReg {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::{fixture, rstest};
 
     #[test]
     fn get_bit_of_usize() {
@@ -137,17 +138,19 @@ mod tests {
         assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 7), 0b1011);
     }
 
-    #[test]
-    fn read() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[fixture]
+    fn reg() -> MBitReg {
+        MBitReg::new(8, String::new())
+    }
+
+    #[rstest]
+    fn read(mut reg: MBitReg) {
         reg.write(0x67).unwrap();
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
-    #[test]
-    fn read_uninitialised() {
-        let mut reg = MBitReg::new(8, String::new());
-
+    #[rstest]
+    fn read_uninitialised(mut reg: MBitReg) {
         for i in 0..7 {
             reg.write_bit(i, true).unwrap();
         }
@@ -157,42 +160,37 @@ mod tests {
         assert_eq!(reg.read().unwrap(), 0b11111111);
     }
 
-    #[test]
-    fn read_bits() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn read_bits(mut reg: MBitReg) {
         reg.write(0b11010110).unwrap();
         assert!(!reg.read_bit(0).unwrap());
         assert!(reg.read_bit(4).unwrap());
         assert!(reg.read_bit(8).is_err());
     }
 
-    #[test]
-    fn read_uninitialised_bits() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn read_uninitialised_bits(mut reg: MBitReg) {
         assert!(reg.read_bit(6).is_err());
         reg.write_bit(6, true).unwrap();
         assert!(reg.read_bit(6).unwrap());
     }
 
-    #[test]
-    fn write() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn write(mut reg: MBitReg) {
         assert!(reg.write(0x67).is_ok());
         assert!(reg.write(0x678).is_err());
     }
 
-    #[test]
-    fn write_wrapped() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn write_wrapped(mut reg: MBitReg) {
         reg.write_wrap(0x567);
         assert_eq!(reg.read().unwrap(), 0x67);
         reg.write_wrap(0x89);
         assert_eq!(reg.read().unwrap(), 0x89);
     }
 
-    #[test]
-    fn write_bits() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn write_bits(mut reg: MBitReg) {
         reg.write(0b11010110).unwrap();
         reg.write_bit(0, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010110);
@@ -205,9 +203,8 @@ mod tests {
         assert!(reg.write_bit(8, true).is_err());
     }
 
-    #[test]
-    fn is_written() {
-        let mut reg = MBitReg::new(8, String::new());
+    #[rstest]
+    fn is_written(mut reg: MBitReg) {
         assert!(!reg.is_written());
 
         for i in 0..7 {
