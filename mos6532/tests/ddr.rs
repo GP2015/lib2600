@@ -11,9 +11,7 @@ fn read_write_ddr_success() {
 }
 
 #[rstest]
-#[case(false)]
-#[case(true)]
-fn read_write_ddr_success_manual(#[case] a1: bool) {
+fn read_write_ddr_success_manual(#[values(false, true)] a1: bool) {
     let mut riot = common::riot_post_reset_select();
     riot.write_rs(true);
     riot.write_rw(false);
@@ -30,9 +28,7 @@ fn read_write_ddr_success_manual(#[case] a1: bool) {
 }
 
 #[rstest]
-#[case(false)]
-#[case(true)]
-fn write_ddr_deselected(#[case] a1: bool) {
+fn write_ddr_deselected(#[values(false, true)] a1: bool) {
     let mut riot = common::riot_post_reset_select();
     riot.write_cs1(false);
     riot.write_rs(true);
@@ -50,9 +46,7 @@ fn write_ddr_deselected(#[case] a1: bool) {
 }
 
 #[rstest]
-#[case(false)]
-#[case(true)]
-fn read_ddr_deselected(#[case] a1: bool) {
+fn read_ddr_deselected(#[values(false, true)] a1: bool) {
     let mut riot = common::riot_post_reset_select();
     riot.write_rs(true);
     riot.write_rw(false);

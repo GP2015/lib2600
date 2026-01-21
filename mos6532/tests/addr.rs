@@ -2,95 +2,125 @@ mod common;
 use rstest::rstest;
 
 #[rstest]
-#[case(false)]
-#[case(true)]
-fn use_ram_no_rs(#[case] rw: bool) {
+fn use_ram_with_uninitialised_pins(#[values(false, true)] rw: bool, #[values(0, 1)] skip: usize) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rw(rw);
-    assert!(riot.pulse_phi2().is_err());
-}
-
-#[test]
-fn use_ram_no_rw() {
-    let mut riot = common::riot_post_reset_select();
-    riot.write_rs(true);
-    assert!(riot.pulse_phi2().is_err());
-}
-
-#[rstest]
-#[case(false, false, false)]
-#[case(false, false, true)]
-#[case(false, true, false)]
-#[case(false, true, true)]
-#[case(true, false, false)]
-#[case(true, false, true)]
-#[case(true, true, false)]
-#[case(true, true, true)]
-fn use_io_no_rs(#[case] rw: bool, #[case] a1: bool, #[case] a0: bool) {
-    let mut riot = common::riot_post_reset_select();
-    riot.write_rw(rw);
-    riot.write_a_bit(2, false).unwrap();
-    riot.write_a_bit(1, a1).unwrap();
-    riot.write_a_bit(0, a0).unwrap();
+    for i in 0..2 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(rw),
+                _ => (),
+            }
+        }
+    }
     assert!(riot.pulse_phi2().is_err());
 }
 
 #[rstest]
-#[case(false, false)]
-#[case(false, true)]
-#[case(true, false)]
-#[case(true, true)]
-fn use_io_no_rw(#[case] a1: bool, #[case] a0: bool) {
+fn use_io_with_uninitialised_pins(
+    #[values(false, true)] rw: bool,
+    #[values(false, true)] a1: bool,
+    #[values(false, true)] a0: bool,
+    #[values(0, 1, 2, 3, 4)] skip: usize,
+) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rs(true);
-    riot.write_a_bit(2, false).unwrap();
-    riot.write_a_bit(1, a1).unwrap();
-    riot.write_a_bit(0, a0).unwrap();
+    for i in 0..5 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(rw),
+                2 => riot.write_a_bit(2, false).unwrap(),
+                3 => riot.write_a_bit(1, a1).unwrap(),
+                4 => riot.write_a_bit(0, a0).unwrap(),
+                _ => (),
+            }
+        }
+    }
     assert!(riot.pulse_phi2().is_err());
 }
 
 #[rstest]
-#[case(false, false, false)]
-#[case(false, false, true)]
-#[case(false, true, false)]
-#[case(false, true, true)]
-#[case(true, false, false)]
-#[case(true, false, true)]
-#[case(true, true, false)]
-#[case(true, true, true)]
-fn use_io_no_a2(#[case] rw: bool, #[case] a1: bool, #[case] a0: bool) {
+fn write_timer_with_uninitialised_pins(
+    #[values(false, true)] a3: bool,
+    #[values(false, true)] a1: bool,
+    #[values(false, true)] a0: bool,
+    #[values(0, 1, 2, 3, 4, 5, 6)] skip: usize,
+) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rs(true);
-    riot.write_rw(rw);
-    riot.write_a_bit(1, a1).unwrap();
-    riot.write_a_bit(0, a0).unwrap();
+    for i in 0..7 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(false),
+                2 => riot.write_a_bit(4, true).unwrap(),
+                3 => riot.write_a_bit(3, a3).unwrap(),
+                4 => riot.write_a_bit(2, true).unwrap(),
+                5 => riot.write_a_bit(1, a1).unwrap(),
+                6 => riot.write_a_bit(0, a0).unwrap(),
+                _ => (),
+            }
+        }
+    }
     assert!(riot.pulse_phi2().is_err());
 }
 
 #[rstest]
-#[case(false, false)]
-#[case(false, true)]
-#[case(true, false)]
-#[case(true, true)]
-fn use_io_no_a1(#[case] rw: bool, #[case] a0: bool) {
+fn read_timer_with_uninitialised_pins(
+    #[values(false, true)] a3: bool,
+    #[values(0, 1, 2, 3, 4)] skip: usize,
+) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rs(true);
-    riot.write_rw(rw);
-    riot.write_a_bit(2, false).unwrap();
-    riot.write_a_bit(0, a0).unwrap();
+    for i in 0..5 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(true),
+                2 => riot.write_a_bit(3, a3).unwrap(),
+                3 => riot.write_a_bit(2, true).unwrap(),
+                4 => riot.write_a_bit(0, false).unwrap(),
+                _ => (),
+            }
+        }
+    }
     assert!(riot.pulse_phi2().is_err());
 }
 
 #[rstest]
-#[case(false, false)]
-#[case(false, true)]
-#[case(true, false)]
-#[case(true, true)]
-fn use_io_no_a0(#[case] rw: bool, #[case] a1: bool) {
+fn read_interrupt_flags_with_uninitialised_pins(#[values(0, 1, 2, 3)] skip: usize) {
     let mut riot = common::riot_post_reset_select();
-    riot.write_rs(true);
-    riot.write_rw(rw);
-    riot.write_a_bit(2, false).unwrap();
-    riot.write_a_bit(1, a1).unwrap();
+    for i in 0..4 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(true),
+                4 => riot.write_a_bit(2, true).unwrap(),
+                6 => riot.write_a_bit(0, true).unwrap(),
+                _ => (),
+            }
+        }
+    }
+    assert!(riot.pulse_phi2().is_err());
+}
+
+#[rstest]
+fn write_edc_with_uninitialised_pins(
+    #[values(false, true)] a1: bool,
+    #[values(false, true)] a0: bool,
+    #[values(0, 1, 2, 3, 4, 5)] skip: usize,
+) {
+    let mut riot = common::riot_post_reset_select();
+    for i in 0..6 {
+        if i != skip {
+            match i {
+                0 => riot.write_rs(true),
+                1 => riot.write_rw(false),
+                2 => riot.write_a_bit(4, false).unwrap(),
+                3 => riot.write_a_bit(2, true).unwrap(),
+                4 => riot.write_a_bit(1, a1).unwrap(),
+                5 => riot.write_a_bit(0, a0).unwrap(),
+                _ => (),
+            }
+        }
+    }
     assert!(riot.pulse_phi2().is_err());
 }
