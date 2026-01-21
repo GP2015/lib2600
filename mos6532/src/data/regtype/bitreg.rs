@@ -10,10 +10,6 @@ impl BitReg {
         Self { name, state: None }
     }
 
-    pub fn reset(&mut self) {
-        self.state = None;
-    }
-
     pub fn read(&self) -> Result<bool, RiotError> {
         match self.state {
             Some(state) => Ok(state),
@@ -30,32 +26,47 @@ impl BitReg {
     pub fn is_written(&self) -> bool {
         self.state.is_some()
     }
+
+    pub fn reset(&mut self) {
+        self.state = None;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::{fixture, rstest};
 
-    #[test]
-    fn write_read() {
-        let mut reg = BitReg::new(String::new());
+    #[fixture]
+    fn reg() -> BitReg {
+        BitReg::new(String::new())
+    }
+
+    #[rstest]
+    fn write_read(mut reg: BitReg) {
         reg.write(true);
         assert!(reg.read().unwrap());
         reg.write(false);
         assert!(!reg.read().unwrap());
     }
 
-    #[test]
-    fn read_uninitialised() {
-        let reg = BitReg::new(String::new());
+    #[rstest]
+    fn read_uninitialised(reg: BitReg) {
         assert!(reg.read().is_err());
     }
 
-    #[test]
-    fn is_writen() {
-        let mut reg = BitReg::new(String::new());
+    #[rstest]
+    fn is_written(mut reg: BitReg) {
         assert!(!reg.is_written());
         reg.write(true);
         assert!(reg.is_written());
+    }
+
+    #[rstest]
+    fn reset(mut reg: BitReg) {
+        reg.write(true);
+        reg.reset();
+        assert!(reg.read().is_err());
+        assert!(!reg.is_written());
     }
 }
