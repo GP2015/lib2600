@@ -7,7 +7,7 @@ pub fn riot_post_reset() -> Riot {
     let mut riot = Riot::new();
     riot.write_pa_bit(7, false);
     riot.reset_pulse().unwrap();
-    riot.write_rs(true);
+    riot.write_res(true);
     riot
 }
 
