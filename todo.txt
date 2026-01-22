@@ -1,3 +1,4 @@
 -- RIOT --
-Fix up ValReg.
+Can you emulate actual pin driving or should you stick to the buffer system?
 Do you need PA7 defined on reset or can you do some undefined stuff? Review logic.
+Fix up ValReg.
