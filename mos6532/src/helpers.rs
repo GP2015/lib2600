@@ -10,7 +10,6 @@ impl Riot {
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
         self.write_res(false);
         self.pulse_phi2()?;
-        self.write_res(true);
         Ok(())
     }
 
