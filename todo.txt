@@ -1,2 +1,3 @@
 -- RIOT --
-Don't allow the user to drive a line already being driven.
+Finish debugging integration tests that are failing
+Fix up ValReg
