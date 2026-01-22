@@ -1,15 +1,15 @@
 mod common;
+use mos6532::Riot;
+use rstest::rstest;
 
-#[test]
-fn read_write_ram_success() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn read_write_ram_success(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
     assert_eq!(riot.read_ram_pulse(0x45).unwrap(), 0x67);
 }
 
-#[test]
-fn read_write_ram_success_manual() {
-    let mut riot = common::riot_post_reset_select();
+#[rstest]
+fn read_write_ram_success_manual(#[from(common::riot_post_reset_select)] mut riot: Riot) {
     riot.write_rs(false);
     riot.write_rw(false);
     riot.write_a(0x45).unwrap();
@@ -22,9 +22,8 @@ fn read_write_ram_success_manual() {
     assert_eq!(riot.read_db().unwrap(), 0x67);
 }
 
-#[test]
-fn write_ram_deselected() {
-    let mut riot = common::riot_post_reset_select();
+#[rstest]
+fn write_ram_deselected(#[from(common::riot_post_reset_select)] mut riot: Riot) {
     riot.write_cs1(false);
     riot.write_rs(false);
     riot.write_rw(false);
@@ -34,9 +33,8 @@ fn write_ram_deselected() {
     assert!(riot.read_ram_pulse(0x45).is_err());
 }
 
-#[test]
-fn read_ram_deselected() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn read_ram_deselected(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
 
     riot.write_db(0x89);
@@ -46,22 +44,19 @@ fn read_ram_deselected() {
     assert_eq!(riot.read_db().unwrap(), 0x89);
 }
 
-#[test]
-fn read_ram_out_of_bounds() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn read_ram_out_of_bounds(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
     assert!(riot.read_ram_pulse(0x85).is_err());
 }
 
-#[test]
-fn write_ram_out_of_bounds() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn write_ram_out_of_bounds(#[from(common::riot_post_reset)] mut riot: Riot) {
     assert!(riot.write_ram_pulse(0x85, 0x67).is_err());
 }
 
-#[test]
-fn read_ram_uninitialised() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn read_ram_uninitialised(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
     assert!(riot.read_ram_pulse(0x46).is_err());
 }

@@ -43,11 +43,9 @@ mod tests {
     }
 
     #[rstest]
-    fn write_read(mut reg: BitReg) {
-        reg.write(true);
-        assert!(reg.read().unwrap());
-        reg.write(false);
-        assert!(!reg.read().unwrap());
+    fn write_read(mut reg: BitReg, #[values(false, true)] state: bool) {
+        reg.write(state);
+        assert_eq!(reg.read().unwrap(), state);
     }
 
     #[rstest]

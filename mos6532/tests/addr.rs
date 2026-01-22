@@ -1,9 +1,13 @@
 mod common;
+use mos6532::Riot;
 use rstest::rstest;
 
 #[rstest]
-fn use_ram_with_uninitialised_pins(#[values(false, true)] rw: bool, #[values(0, 1)] skip: usize) {
-    let mut riot = common::riot_post_reset_select();
+fn use_ram_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[values(false, true)] rw: bool,
+    #[values(0, 1)] skip: usize,
+) {
     for i in 0..2 {
         if i != skip {
             match i {
@@ -18,12 +22,12 @@ fn use_ram_with_uninitialised_pins(#[values(false, true)] rw: bool, #[values(0, 
 
 #[rstest]
 fn use_io_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] rw: bool,
     #[values(false, true)] a1: bool,
     #[values(false, true)] a0: bool,
     #[values(0, 1, 2, 3, 4)] skip: usize,
 ) {
-    let mut riot = common::riot_post_reset_select();
     for i in 0..5 {
         if i != skip {
             match i {
@@ -41,12 +45,12 @@ fn use_io_with_uninitialised_pins(
 
 #[rstest]
 fn write_timer_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a3: bool,
     #[values(false, true)] a1: bool,
     #[values(false, true)] a0: bool,
     #[values(0, 1, 2, 3, 4, 5, 6)] skip: usize,
 ) {
-    let mut riot = common::riot_post_reset_select();
     for i in 0..7 {
         if i != skip {
             match i {
@@ -60,16 +64,16 @@ fn write_timer_with_uninitialised_pins(
                 _ => (),
             }
         }
+        assert!(riot.pulse_phi2().is_err());
     }
-    assert!(riot.pulse_phi2().is_err());
 }
 
 #[rstest]
 fn read_timer_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a3: bool,
     #[values(0, 1, 2, 3, 4)] skip: usize,
 ) {
-    let mut riot = common::riot_post_reset_select();
     for i in 0..5 {
         if i != skip {
             match i {
@@ -86,8 +90,10 @@ fn read_timer_with_uninitialised_pins(
 }
 
 #[rstest]
-fn read_interrupt_flags_with_uninitialised_pins(#[values(0, 1, 2, 3)] skip: usize) {
-    let mut riot = common::riot_post_reset_select();
+fn read_interrupt_flags_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[values(0, 1, 2, 3)] skip: usize,
+) {
     for i in 0..4 {
         if i != skip {
             match i {
@@ -104,11 +110,11 @@ fn read_interrupt_flags_with_uninitialised_pins(#[values(0, 1, 2, 3)] skip: usiz
 
 #[rstest]
 fn write_edc_with_uninitialised_pins(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a1: bool,
     #[values(false, true)] a0: bool,
     #[values(0, 1, 2, 3, 4, 5)] skip: usize,
 ) {
-    let mut riot = common::riot_post_reset_select();
     for i in 0..6 {
         if i != skip {
             match i {

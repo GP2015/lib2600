@@ -1,9 +1,9 @@
 mod common;
+use mos6532::Riot;
 use rstest::rstest;
 
-#[test]
-fn read_write_ddr_success() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn read_write_ddr_success(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ddra_pulse(0x67).unwrap();
     riot.write_ddrb_pulse(0x89).unwrap();
     assert_eq!(riot.read_ddra_pulse().unwrap(), 0x67);
@@ -11,8 +11,10 @@ fn read_write_ddr_success() {
 }
 
 #[rstest]
-fn read_write_ddr_success_manual(#[values(false, true)] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn read_write_ddr_success_manual(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[values(false, true)] a1: bool,
+) {
     riot.write_rs(true);
     riot.write_rw(false);
     riot.write_a_bit(2, false).unwrap();
@@ -28,8 +30,10 @@ fn read_write_ddr_success_manual(#[values(false, true)] a1: bool) {
 }
 
 #[rstest]
-fn write_ddr_deselected(#[values(false, true)] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn write_ddr_deselected(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[values(false, true)] a1: bool,
+) {
     riot.write_cs1(false);
     riot.write_rs(true);
     riot.write_rw(false);
@@ -46,8 +50,10 @@ fn write_ddr_deselected(#[values(false, true)] a1: bool) {
 }
 
 #[rstest]
-fn read_ddr_deselected(#[values(false, true)] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn read_ddr_deselected(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[values(false, true)] a1: bool,
+) {
     riot.write_rs(true);
     riot.write_rw(false);
     riot.write_a_bit(2, false).unwrap();

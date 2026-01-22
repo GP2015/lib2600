@@ -1,16 +1,16 @@
 mod common;
+use mos6532::Riot;
+use rstest::rstest;
 
-#[test]
-fn reset_ram() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn reset_ram(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
     riot.reset_pulse().unwrap();
     assert!(riot.read_ram_pulse(0x45).is_err());
 }
 
-#[test]
-fn reset_ddr() {
-    let mut riot = common::riot_post_reset();
+#[rstest]
+fn reset_ddr(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ddra_pulse(0x67).unwrap();
     riot.write_ddrb_pulse(0x89).unwrap();
     riot.reset_pulse().unwrap();

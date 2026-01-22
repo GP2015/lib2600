@@ -1,6 +1,5 @@
 mod common;
-use mos6532::Riot;
-use mos6532::RiotError;
+use mos6532::{Riot, RiotError};
 use rstest::rstest;
 
 const ATYPE: bool = false;
@@ -42,16 +41,20 @@ fn read_p(riot: &mut Riot, reg: bool) -> Result<u8, RiotError> {
 }
 
 #[rstest]
-fn write_output_p(#[values(ATYPE, BTYPE)] reg: bool) {
-    let mut riot = common::riot_post_reset();
+fn write_output_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
     write_or_pulse(&mut riot, reg, 0x67).unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
 }
 
 #[rstest]
-fn write_input_p(#[values(ATYPE, BTYPE)] reg: bool) {
-    let mut riot = common::riot_post_reset();
+fn write_input_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+) {
     write_p(&mut riot, reg, 0x67);
     write_or_pulse(&mut riot, reg, 0x89).unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
@@ -62,8 +65,12 @@ fn write_input_p(#[values(ATYPE, BTYPE)] reg: bool) {
 #[rstest]
 #[case(0x0F, 0x69)]
 #[case(0xF0, 0x87)]
-fn write_mixed_p(#[values(ATYPE, BTYPE)] reg: bool, #[case] ddr: u8, #[case] out: u8) {
-    let mut riot = common::riot_post_reset();
+fn write_mixed_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+    #[case] ddr: u8,
+    #[case] out: u8,
+) {
     write_p(&mut riot, reg, 0x67);
     write_ddr_pulse(&mut riot, reg, ddr).unwrap();
     write_or_pulse(&mut riot, reg, 0x89).unwrap();
@@ -71,16 +78,20 @@ fn write_mixed_p(#[values(ATYPE, BTYPE)] reg: bool, #[case] ddr: u8, #[case] out
 }
 
 #[rstest]
-fn read_input_p(#[values(ATYPE, BTYPE)] reg: bool) {
-    let mut riot = common::riot_post_reset();
+fn read_input_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+) {
     write_p(&mut riot, reg, 0x67);
     write_or_pulse(&mut riot, reg, 0x89).unwrap();
     assert_eq!(read_or_pulse(&mut riot, reg).unwrap(), 0x67);
 }
 
 #[rstest]
-fn read_output_p(#[values(ATYPE, BTYPE)] reg: bool) {
-    let mut riot = common::riot_post_reset();
+fn read_output_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
     write_or_pulse(&mut riot, reg, 0x67).unwrap();
     write_p(&mut riot, reg, 0x89);
@@ -90,8 +101,12 @@ fn read_output_p(#[values(ATYPE, BTYPE)] reg: bool) {
 #[rstest]
 #[case(0x0F, 0x69)]
 #[case(0xF0, 0x87)]
-fn read_mixed_p(#[values(ATYPE, BTYPE)] reg: bool, #[case] ddr: u8, #[case] out: u8) {
-    let mut riot = common::riot_post_reset();
+fn read_mixed_p(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+    #[case] ddr: u8,
+    #[case] out: u8,
+) {
     write_p(&mut riot, reg, 0x67);
     write_ddr_pulse(&mut riot, reg, ddr).unwrap();
     write_or_pulse(&mut riot, reg, 0x89).unwrap();
@@ -99,8 +114,10 @@ fn read_mixed_p(#[values(ATYPE, BTYPE)] reg: bool, #[case] ddr: u8, #[case] out:
 }
 
 #[rstest]
-fn output_p_update_on_deselected_pulse(#[values(ATYPE, BTYPE)] reg: bool) {
-    let mut riot = common::riot_post_reset();
+fn output_p_update_on_deselected_pulse(
+    #[from(common::riot_post_reset)] mut riot: Riot,
+    #[values(ATYPE, BTYPE)] reg: bool,
+) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
     write_or_pulse(&mut riot, reg, 0x67).unwrap();
     write_p(&mut riot, reg, 0x89);
@@ -113,8 +130,11 @@ fn output_p_update_on_deselected_pulse(#[values(ATYPE, BTYPE)] reg: bool) {
 #[rstest]
 #[case(ATYPE, false)]
 #[case(BTYPE, true)]
-fn write_output_p_manual(#[case] reg: bool, #[case] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn write_output_p_manual(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[case] reg: bool,
+    #[case] a1: bool,
+) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
     riot.write_rs(true);
     riot.write_rw(false);
@@ -129,8 +149,11 @@ fn write_output_p_manual(#[case] reg: bool, #[case] a1: bool) {
 #[rstest]
 #[case(ATYPE, false)]
 #[case(BTYPE, true)]
-fn read_input_p_manual(#[case] reg: bool, #[case] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn read_input_p_manual(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[case] reg: bool,
+    #[case] a1: bool,
+) {
     write_p(&mut riot, reg, 0x67);
     riot.write_rs(true);
     riot.write_rw(true);
@@ -144,8 +167,11 @@ fn read_input_p_manual(#[case] reg: bool, #[case] a1: bool) {
 #[rstest]
 #[case(ATYPE, false)]
 #[case(BTYPE, true)]
-fn write_output_p_deselected(#[case] reg: bool, #[case] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn write_output_p_deselected(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[case] reg: bool,
+    #[case] a1: bool,
+) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
     riot.write_cs1(false);
     riot.write_rs(true);
@@ -161,8 +187,11 @@ fn write_output_p_deselected(#[case] reg: bool, #[case] a1: bool) {
 #[rstest]
 #[case(ATYPE, false)]
 #[case(BTYPE, true)]
-fn read_input_p_deselected(#[case] reg: bool, #[case] a1: bool) {
-    let mut riot = common::riot_post_reset_select();
+fn read_input_p_deselected(
+    #[from(common::riot_post_reset_select)] mut riot: Riot,
+    #[case] reg: bool,
+    #[case] a1: bool,
+) {
     write_p(&mut riot, reg, 0x67);
     riot.write_cs1(false);
     riot.write_rs(true);
