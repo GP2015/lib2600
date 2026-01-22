@@ -108,6 +108,17 @@ impl MBitReg {
         }
         true
     }
+
+    pub fn is_bit_written(&self, bit: usize) -> Result<bool, RiotError> {
+        if bit >= self.size {
+            return Err(RiotError::MBitRegBitOutOfRange {
+                reg_name: self.name.clone(),
+                bit,
+                reg_size: self.size,
+            });
+        }
+        Ok(self.bits[bit].is_some())
+    }
 }
 
 #[cfg(test)]
@@ -115,27 +126,30 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    #[test]
-    fn get_bit_of_usize() {
-        assert!(MBitReg::get_bit_of_usize(0b101, 0));
-        assert!(!MBitReg::get_bit_of_usize(0b101, 1));
-        assert!(!MBitReg::get_bit_of_usize(0b101, 7));
+    #[rstest]
+    #[case(0x101, 0, true)]
+    #[case(0x101, 1, false)]
+    #[case(0x101, 7, false)]
+    fn get_bit_of_usize(#[case] val: usize, #[case] bit: usize, #[case] res: bool) {
+        assert_eq!(MBitReg::get_bit_of_usize(val, bit), res);
     }
 
-    #[test]
-    fn usize_exceeds_bit_count() {
-        assert!(MBitReg::usize_exceeds_bit_count(0b1011, 3));
-        assert!(!MBitReg::usize_exceeds_bit_count(0b1011, 4));
-        assert!(!MBitReg::usize_exceeds_bit_count(0b1011, 5));
+    #[rstest]
+    #[case(0b1011, 3, true)]
+    #[case(0b1011, 4, false)]
+    #[case(0b1011, 5, false)]
+    fn usize_exceeds_bit_count(#[case] val: usize, #[case] bit_count: usize, #[case] res: bool) {
+        assert_eq!(MBitReg::usize_exceeds_bit_count(val, bit_count), res);
     }
 
-    #[test]
-    fn get_low_bits_of_usize() {
-        assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 0), 0);
-        assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 1), 1);
-        assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 2), 0b11);
-        assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 3), 0b11);
-        assert_eq!(MBitReg::get_low_bits_of_usize(0b1011, 7), 0b1011);
+    #[rstest]
+    #[case(0b1011, 0, 0)]
+    #[case(0b1011, 1, 1)]
+    #[case(0b1011, 2, 0b11)]
+    #[case(0b1011, 3, 0b11)]
+    #[case(0b1011, 7, 0b1011)]
+    fn get_low_bits_of_usize(#[case] val: usize, #[case] bit_count: usize, #[case] res: usize) {
+        assert_eq!(MBitReg::get_low_bits_of_usize(val, bit_count), res);
     }
 
     #[fixture]
@@ -182,11 +196,11 @@ mod tests {
     }
 
     #[rstest]
-    fn write_wrapped(mut reg: MBitReg) {
-        reg.write_wrap(0x567);
-        assert_eq!(reg.read().unwrap(), 0x67);
-        reg.write_wrap(0x89);
-        assert_eq!(reg.read().unwrap(), 0x89);
+    #[case(0x567, 0x67)]
+    #[case(0x89, 0x89)]
+    fn write_wrapped(mut reg: MBitReg, #[case] full: usize, #[case] wrapped: usize) {
+        reg.write_wrap(full);
+        assert_eq!(reg.read().unwrap(), wrapped);
     }
 
     #[rstest]
@@ -214,5 +228,17 @@ mod tests {
 
         reg.write_bit(7, true).unwrap();
         assert!(reg.is_written());
+    }
+
+    #[rstest]
+    fn is_bit_written(mut reg: MBitReg) {
+        assert!(!reg.is_bit_written(6).unwrap());
+        assert!(!reg.is_bit_written(7).unwrap());
+        reg.write_bit(6, true).unwrap();
+        assert!(reg.is_bit_written(6).unwrap());
+        assert!(!reg.is_bit_written(7).unwrap());
+        reg.write(0x45).unwrap();
+        assert!(reg.is_bit_written(7).unwrap());
+        assert!(reg.is_bit_written(8).is_err());
     }
 }

@@ -58,6 +58,14 @@ impl Riot {
 
     // Address Bus operations
 
+    pub fn read_a(&self) -> Result<usize, RiotError> {
+        self.buf.a.read()
+    }
+
+    pub fn read_a_bit(&self, bit: usize) -> Result<bool, RiotError> {
+        self.buf.a.read_bit(bit)
+    }
+
     /// Drive the address bus with the value `val`,
     /// without wrapping.
     ///
@@ -84,6 +92,10 @@ impl Riot {
     /// Returns true if the address bus is being driven with a value.
     pub fn a_written(&self) -> bool {
         self.buf.a.is_written()
+    }
+
+    pub fn a_bit_written(&self, bit: usize) -> Result<bool, RiotError> {
+        self.buf.a.is_bit_written(bit)
     }
 
     // Data Bus operations
@@ -129,6 +141,10 @@ impl Riot {
         self.buf.db.is_written()
     }
 
+    pub fn db_bit_written(&self, bit: u8) -> bool {
+        self.buf.db.is_bit_written(bit as usize).unwrap()
+    }
+
     // Peripheral A Data operations
 
     pub fn read_pa(&self) -> Result<u8, RiotError> {
@@ -149,6 +165,10 @@ impl Riot {
 
     pub fn pa_written(&self) -> bool {
         self.buf.pa.is_written()
+    }
+
+    pub fn pa_bit_written(&self, bit: u8) -> bool {
+        self.buf.pa.is_bit_written(bit as usize).unwrap()
     }
 
     // Peripheral B Data operations
@@ -173,11 +193,19 @@ impl Riot {
         self.buf.pb.is_written()
     }
 
+    pub fn pb_bit_written(&self, bit: u8) -> bool {
+        self.buf.pb.is_bit_written(bit as usize).unwrap()
+    }
+
     // Other pin operations
 
     /// Pulse the input clock pin (PHI2).
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.tick()
+    }
+
+    pub fn read_cs1(&self) -> Result<bool, RiotError> {
+        self.buf.cs1.read()
     }
 
     /// Drive the Chip Select 1 pin with state `state`.
@@ -190,6 +218,10 @@ impl Riot {
         self.buf.cs1.is_written()
     }
 
+    pub fn read_cs2(&self) -> Result<bool, RiotError> {
+        self.buf.cs2.read()
+    }
+
     /// Drive the Chip Select 2 pin with state `state`.
     pub fn write_cs2(&mut self, state: bool) {
         self.buf.cs2.write(state)
@@ -198,6 +230,10 @@ impl Riot {
     /// Returns true if the Chip Select 2 pin is being driven.
     pub fn cs2_written(&self) -> bool {
         self.buf.cs2.is_written()
+    }
+
+    pub fn read_rw(&self) -> Result<bool, RiotError> {
+        self.buf.rw.read()
     }
 
     /// Drive the Read/Write pin with state `state`.
@@ -210,6 +246,10 @@ impl Riot {
         self.buf.rw.is_written()
     }
 
+    pub fn read_res(&self) -> Result<bool, RiotError> {
+        self.buf.res.read()
+    }
+
     /// Drive the Reset pin with state `state`.
     pub fn write_res(&mut self, state: bool) {
         self.buf.res.write(state)
@@ -218,6 +258,10 @@ impl Riot {
     /// Returns true if the Reset pin is being driven.
     pub fn res_written(&self) -> bool {
         self.buf.res.is_written()
+    }
+
+    pub fn read_rs(&self) -> Result<bool, RiotError> {
+        self.buf.rs.read()
     }
 
     /// Drive the Ram Select pin with state `state`.
@@ -241,5 +285,119 @@ impl Riot {
     /// Returns true if the Interrupt Request pin is being driven.
     pub fn irq_written(&self) -> bool {
         self.buf.irq.is_written()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    fn riot() -> Riot {
+        Riot::new()
+    }
+
+    #[rstest]
+    fn read_write_a(mut riot: Riot) {
+        assert!(riot.read_a().is_err());
+        assert!(!riot.a_written());
+        riot.write_a(0x45).unwrap();
+        assert_eq!(riot.read_a().unwrap(), 0x45);
+        assert!(riot.a_written());
+    }
+
+    #[rstest]
+    fn write_a_out_of_bounds(mut riot: Riot) {
+        assert!(riot.write_a(0x80).is_err());
+    }
+
+    #[rstest]
+    fn write_a_wrap(mut riot: Riot) {
+        riot.write_a_wrap(0xFF);
+        assert_eq!(riot.read_a().unwrap(), 0x7F);
+    }
+
+    #[rstest]
+    fn read_write_a_bit(mut riot: Riot) {
+        assert!(riot.read_a_bit(4).is_err());
+        assert!(!riot.a_bit_written(4).unwrap());
+        riot.write_a_bit(4, true).unwrap();
+        assert!(riot.read_a_bit(4).unwrap());
+        assert!(riot.a_bit_written(4).unwrap());
+    }
+
+    #[rstest]
+    fn read_write_a_bit_out_of_bounds(mut riot: Riot) {
+        assert!(riot.write_a_bit(7, true).is_err());
+        riot.write_a_wrap(0xFF);
+        assert!(riot.read_a_bit(7).is_err());
+    }
+
+    type ReadU8BusFn = fn(&Riot) -> Result<u8, RiotError>;
+    type WriteU8BusFn = fn(&mut Riot, u8);
+    type U8BusWrittenFn = fn(&Riot) -> bool;
+
+    #[rstest]
+    #[case(Riot::read_db, Riot::write_db, Riot::db_written)]
+    #[case(Riot::read_pa, Riot::write_pa, Riot::pa_written)]
+    #[case(Riot::read_pb, Riot::write_pb, Riot::pb_written)]
+    fn read_write_u8_bus(
+        mut riot: Riot,
+        #[case] read: ReadU8BusFn,
+        #[case] write: WriteU8BusFn,
+        #[case] written: U8BusWrittenFn,
+    ) {
+        assert!(read(&riot).is_err());
+        assert!(!written(&riot));
+        write(&mut riot, 0x67);
+        assert_eq!(read(&riot).unwrap(), 0x67);
+        assert!(written(&riot));
+    }
+
+    type ReadU8BusBitFn = fn(&Riot, u8) -> Result<bool, RiotError>;
+    type WriteU8BusBitFn = fn(&mut Riot, u8, bool);
+    type U8BusBitWrittenFn = fn(&Riot, u8) -> bool;
+
+    #[rstest]
+    #[case(Riot::read_db_bit, Riot::write_db_bit, Riot::db_bit_written)]
+    #[case(Riot::read_pa_bit, Riot::write_pa_bit, Riot::pa_bit_written)]
+    #[case(Riot::read_pb_bit, Riot::write_pb_bit, Riot::pb_bit_written)]
+    fn read_write_u8_bus_bit(
+        mut riot: Riot,
+        #[case] read: ReadU8BusBitFn,
+        #[case] write: WriteU8BusBitFn,
+        #[case] written: U8BusBitWrittenFn,
+        #[values(false, true)] state: bool,
+    ) {
+        assert!(read(&riot, 6).is_err());
+        assert!(!written(&riot, 6));
+        write(&mut riot, 6, state);
+        assert_eq!(read(&riot, 6).unwrap(), state);
+        assert!(written(&riot, 6));
+    }
+
+    type ReadPinFn = fn(&Riot) -> Result<bool, RiotError>;
+    type WritePinFn = fn(&mut Riot, bool);
+    type PinWrittenFn = fn(&Riot) -> bool;
+
+    #[rstest]
+    #[case(Riot::read_res, Riot::write_res, Riot::res_written)]
+    #[case(Riot::read_rw, Riot::write_rw, Riot::rw_written)]
+    #[case(Riot::read_rs, Riot::write_rs, Riot::rs_written)]
+    #[case(Riot::read_cs1, Riot::write_cs1, Riot::cs1_written)]
+    #[case(Riot::read_cs2, Riot::write_cs2, Riot::cs2_written)]
+    fn read_write_pin(
+        mut riot: Riot,
+        #[case] read: ReadPinFn,
+        #[case] write: WritePinFn,
+        #[case] written: PinWrittenFn,
+        #[values(false, true)] state: bool,
+    ) {
+        assert!(read(&riot).is_err());
+        assert!(!written(&riot));
+        write(&mut riot, state);
+        assert_eq!(read(&riot).unwrap(), state);
+        assert!(written(&riot));
     }
 }
