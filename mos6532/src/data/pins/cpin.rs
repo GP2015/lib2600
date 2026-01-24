@@ -14,7 +14,7 @@ pub struct ContentionPin {
 }
 
 impl ContentionPin {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let mut driving = [false; 2];
         driving[DRIVING_OUT] = true;
 
@@ -28,7 +28,15 @@ impl ContentionPin {
         self.state
     }
 
-    pub fn set_drive(&mut self, dir: DriveDirection, state: PinState) -> Result<(), RiotError> {
+    pub fn set_drive_in(&mut self, state: PinState) -> Result<(), RiotError> {
+        self.set_drive(DriveDirection::In, state)
+    }
+
+    pub(crate) fn set_drive_out(&mut self, state: PinState) -> Result<(), RiotError> {
+        self.set_drive(DriveDirection::Out, state)
+    }
+
+    fn set_drive(&mut self, dir: DriveDirection, state: PinState) -> Result<(), RiotError> {
         let (this, other) = match dir {
             DriveDirection::In => (DRIVING_IN, DRIVING_OUT),
             DriveDirection::Out => (DRIVING_OUT, DRIVING_IN),
@@ -48,14 +56,6 @@ impl ContentionPin {
         self.driving[this] = true;
         self.state = state;
         Ok(())
-    }
-
-    pub fn set_drive_in(&mut self, state: PinState) -> Result<(), RiotError> {
-        self.set_drive(DriveDirection::In, state)
-    }
-
-    pub fn set_drive_out(&mut self, state: PinState) -> Result<(), RiotError> {
-        self.set_drive(DriveDirection::Out, state)
     }
 }
 

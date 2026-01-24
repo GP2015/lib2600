@@ -1,4 +1,2 @@
-mod pins;
-mod registers;
-
-pub use registers::Registers;
+pub mod pins;
+pub mod registers;

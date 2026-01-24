@@ -5,7 +5,7 @@ pub struct InputPin {
 }
 
 impl InputPin {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             state: PinState::Undefined,
         }
@@ -15,7 +15,7 @@ impl InputPin {
         self.state
     }
 
-    pub fn drive_in(&mut self, state: PinState) {
+    pub fn set_drive_in(&mut self, state: PinState) {
         self.state = state;
     }
 }
@@ -37,7 +37,7 @@ mod tests {
 
     #[rstest]
     fn drive_read(mut reg: InputPin) {
-        reg.drive_in(PinState::High);
+        reg.set_drive_in(PinState::High);
         assert_eq!(reg.read(), PinState::High);
     }
 }
