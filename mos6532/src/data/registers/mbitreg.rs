@@ -1,4 +1,10 @@
-use crate::data::registers::state::{MBitRegState, RegBitState};
+use crate::data::registers::common::RegBitState;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MBitRegState {
+    Val(usize),
+    Undefined,
+}
 
 pub struct MBitReg {
     bits: Vec<RegBitState>,
@@ -18,8 +24,8 @@ impl MBitReg {
         for bit in (0..self.size).rev() {
             combined = match self.bits[bit] {
                 RegBitState::Undefined => return MBitRegState::Undefined,
-                RegBitState::False => combined << 1,
-                RegBitState::True => (combined << 1) + 1,
+                RegBitState::Low => combined << 1,
+                RegBitState::High => (combined << 1) + 1,
             }
         }
         MBitRegState::Val(combined)
@@ -35,8 +41,8 @@ impl MBitReg {
             MBitRegState::Val(val) => {
                 for bit in 0..self.size {
                     self.bits[bit] = match (val >> bit) & 1 == 1 {
-                        true => RegBitState::True,
-                        false => RegBitState::False,
+                        true => RegBitState::High,
+                        false => RegBitState::Low,
                     }
                 }
             }
@@ -92,10 +98,10 @@ mod tests {
     }
 
     #[rstest]
-    #[case(1, RegBitState::True)]
-    #[case(3, RegBitState::False)]
-    #[case(8, RegBitState::False)]
-    #[case(10, RegBitState::True)]
+    #[case(1, RegBitState::High)]
+    #[case(3, RegBitState::Low)]
+    #[case(8, RegBitState::Low)]
+    #[case(10, RegBitState::High)]
     fn get_bits(mut reg: MBitReg, #[case] bit: usize, #[case] state: RegBitState) {
         reg.set(MBitRegState::Val(0b11010110));
         assert_eq!(reg.get_bit(bit), state);
@@ -105,16 +111,16 @@ mod tests {
     fn set_bits(mut reg: MBitReg) {
         for i in 0..8 {
             assert_eq!(reg.get(), MBitRegState::Undefined);
-            reg.set_bit(i, RegBitState::False);
+            reg.set_bit(i, RegBitState::Low);
         }
         assert_eq!(reg.get(), MBitRegState::Val(0));
     }
 
     #[rstest]
     fn get_set_bits(mut reg: MBitReg) {
-        reg.set_bit(6, RegBitState::True);
-        reg.set_bit(7, RegBitState::False);
-        assert_eq!(reg.get_bit(6), RegBitState::True);
-        assert_eq!(reg.get_bit(7), RegBitState::False);
+        reg.set_bit(6, RegBitState::High);
+        reg.set_bit(7, RegBitState::Low);
+        assert_eq!(reg.get_bit(6), RegBitState::High);
+        assert_eq!(reg.get_bit(7), RegBitState::Low);
     }
 }

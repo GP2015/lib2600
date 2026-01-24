@@ -1,4 +1,4 @@
-use crate::data::registers::state::RegBitState;
+use crate::data::registers::common::RegBitState;
 
 pub struct BitReg {
     state: RegBitState,
@@ -36,9 +36,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(RegBitState::True)]
-    fn set_get(mut reg: BitReg, #[case] state: RegBitState) {
-        reg.set(state);
-        assert_eq!(reg.get(), state);
+    fn set_get(mut reg: BitReg) {
+        reg.set(RegBitState::High);
+        assert_eq!(reg.get(), RegBitState::High);
     }
 }
