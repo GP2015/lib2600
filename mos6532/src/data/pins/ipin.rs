@@ -37,6 +37,10 @@ impl InputPin {
     pub fn drive_in(&mut self, state: bool) {
         self.state = Some(PinState::from_bool(state));
     }
+
+    pub fn tristate_in(&mut self) {
+        self.state = Some(PinState::TriState);
+    }
 }
 
 #[cfg(test)]
@@ -76,6 +80,12 @@ mod tests {
     }
 
     #[rstest]
+    fn tristate_in(mut reg: InputPin) {
+        reg.tristate_in();
+        assert_eq!(reg.state().unwrap(), PinState::TriState);
+    }
+
+    #[rstest]
     fn read_bool(mut reg: InputPin, #[values(true, false)] state: bool) {
         reg.drive_in(state);
         assert_eq!(reg.read().unwrap(), state);
@@ -83,7 +93,7 @@ mod tests {
 
     #[rstest]
     fn read_tristate(mut reg: InputPin) {
-        reg.set_signal_in(PinState::TriState);
+        reg.tristate_in();
         assert!(matches!(
             reg.read().err().unwrap(),
             RiotError::PinReadWhileTriStated { .. }

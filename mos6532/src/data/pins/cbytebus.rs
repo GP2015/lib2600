@@ -92,6 +92,18 @@ impl ContentionByteBus {
         Ok(())
     }
 
+    pub fn tristate_in(&mut self) {
+        for bit in 0..BUS_SIZE {
+            self.pins[bit].set_signal_in(PinState::TriState).unwrap();
+        }
+    }
+
+    pub(crate) fn tristate_out(&mut self) {
+        for bit in 0..BUS_SIZE {
+            self.pins[bit].set_signal_out(PinState::TriState).unwrap();
+        }
+    }
+
     pub fn set_signal_in_bit(&mut self, bit: usize, state: PinState) -> Result<(), RiotError> {
         if bit >= BUS_SIZE {
             return Err(RiotError::BusPinOutOfRange {
