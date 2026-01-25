@@ -32,10 +32,9 @@ impl MBitReg {
 
         for bit in (0..self.size).rev() {
             let Some(val) = self.bits[bit] else {
-                return Err(RiotError::UninitialisedMBitRegBit {
-                    reg_name: self.name.clone(),
+                return Err(RiotError::RegisterBitUninitialised {
+                    name: self.name.clone(),
                     bit,
-                    reg_size: self.size,
                 });
             };
 
@@ -47,77 +46,29 @@ impl MBitReg {
     }
 
     pub fn read_bit(&self, bit: usize) -> Result<bool, RiotError> {
-        if bit >= self.size {
-            return Err(RiotError::MBitRegBitOutOfRange {
-                reg_name: self.name.clone(),
-                bit,
-                reg_size: self.size,
-            });
-        }
-
         let Some(val) = self.bits[bit] else {
-            return Err(RiotError::UninitialisedMBitRegBit {
-                reg_name: self.name.clone(),
+            return Err(RiotError::RegisterBitUninitialised {
+                name: self.name.clone(),
                 bit,
-                reg_size: self.size,
             });
         };
 
         Ok(val)
     }
 
-    pub fn write(&mut self, val: usize) -> Result<(), RiotError> {
-        if Self::usize_exceeds_bit_count(val, self.size) {
-            return Err(RiotError::MBitRegDriveValueTooLarge {
-                reg_name: self.name.clone(),
-                value: val,
-                reg_size: self.size,
-            });
+    pub fn write(&mut self, val: usize) {
+        if cfg!(debug_assertions) && Self::usize_exceeds_bit_count(val, self.size) {
+            panic!("writing excessively large value to register should not be possible");
         }
 
         for bit in 0..self.size {
             self.bits[bit] = Some(Self::get_bit_of_usize(val, bit))
         }
-
-        Ok(())
-    }
-
-    pub fn write_wrap(&mut self, val: usize) {
-        self.write(Self::get_low_bits_of_usize(val, self.size))
-            .unwrap();
     }
 
     pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
-        if bit >= self.size {
-            return Err(RiotError::MBitRegBitOutOfRange {
-                reg_name: self.name.clone(),
-                bit,
-                reg_size: self.size,
-            });
-        }
-
         self.bits[bit] = Some(state);
         Ok(())
-    }
-
-    pub fn is_written(&self) -> bool {
-        for bit in 0..self.size {
-            if self.bits[bit].is_none() {
-                return false;
-            }
-        }
-        true
-    }
-
-    pub fn is_bit_written(&self, bit: usize) -> Result<bool, RiotError> {
-        if bit >= self.size {
-            return Err(RiotError::MBitRegBitOutOfRange {
-                reg_name: self.name.clone(),
-                bit,
-                reg_size: self.size,
-            });
-        }
-        Ok(self.bits[bit].is_some())
     }
 }
 
@@ -159,7 +110,7 @@ mod tests {
 
     #[rstest]
     fn read(mut reg: MBitReg) {
-        reg.write(0x67).unwrap();
+        reg.write(0x67);
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
@@ -176,7 +127,7 @@ mod tests {
 
     #[rstest]
     fn read_bits(mut reg: MBitReg) {
-        reg.write(0b11010110).unwrap();
+        reg.write(0b11010110);
         assert!(!reg.read_bit(0).unwrap());
         assert!(reg.read_bit(4).unwrap());
         assert!(reg.read_bit(8).is_err());
@@ -190,22 +141,8 @@ mod tests {
     }
 
     #[rstest]
-    fn write(mut reg: MBitReg) {
-        assert!(reg.write(0x67).is_ok());
-        assert!(reg.write(0x678).is_err());
-    }
-
-    #[rstest]
-    #[case(0x567, 0x67)]
-    #[case(0x89, 0x89)]
-    fn write_wrapped(mut reg: MBitReg, #[case] full: usize, #[case] wrapped: usize) {
-        reg.write_wrap(full);
-        assert_eq!(reg.read().unwrap(), wrapped);
-    }
-
-    #[rstest]
     fn write_bits(mut reg: MBitReg) {
-        reg.write(0b11010110).unwrap();
+        reg.write(0b11010110);
         reg.write_bit(0, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010110);
         reg.write_bit(1, false).unwrap();
@@ -215,30 +152,5 @@ mod tests {
         reg.write_bit(3, true).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11011100);
         assert!(reg.write_bit(8, true).is_err());
-    }
-
-    #[rstest]
-    fn is_written(mut reg: MBitReg) {
-        assert!(!reg.is_written());
-
-        for i in 0..7 {
-            reg.write_bit(i, true).unwrap();
-        }
-        assert!(!reg.is_written());
-
-        reg.write_bit(7, true).unwrap();
-        assert!(reg.is_written());
-    }
-
-    #[rstest]
-    fn is_bit_written(mut reg: MBitReg) {
-        assert!(!reg.is_bit_written(6).unwrap());
-        assert!(!reg.is_bit_written(7).unwrap());
-        reg.write_bit(6, true).unwrap();
-        assert!(reg.is_bit_written(6).unwrap());
-        assert!(!reg.is_bit_written(7).unwrap());
-        reg.write(0x45).unwrap();
-        assert!(reg.is_bit_written(7).unwrap());
-        assert!(reg.is_bit_written(8).is_err());
     }
 }

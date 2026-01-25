@@ -20,7 +20,7 @@ impl Ram {
     pub fn read_byte(&self, address: usize) -> Result<u8, RiotError> {
         match self.bytes[address] {
             Some(byte) => Ok(byte),
-            None => Err(RiotError::UninitialisedRAMByte { address }),
+            None => Err(RiotError::RamByteUninitialised { address }),
         }
     }
 

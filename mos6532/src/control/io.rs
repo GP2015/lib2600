@@ -13,14 +13,13 @@ impl Riot {
     }
 
     fn write_ddr(&mut self, reg: bool) -> Result<(), RiotError> {
-        let byte = self.buf.db.read()?;
+        let byte = self.pin.db.read()?;
 
         match reg {
             ATYPE => &mut self.reg.ddra,
             BTYPE => &mut self.reg.ddrb,
         }
-        .write(byte)
-        .unwrap();
+        .write(byte as usize);
 
         self.update_peripheral(reg)
     }
@@ -40,7 +39,7 @@ impl Riot {
         }
         .read()?;
 
-        self.buf.db.write(byte).unwrap();
+        self.pin.db.drive_value_out(byte as u8)?;
         Ok(())
     }
 
@@ -53,21 +52,20 @@ impl Riot {
     }
 
     fn write_or(&mut self, reg: bool) -> Result<(), RiotError> {
-        let byte = self.buf.db.read()?;
+        let byte = self.pin.db.read()?;
 
         match reg {
             ATYPE => &mut self.reg.ora,
             BTYPE => &mut self.reg.orb,
         }
-        .write(byte)
-        .unwrap();
+        .write(byte as usize);
 
         self.update_peripheral(reg)
     }
 
     pub(super) fn read_ora(&mut self) -> Result<(), RiotError> {
-        let byte = self.buf.pa.read()?;
-        self.buf.db.write(byte).unwrap();
+        let byte = self.pin.pa.read()?;
+        self.pin.db.drive_value_out(byte)?;
         Ok(())
     }
 
@@ -75,9 +73,9 @@ impl Riot {
         for bit in 0..8 {
             let state = match self.reg.ddrb.read_bit(bit)? {
                 true => self.reg.orb.read_bit(bit)?,
-                false => self.buf.pb.read_bit(bit)?,
+                false => self.pin.pb.read_bit(bit)?,
             };
-            self.buf.db.write_bit(bit, state).unwrap();
+            self.pin.db.drive_out_bit(bit, state)?;
         }
 
         Ok(())
@@ -94,13 +92,13 @@ impl Riot {
                 ATYPE => {
                     if self.reg.ddra.read_bit(bit)? {
                         let state = self.reg.ora.read_bit(bit)?;
-                        self.buf.pa.write_bit(bit, state).unwrap();
+                        self.pin.pa.drive_out_bit(bit, state)?;
                     }
                 }
                 BTYPE => {
                     if self.reg.ddrb.read_bit(bit)? {
                         let state = self.reg.orb.read_bit(bit)?;
-                        self.buf.pb.write_bit(bit, state).unwrap();
+                        self.pin.pb.drive_out_bit(bit, state)?;
                     }
                 }
             };

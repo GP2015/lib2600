@@ -16,8 +16,8 @@ where
 
     pub fn read(&self) -> Result<T, RiotError> {
         let Some(val) = self.value else {
-            return Err(RiotError::UninitialisedValueReg {
-                reg_name: self.name.clone(),
+            return Err(RiotError::RegisterUninitialised {
+                name: self.name.clone(),
             });
         };
 
@@ -33,27 +33,27 @@ where
         self.value.is_some()
     }
 
-    pub fn increment(&mut self) -> Result<(), RiotError> {
-        let Some(val) = self.value else {
-            return Err(RiotError::UninitialisedValueReg {
-                reg_name: self.name.clone(),
-            });
-        };
+    // pub fn increment(&mut self) -> Result<(), RiotError> {
+    //     let Some(val) = self.value else {
+    //         return Err(RiotError::RegisterUninitialised {
+    //             name: self.name.clone(),
+    //         });
+    //     };
 
-        self.value = Some(val + T::one());
-        Ok(())
-    }
+    //     self.value = Some(val + T::one());
+    //     Ok(())
+    // }
 
-    pub fn decrement(&mut self) -> Result<(), RiotError> {
-        let Some(val) = self.value else {
-            return Err(RiotError::UninitialisedValueReg {
-                reg_name: self.name.clone(),
-            });
-        };
+    // pub fn decrement(&mut self) -> Result<(), RiotError> {
+    //     let Some(val) = self.value else {
+    //         return Err(RiotError::RegisterUninitialised {
+    //             name: self.name.clone(),
+    //         });
+    //     };
 
-        self.value = Some(val - T::one());
-        Ok(())
-    }
+    //     self.value = Some(val - T::one());
+    //     Ok(())
+    // }
 }
 
 #[cfg(test)]
@@ -87,19 +87,19 @@ mod tests {
         assert!(reg.is_written());
     }
 
-    #[test]
-    fn increment() {
-        let mut reg = ValueReg::new(String::new());
-        reg.write(0x67).unwrap();
-        reg.increment().unwrap();
-        assert_eq!(reg.read().unwrap(), 0x68);
-    }
+    // #[test]
+    // fn increment() {
+    //     let mut reg = ValueReg::new(String::new());
+    //     reg.write(0x67).unwrap();
+    //     reg.increment().unwrap();
+    //     assert_eq!(reg.read().unwrap(), 0x68);
+    // }
 
-    #[test]
-    fn decrement() {
-        let mut reg = ValueReg::new(String::new());
-        reg.write(0x67).unwrap();
-        reg.decrement().unwrap();
-        assert_eq!(reg.read().unwrap(), 0x66);
-    }
+    // #[test]
+    // fn decrement() {
+    //     let mut reg = ValueReg::new(String::new());
+    //     reg.write(0x67).unwrap();
+    //     reg.decrement().unwrap();
+    //     assert_eq!(reg.read().unwrap(), 0x66);
+    // }
 }

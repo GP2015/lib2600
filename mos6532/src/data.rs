@@ -1,8 +1,3 @@
-mod buffers;
-mod ram;
-mod registers;
-mod regtype;
-
-pub use buffers::Buffers;
-pub use ram::Ram;
-pub use registers::Registers;
+pub mod pins;
+pub mod ram;
+pub mod registers;

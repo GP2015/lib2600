@@ -4,5 +4,11 @@ mod error;
 mod helpers;
 mod riot;
 
-pub use crate::error::RiotError;
-pub use crate::riot::Riot;
+pub use crate::{
+    data::pins::{
+        Pins, abus::AddressBus, cbytebus::ContentionByteBus, common::PinState, cpin::ContentionPin,
+        ipin::InputPin,
+    },
+    error::RiotError,
+    riot::Riot,
+};

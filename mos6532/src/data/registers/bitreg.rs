@@ -13,18 +13,14 @@ impl BitReg {
     pub fn read(&self) -> Result<bool, RiotError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RiotError::UninitialisedBitReg {
-                reg_name: self.name.clone(),
+            None => Err(RiotError::RegisterUninitialised {
+                name: self.name.clone(),
             }),
         }
     }
 
     pub fn write(&mut self, state: bool) {
         self.state = Some(state);
-    }
-
-    pub fn is_written(&self) -> bool {
-        self.state.is_some()
     }
 
     pub fn reset(&mut self) {
@@ -51,20 +47,5 @@ mod tests {
     #[rstest]
     fn read_uninitialised(reg: BitReg) {
         assert!(reg.read().is_err());
-    }
-
-    #[rstest]
-    fn is_written(mut reg: BitReg) {
-        assert!(!reg.is_written());
-        reg.write(true);
-        assert!(reg.is_written());
-    }
-
-    #[rstest]
-    fn reset(mut reg: BitReg) {
-        reg.write(true);
-        reg.reset();
-        assert!(reg.read().is_err());
-        assert!(!reg.is_written());
     }
 }
