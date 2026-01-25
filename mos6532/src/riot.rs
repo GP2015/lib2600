@@ -27,4 +27,8 @@ impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.tick()
     }
+
+    pub fn release_db(&mut self) {
+        self.pin.db.tristate_out();
+    }
 }

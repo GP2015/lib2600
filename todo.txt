@@ -1,6 +1,5 @@
 -- RIOT --
 Add in removed units tests & integration tests.
-Add in pull-up / pull-down resistors.
 Add in callback functions for pins.
 Stop errored method calls from changing the chip at all.
 Should the reset sequence be dependant on the clock?

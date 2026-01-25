@@ -139,4 +139,12 @@ impl ContentionByteBus {
     pub(crate) fn drive_out_bit(&mut self, bit: usize, state: bool) -> Result<(), RiotError> {
         self.set_signal_out_bit(bit, PinState::from_bool(state))
     }
+
+    pub fn tristate_in_bit(&mut self, bit: usize) -> Result<(), RiotError> {
+        self.set_signal_in_bit(bit, PinState::TriState)
+    }
+
+    pub(crate) fn tristate_out_bit(&mut self, bit: usize) -> Result<(), RiotError> {
+        self.set_signal_out_bit(bit, PinState::TriState)
+    }
 }

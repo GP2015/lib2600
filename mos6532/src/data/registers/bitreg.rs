@@ -22,10 +22,6 @@ impl BitReg {
     pub fn write(&mut self, state: bool) {
         self.state = Some(state);
     }
-
-    pub fn reset(&mut self) {
-        self.state = None;
-    }
 }
 
 #[cfg(test)]
