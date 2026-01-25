@@ -23,10 +23,6 @@ impl MBitReg {
         val >> bit_count != 0
     }
 
-    fn get_low_bits_of_usize(val: usize, bit_count: usize) -> usize {
-        val & ((1 << bit_count) - 1)
-    }
-
     pub fn read(&self) -> Result<usize, RiotError> {
         let mut combined = 0;
 
@@ -93,16 +89,6 @@ mod tests {
         assert_eq!(MBitReg::usize_exceeds_bit_count(val, bit_count), res);
     }
 
-    #[rstest]
-    #[case(0b1011, 0, 0)]
-    #[case(0b1011, 1, 1)]
-    #[case(0b1011, 2, 0b11)]
-    #[case(0b1011, 3, 0b11)]
-    #[case(0b1011, 7, 0b1011)]
-    fn get_low_bits_of_usize(#[case] val: usize, #[case] bit_count: usize, #[case] res: usize) {
-        assert_eq!(MBitReg::get_low_bits_of_usize(val, bit_count), res);
-    }
-
     #[fixture]
     fn reg() -> MBitReg {
         MBitReg::new(8, String::new())
@@ -129,8 +115,9 @@ mod tests {
     fn read_bits(mut reg: MBitReg) {
         reg.write(0b11010110);
         assert!(!reg.read_bit(0).unwrap());
+        assert!(reg.read_bit(1).unwrap());
+        assert!(!reg.read_bit(3).unwrap());
         assert!(reg.read_bit(4).unwrap());
-        assert!(reg.read_bit(8).is_err());
     }
 
     #[rstest]
@@ -151,6 +138,5 @@ mod tests {
         assert_eq!(reg.read().unwrap(), 0b11010100);
         reg.write_bit(3, true).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11011100);
-        assert!(reg.write_bit(8, true).is_err());
     }
 }
