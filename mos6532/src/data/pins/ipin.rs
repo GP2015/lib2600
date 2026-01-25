@@ -50,13 +50,43 @@ mod tests {
     }
 
     #[rstest]
-    fn read_initial(reg: InputPin) {
-        assert!(reg.read().is_err());
+    fn initial_state(reg: InputPin) {
+        assert_eq!(reg.state(), None);
+        assert!(matches!(
+            reg.read().err().unwrap(),
+            RiotError::PinUninitialised { .. }
+        ));
     }
 
     #[rstest]
-    fn drive_read(mut reg: InputPin) {
-        reg.set_signal_in(PinState::High);
-        assert!(reg.read().unwrap());
+    fn set_and_state(
+        mut reg: InputPin,
+        #[values(PinState::High, PinState::Low, PinState::TriState)] state: PinState,
+    ) {
+        reg.set_signal_in(state);
+        assert_eq!(reg.state().unwrap(), state);
+    }
+
+    #[rstest]
+    #[case(true, PinState::High)]
+    #[case(false, PinState::Low)]
+    fn drive_in(mut reg: InputPin, #[case] istate: bool, #[case] ostate: PinState) {
+        reg.drive_in(istate);
+        assert_eq!(reg.state().unwrap(), ostate);
+    }
+
+    #[rstest]
+    fn read_bool(mut reg: InputPin, #[values(true, false)] state: bool) {
+        reg.drive_in(state);
+        assert_eq!(reg.read().unwrap(), state);
+    }
+
+    #[rstest]
+    fn read_tristate(mut reg: InputPin) {
+        reg.set_signal_in(PinState::TriState);
+        assert!(matches!(
+            reg.read().err().unwrap(),
+            RiotError::PinReadWhileTriStated { .. }
+        ));
     }
 }
