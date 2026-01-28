@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::data::pins::common::PinState;
+use crate::data::pins::state::PinState;
 
 #[derive(Error, Debug)]
 pub enum RiotError {

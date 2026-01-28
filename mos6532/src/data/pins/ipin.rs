@@ -1,4 +1,4 @@
-use crate::{RiotError, data::pins::common::PinState};
+use crate::{RiotError, data::pins::state::PinState};
 
 pub struct InputPin {
     name: String,

@@ -1,4 +1,4 @@
-use crate::{InputPin, PinState, RiotError};
+use crate::{InputPin, PinState, RiotError, data::bitutils};
 
 const BUS_SIZE: usize = 7;
 
@@ -19,18 +19,6 @@ impl AddressBus {
                 InputPin::new(String::from("A6")),
             ],
         }
-    }
-
-    fn get_bit_of_usize(val: usize, bit: usize) -> PinState {
-        PinState::from_bool((val >> bit) & 1 == 1)
-    }
-
-    fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
-        val >> bit_count != 0
-    }
-
-    fn get_low_bits_of_usize(val: usize, bit_count: usize) -> usize {
-        val & ((1 << bit_count) - 1)
     }
 
     pub fn read(&self) -> Result<usize, RiotError> {
@@ -82,7 +70,7 @@ impl AddressBus {
     }
 
     pub fn drive_value_in(&mut self, val: usize) -> Result<(), RiotError> {
-        if Self::usize_exceeds_bit_count(val, BUS_SIZE) {
+        if bitutils::usize_exceeds_bit_count(val, BUS_SIZE) {
             return Err(RiotError::BusDriveValueTooLarge {
                 name: String::from("A"),
                 value: val,
@@ -91,14 +79,16 @@ impl AddressBus {
         }
 
         for bit in 0..BUS_SIZE {
-            self.pins[bit].set_signal_in(Self::get_bit_of_usize(val, bit));
+            let b = bitutils::get_bit_of_usize(val, bit);
+            let signal = PinState::from_bool(b);
+            self.pins[bit].set_signal_in(signal);
         }
 
         Ok(())
     }
 
     pub fn drive_value_in_wrapped(&mut self, val: usize) {
-        self.drive_value_in(Self::get_low_bits_of_usize(val, BUS_SIZE))
+        self.drive_value_in(bitutils::get_low_bits_of_usize(val, BUS_SIZE))
             .unwrap();
     }
 

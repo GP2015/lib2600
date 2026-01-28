@@ -4,9 +4,9 @@ use crate::data::pins::{
 
 pub mod abus;
 pub mod cbytebus;
-pub mod common;
 pub mod cpin;
 pub mod ipin;
+pub mod state;
 
 pub struct Pins {
     pub a: AddressBus,

@@ -1,4 +1,4 @@
-use crate::error::RiotError;
+use crate::{data::bitutils, error::RiotError};
 
 pub struct MBitReg {
     name: String,
@@ -13,14 +13,6 @@ impl MBitReg {
             bits: vec![None; size],
             size,
         }
-    }
-
-    fn get_bit_of_usize(val: usize, bit: usize) -> bool {
-        (val >> bit) & 1 == 1
-    }
-
-    fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
-        val >> bit_count != 0
     }
 
     pub fn read(&self) -> Result<usize, RiotError> {
@@ -53,12 +45,12 @@ impl MBitReg {
     }
 
     pub fn write(&mut self, val: usize) {
-        if cfg!(debug_assertions) && Self::usize_exceeds_bit_count(val, self.size) {
+        if cfg!(debug_assertions) && bitutils::usize_exceeds_bit_count(val, self.size) {
             panic!("writing excessively large value to register should not be possible");
         }
 
         for bit in 0..self.size {
-            self.bits[bit] = Some(Self::get_bit_of_usize(val, bit))
+            self.bits[bit] = Some(bitutils::get_bit_of_usize(val, bit))
         }
     }
 
@@ -72,22 +64,6 @@ impl MBitReg {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
-
-    #[rstest]
-    #[case(0x101, 0, true)]
-    #[case(0x101, 1, false)]
-    #[case(0x101, 7, false)]
-    fn get_bit_of_usize(#[case] val: usize, #[case] bit: usize, #[case] res: bool) {
-        assert_eq!(MBitReg::get_bit_of_usize(val, bit), res);
-    }
-
-    #[rstest]
-    #[case(0b1011, 3, true)]
-    #[case(0b1011, 4, false)]
-    #[case(0b1011, 5, false)]
-    fn usize_exceeds_bit_count(#[case] val: usize, #[case] bit_count: usize, #[case] res: bool) {
-        assert_eq!(MBitReg::usize_exceeds_bit_count(val, bit_count), res);
-    }
 
     #[fixture]
     fn reg() -> MBitReg {

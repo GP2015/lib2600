@@ -6,8 +6,8 @@ mod riot;
 
 pub use crate::{
     data::pins::{
-        Pins, abus::AddressBus, cbytebus::ContentionByteBus, common::PinState, cpin::ContentionPin,
-        ipin::InputPin,
+        Pins, abus::AddressBus, cbytebus::ContentionByteBus, cpin::ContentionPin, ipin::InputPin,
+        state::PinState,
     },
     error::RiotError,
     riot::Riot,

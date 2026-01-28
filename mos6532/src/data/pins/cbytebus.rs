@@ -1,4 +1,4 @@
-use crate::{ContentionPin, PinState, RiotError};
+use crate::{ContentionPin, PinState, RiotError, data::bitutils};
 
 const BUS_SIZE: usize = 7;
 
@@ -22,10 +22,6 @@ impl ContentionByteBus {
                 ContentionPin::new(format!("{}7", name)),
             ],
         }
-    }
-
-    fn get_bit_of_u8(val: u8, bit: usize) -> PinState {
-        PinState::from_bool((val >> bit) & 1 == 1)
     }
 
     pub fn read(&self) -> Result<u8, RiotError> {
@@ -78,7 +74,9 @@ impl ContentionByteBus {
 
     pub fn drive_value_in(&mut self, val: u8) -> Result<(), RiotError> {
         for bit in 0..BUS_SIZE {
-            self.pins[bit].set_signal_in(Self::get_bit_of_u8(val, bit))?;
+            let b = bitutils::get_bit_of_u8(val, bit);
+            let signal = PinState::from_bool(b);
+            self.pins[bit].set_signal_in(signal)?;
         }
 
         Ok(())
@@ -86,7 +84,9 @@ impl ContentionByteBus {
 
     pub(crate) fn drive_value_out(&mut self, val: u8) -> Result<(), RiotError> {
         for bit in 0..BUS_SIZE {
-            self.pins[bit].set_signal_out(Self::get_bit_of_u8(val, bit))?;
+            let b = bitutils::get_bit_of_u8(val, bit);
+            let signal = PinState::from_bool(b);
+            self.pins[bit].set_signal_out(signal)?;
         }
 
         Ok(())

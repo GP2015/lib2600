@@ -1,4 +1,4 @@
-use crate::{data::pins::common::PinState, error::RiotError};
+use crate::{data::pins::state::PinState, error::RiotError};
 
 pub struct ContentionPin {
     name: String,
