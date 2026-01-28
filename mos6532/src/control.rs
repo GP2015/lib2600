@@ -150,114 +150,114 @@ impl Riot {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use rstest::{fixture, rstest};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::{fixture, rstest};
 
-//     #[fixture]
-//     fn riot() -> Riot {
-//         Riot::new()
-//     }
+    #[fixture]
+    fn riot() -> Riot {
+        Riot::new()
+    }
 
-//     #[rstest]
-//     fn address_ram(mut riot: Riot) {
-//         riot.write_rs(false);
-//         riot.write_rw(false);
-//         assert_eq!(riot.decode_instruction().unwrap(), Instruction::WriteRam);
-//         riot.write_rw(true);
-//         assert_eq!(riot.decode_instruction().unwrap(), Instruction::ReadRam);
-//     }
+    #[rstest]
+    #[case(false, Instruction::WriteRam)]
+    #[case(true, Instruction::ReadRam)]
+    fn address_ram(mut riot: Riot, #[case] rw: bool, #[case] res: Instruction) {
+        riot.pin.rs.drive_in(false);
+        riot.pin.rw.drive_in(rw);
+        assert_eq!(riot.decode_instruction().unwrap(), res);
+    }
 
-//     fn address_io(instr: Instruction, rw: bool, a1: bool, a0: bool) {
-//         let mut riot = Riot::new();
-//         riot.write_rs(true);
-//         riot.write_rw(rw);
-//         riot.write_a_bit(2, false).unwrap();
-//         riot.write_a_bit(1, a1).unwrap();
-//         riot.write_a_bit(0, a0).unwrap();
-//         assert_eq!(riot.decode_instruction().unwrap(), instr);
-//     }
+    #[rstest]
+    #[case(false, false, true, Instruction::WriteDdra)]
+    #[case(true, false, true, Instruction::ReadDdra)]
+    #[case(false, true, true, Instruction::WriteDdrb)]
+    #[case(true, true, true, Instruction::ReadDdrb)]
+    #[case(false, false, false, Instruction::WriteOra)]
+    #[case(true, false, false, Instruction::ReadOra)]
+    #[case(false, true, false, Instruction::WriteOrb)]
+    #[case(true, true, false, Instruction::ReadOrb)]
+    fn address_io(
+        #[case] rw: bool,
+        #[case] a1: bool,
+        #[case] a0: bool,
+        #[case] instr: Instruction,
+    ) {
+        let mut riot = Riot::new();
+        riot.pin.rs.drive_in(true);
+        riot.pin.rw.drive_in(rw);
+        riot.pin.a.drive_in_bit(2, false).unwrap();
+        riot.pin.a.drive_in_bit(1, a1).unwrap();
+        riot.pin.a.drive_in_bit(0, a0).unwrap();
+        assert_eq!(riot.decode_instruction().unwrap(), instr);
+    }
 
-//     #[test]
-//     fn address_ddrs() {
-//         address_io(Instruction::WriteDdra, false, false, true);
-//         address_io(Instruction::ReadDdra, true, false, true);
-//         address_io(Instruction::WriteDdrb, false, true, true);
-//         address_io(Instruction::ReadDdrb, true, true, true);
-//     }
+    #[rstest]
+    #[case(false, false, false, Instruction::WriteTimer1T { enable_irq: false })]
+    #[case(false, false, true, Instruction::WriteTimer1T { enable_irq: true })]
+    #[case(false, true, false, Instruction::WriteTimer8T { enable_irq: false })]
+    #[case(false, true, true, Instruction::WriteTimer8T { enable_irq: true })]
+    #[case(true, false, false, Instruction::WriteTimer64T { enable_irq: false })]
+    #[case(true, false, true, Instruction::WriteTimer64T { enable_irq: true })]
+    #[case(true, true, false, Instruction::WriteTimer1024T { enable_irq: false })]
+    #[case(true, true, true, Instruction::WriteTimer1024T { enable_irq: true })]
+    fn address_write_timer(
+        #[case] a1: bool,
+        #[case] a0: bool,
+        #[case] enable_irq: bool,
+        #[case] instr: Instruction,
+    ) {
+        let mut riot = Riot::new();
+        riot.pin.rs.drive_in(true);
+        riot.pin.rw.drive_in(false);
+        riot.pin.a.drive_in_bit(4, true).unwrap();
+        riot.pin.a.drive_in_bit(3, enable_irq).unwrap();
+        riot.pin.a.drive_in_bit(2, true).unwrap();
+        riot.pin.a.drive_in_bit(1, a1).unwrap();
+        riot.pin.a.drive_in_bit(0, a0).unwrap();
+        assert_eq!(riot.decode_instruction().unwrap(), instr);
+    }
 
-//     #[test]
-//     fn address_ors() {
-//         address_io(Instruction::WriteOra, false, false, false);
-//         address_io(Instruction::ReadOra, true, false, false);
-//         address_io(Instruction::WriteOrb, false, true, false);
-//         address_io(Instruction::ReadOrb, true, true, false);
-//     }
+    #[rstest]
+    fn address_read_timer(mut riot: Riot, #[values(false, true)] enable_irq: bool) {
+        riot.pin.rs.drive_in(true);
+        riot.pin.rw.drive_in(true);
+        riot.pin.a.drive_in_bit(3, enable_irq).unwrap();
+        riot.pin.a.drive_in_bit(2, true).unwrap();
+        riot.pin.a.drive_in_bit(0, false).unwrap();
+        let instruction = Instruction::ReadTimer { enable_irq };
+        assert_eq!(instruction, riot.decode_instruction().unwrap(),);
+    }
 
-//     fn address_write_timer(instr: Instruction, enable_irq: bool, a1: bool, a0: bool) {
-//         let mut riot = Riot::new();
-//         riot.write_rs(true);
-//         riot.write_rw(false);
-//         riot.write_a_bit(4, true).unwrap();
-//         riot.write_a_bit(3, enable_irq).unwrap();
-//         riot.write_a_bit(2, true).unwrap();
-//         riot.write_a_bit(1, a1).unwrap();
-//         riot.write_a_bit(0, a0).unwrap();
-//         assert_eq!(riot.decode_instruction().unwrap(), instr);
-//     }
+    #[rstest]
+    fn address_read_interrupt_flag(mut riot: Riot) {
+        riot.pin.rs.drive_in(true);
+        riot.pin.rw.drive_in(true);
+        riot.pin.a.drive_in_bit(2, true).unwrap();
+        riot.pin.a.drive_in_bit(0, true).unwrap();
+        let instruction = Instruction::ReadInterruptFlag;
+        assert_eq!(instruction, riot.decode_instruction().unwrap());
+    }
 
-//     #[rstest]
-//     fn address_write_timers(#[values(false, true)] enable_irq: bool) {
-//         let instruction = Instruction::WriteTimer1T { enable_irq };
-//         address_write_timer(instruction, enable_irq, false, false);
-//         let instruction = Instruction::WriteTimer8T { enable_irq };
-//         address_write_timer(instruction, enable_irq, false, true);
-//         let instruction = Instruction::WriteTimer64T { enable_irq };
-//         address_write_timer(instruction, enable_irq, true, false);
-//         let instruction = Instruction::WriteTimer1024T { enable_irq };
-//         address_write_timer(instruction, enable_irq, true, true);
-//     }
+    #[rstest]
+    fn address_write_edc(
+        mut riot: Riot,
+        #[values(false, true)] enable_irq: bool,
+        #[values(false, true)] use_pos_edge: bool,
+    ) {
+        riot.pin.rs.drive_in(true);
+        riot.pin.rw.drive_in(false);
+        riot.pin.a.drive_in_bit(4, false).unwrap();
+        riot.pin.a.drive_in_bit(2, true).unwrap();
+        riot.pin.a.drive_in_bit(1, enable_irq).unwrap();
+        riot.pin.a.drive_in_bit(0, use_pos_edge).unwrap();
 
-//     #[rstest]
-//     fn address_read_timer(mut riot: Riot, #[values(false, true)] enable_irq: bool) {
-//         riot.write_rs(true);
-//         riot.write_rw(true);
-//         riot.write_a_bit(3, enable_irq).unwrap();
-//         riot.write_a_bit(2, true).unwrap();
-//         riot.write_a_bit(0, false).unwrap();
-//         let instruction = Instruction::ReadTimer { enable_irq };
-//         assert_eq!(instruction, riot.decode_instruction().unwrap(),);
-//     }
+        let instruction = Instruction::WriteEdc {
+            enable_irq,
+            use_pos_edge,
+        };
 
-//     #[rstest]
-//     fn address_read_interrupt_flag(mut riot: Riot) {
-//         riot.write_rs(true);
-//         riot.write_rw(true);
-//         riot.write_a_bit(2, true).unwrap();
-//         riot.write_a_bit(0, true).unwrap();
-//         let instruction = Instruction::ReadInterruptFlag;
-//         assert_eq!(instruction, riot.decode_instruction().unwrap());
-//     }
-
-//     #[rstest]
-//     fn address_write_edc(
-//         mut riot: Riot,
-//         #[values(false, true)] enable_irq: bool,
-//         #[values(false, true)] use_pos_edge: bool,
-//     ) {
-//         riot.write_rs(true);
-//         riot.write_rw(false);
-//         riot.write_a_bit(4, false).unwrap();
-//         riot.write_a_bit(2, true).unwrap();
-//         riot.write_a_bit(1, enable_irq).unwrap();
-//         riot.write_a_bit(0, use_pos_edge).unwrap();
-
-//         let instruction = Instruction::WriteEdc {
-//             enable_irq,
-//             use_pos_edge,
-//         };
-
-//         assert_eq!(instruction, riot.decode_instruction().unwrap());
-//     }
-// }
+        assert_eq!(instruction, riot.decode_instruction().unwrap());
+    }
+}
