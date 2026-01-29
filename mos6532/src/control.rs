@@ -179,12 +179,12 @@ mod tests {
     #[case(false, true, false, Instruction::WriteOrb)]
     #[case(true, true, false, Instruction::ReadOrb)]
     fn address_io(
+        mut riot: Riot,
         #[case] rw: bool,
         #[case] a1: bool,
         #[case] a0: bool,
         #[case] instr: Instruction,
     ) {
-        let mut riot = Riot::new();
         riot.pin.rs.drive_in(true);
         riot.pin.rw.drive_in(rw);
         riot.pin.a.drive_in_bit(2, false).unwrap();
@@ -203,12 +203,12 @@ mod tests {
     #[case(true, true, false, Instruction::WriteTimer1024T { enable_irq: false })]
     #[case(true, true, true, Instruction::WriteTimer1024T { enable_irq: true })]
     fn address_write_timer(
+        mut riot: Riot,
         #[case] a1: bool,
         #[case] a0: bool,
         #[case] enable_irq: bool,
         #[case] instr: Instruction,
     ) {
-        let mut riot = Riot::new();
         riot.pin.rs.drive_in(true);
         riot.pin.rw.drive_in(false);
         riot.pin.a.drive_in_bit(4, true).unwrap();
