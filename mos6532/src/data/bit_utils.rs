@@ -2,10 +2,6 @@ pub fn get_bit_of_usize(val: usize, bit: usize) -> bool {
     (val >> bit) & 1 == 1
 }
 
-pub fn get_bit_of_u8(val: u8, bit: usize) -> bool {
-    (val >> bit) & 1 == 1
-}
-
 pub fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
     val >> bit_count != 0
 }
@@ -25,14 +21,6 @@ mod tests {
     #[case(0b101, 7, false)]
     fn get_bit_of_usize_t(#[case] val: usize, #[case] bit: usize, #[case] res: bool) {
         assert_eq!(get_bit_of_usize(val, bit), res);
-    }
-
-    #[rstest]
-    #[case(0b101, 0, true)]
-    #[case(0b101, 1, false)]
-    #[case(0b101, 7, false)]
-    fn get_bit_of_u8_t(#[case] val: u8, #[case] bit: usize, #[case] res: bool) {
-        assert_eq!(get_bit_of_u8(val, bit), res);
     }
 
     #[rstest]
