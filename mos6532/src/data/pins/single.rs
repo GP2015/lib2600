@@ -8,7 +8,7 @@ pub trait SinglePin {
     fn state(&self) -> Option<PinState>;
     fn set_signal_in(&mut self, state: PinState) -> Result<(), RiotError>;
     fn drive_in(&mut self, state: bool) -> Result<(), RiotError>;
-    fn tristate_in(&mut self);
+    fn tri_state_in(&mut self);
 }
 
 pub trait SinglePinNew {
@@ -18,5 +18,5 @@ pub trait SinglePinNew {
 pub trait SinglePinOutput {
     fn set_signal_out(&mut self, state: PinState) -> Result<(), RiotError>;
     fn drive_out(&mut self, state: bool) -> Result<(), RiotError>;
-    fn tristate_out(&mut self);
+    fn tri_state_out(&mut self);
 }

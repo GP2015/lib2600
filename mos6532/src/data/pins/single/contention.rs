@@ -90,7 +90,7 @@ impl SinglePin for ContentionPin {
 
     fn set_signal_in(&mut self, state: PinState) -> Result<(), RiotError> {
         if matches!(state, PinState::TriState) {
-            self.tristate_in();
+            self.tri_state_in();
             Ok(())
         } else {
             self.set_signal_in_bool_state(state)
@@ -101,7 +101,7 @@ impl SinglePin for ContentionPin {
         self.set_signal_in_bool_state(PinState::from_bool(state))
     }
 
-    fn tristate_in(&mut self) {
+    fn tri_state_in(&mut self) {
         self.driving_in = false;
         if !self.driving_out {
             self.state = Some(PinState::TriState);
@@ -112,7 +112,7 @@ impl SinglePin for ContentionPin {
 impl SinglePinOutput for ContentionPin {
     fn set_signal_out(&mut self, state: PinState) -> Result<(), RiotError> {
         if matches!(state, PinState::TriState) {
-            self.tristate_out();
+            self.tri_state_out();
             Ok(())
         } else {
             self.set_signal_out_bool_state(state)
@@ -123,7 +123,7 @@ impl SinglePinOutput for ContentionPin {
         self.set_signal_out_bool_state(PinState::from_bool(state))
     }
 
-    fn tristate_out(&mut self) {
+    fn tri_state_out(&mut self) {
         self.driving_out = false;
         if !self.driving_in {
             self.state = Some(PinState::TriState);
@@ -142,9 +142,9 @@ mod tests {
     }
 
     #[fixture]
-    fn reg_tristate_out() -> ContentionPin {
+    fn reg_tri_state_out() -> ContentionPin {
         let mut reg = ContentionPin::new(String::new());
-        reg.tristate_out();
+        reg.tri_state_out();
         reg
     }
 
@@ -169,8 +169,8 @@ mod tests {
     }
 
     #[rstest]
-    fn initial_tristate_in(#[from(reg_default)] mut reg: ContentionPin) {
-        reg.tristate_in();
+    fn initial_tri_state_in(#[from(reg_default)] mut reg: ContentionPin) {
+        reg.tri_state_in();
         assert_eq!(reg.state(), None);
         assert!(matches!(
             reg.read().err().unwrap(),
@@ -194,8 +194,8 @@ mod tests {
     }
 
     #[rstest]
-    fn read_tristate(#[from(reg_default)] mut reg: ContentionPin) {
-        reg.tristate_out();
+    fn read_tri_state(#[from(reg_default)] mut reg: ContentionPin) {
+        reg.tri_state_out();
         assert!(matches!(
             reg.read().err().unwrap(),
             RiotError::PinReadWhileTriStated { .. }
@@ -209,7 +209,7 @@ mod tests {
     #[case(PinState::TriState, PinState::High, PinState::High)]
     #[case(PinState::TriState, PinState::Low, PinState::Low)]
     fn safe_bool_reads(
-        #[from(reg_tristate_out)] mut reg: ContentionPin,
+        #[from(reg_tri_state_out)] mut reg: ContentionPin,
         #[case] istate: PinState,
         #[case] ostate: PinState,
         #[case] state: PinState,
@@ -223,7 +223,7 @@ mod tests {
     #[case(true, PinState::High)]
     #[case(false, PinState::Low)]
     fn drive_in(
-        #[from(reg_tristate_out)] mut reg: ContentionPin,
+        #[from(reg_tri_state_out)] mut reg: ContentionPin,
         #[case] istate: bool,
         #[case] ostate: PinState,
     ) {
@@ -244,14 +244,14 @@ mod tests {
     }
 
     #[rstest]
-    fn tristate_in(#[from(reg_tristate_out)] mut reg: ContentionPin) {
-        reg.tristate_in();
+    fn tri_state_in(#[from(reg_tri_state_out)] mut reg: ContentionPin) {
+        reg.tri_state_in();
         assert_eq!(reg.state().unwrap(), PinState::TriState);
     }
 
     #[rstest]
-    fn tristate_out(#[from(reg_default)] mut reg: ContentionPin) {
-        reg.tristate_out();
+    fn tri_state_out(#[from(reg_default)] mut reg: ContentionPin) {
+        reg.tri_state_out();
         assert_eq!(reg.state().unwrap(), PinState::TriState);
     }
 
@@ -263,7 +263,7 @@ mod tests {
         reg.drive_out(state).unwrap();
         reg.drive_in(state).unwrap();
         assert_eq!(reg.read().unwrap(), state);
-        reg.tristate_out();
+        reg.tri_state_out();
         reg.drive_in(!state).unwrap();
         reg.drive_out(!state).unwrap();
         assert_eq!(reg.read().unwrap(), !state);
@@ -283,7 +283,7 @@ mod tests {
 
     #[rstest]
     fn out_short_circuit(
-        #[from(reg_tristate_out)] mut reg: ContentionPin,
+        #[from(reg_tri_state_out)] mut reg: ContentionPin,
         #[values(true, false)] state: bool,
     ) {
         reg.drive_in(state).unwrap();

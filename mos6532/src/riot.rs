@@ -52,6 +52,6 @@ impl Riot {
     }
 
     pub fn release_db(&mut self) {
-        self.pin.db.tristate_out();
+        self.pin.db.tri_state_out();
     }
 }

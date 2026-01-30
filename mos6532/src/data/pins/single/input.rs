@@ -48,7 +48,7 @@ impl SinglePin for InputPin {
         Ok(())
     }
 
-    fn tristate_in(&mut self) {
+    fn tri_state_in(&mut self) {
         self.state = Some(PinState::TriState);
     }
 }
@@ -90,8 +90,8 @@ mod tests {
     }
 
     #[rstest]
-    fn tristate_in(mut reg: InputPin) {
-        reg.tristate_in();
+    fn tri_state_in(mut reg: InputPin) {
+        reg.tri_state_in();
         assert_eq!(reg.state().unwrap(), PinState::TriState);
     }
 
@@ -102,8 +102,8 @@ mod tests {
     }
 
     #[rstest]
-    fn read_tristate(mut reg: InputPin) {
-        reg.tristate_in();
+    fn read_tri_state(mut reg: InputPin) {
+        reg.tri_state_in();
         assert!(matches!(
             reg.read().err().unwrap(),
             RiotError::PinReadWhileTriStated { .. }
