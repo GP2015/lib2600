@@ -1,4 +1,10 @@
-use crate::{data::pins::state::PinState, error::RiotError};
+use crate::{
+    data::pins::{
+        single::{SinglePin, SinglePinNew, SinglePinOutput},
+        state::PinState,
+    },
+    error::RiotError,
+};
 
 pub struct ContentionPin {
     name: String,
@@ -8,75 +14,6 @@ pub struct ContentionPin {
 }
 
 impl ContentionPin {
-    pub(crate) fn new(name: String) -> Self {
-        Self {
-            name,
-            state: None,
-            driving_in: false,
-            driving_out: true,
-        }
-    }
-
-    pub fn read(&self) -> Result<bool, RiotError> {
-        let Some(state) = self.state else {
-            return Err(RiotError::PinUninitialised {
-                name: self.name.clone(),
-            });
-        };
-
-        match state {
-            PinState::High => Ok(true),
-            PinState::Low => Ok(false),
-            PinState::TriState => Err(RiotError::PinReadWhileTriStated {
-                name: self.name.clone(),
-            }),
-        }
-    }
-
-    pub fn state(&self) -> Option<PinState> {
-        self.state
-    }
-
-    pub fn set_signal_in(&mut self, state: PinState) -> Result<(), RiotError> {
-        if matches!(state, PinState::TriState) {
-            self.tristate_in();
-            Ok(())
-        } else {
-            self.set_signal_in_bool_state(state)
-        }
-    }
-
-    pub(crate) fn set_signal_out(&mut self, state: PinState) -> Result<(), RiotError> {
-        if matches!(state, PinState::TriState) {
-            self.tristate_out();
-            Ok(())
-        } else {
-            self.set_signal_out_bool_state(state)
-        }
-    }
-
-    pub fn drive_in(&mut self, state: bool) -> Result<(), RiotError> {
-        self.set_signal_in_bool_state(PinState::from_bool(state))
-    }
-
-    pub(crate) fn drive_out(&mut self, state: bool) -> Result<(), RiotError> {
-        self.set_signal_out_bool_state(PinState::from_bool(state))
-    }
-
-    pub fn tristate_in(&mut self) {
-        self.driving_in = false;
-        if !self.driving_out {
-            self.state = Some(PinState::TriState);
-        }
-    }
-
-    pub(crate) fn tristate_out(&mut self) {
-        self.driving_out = false;
-        if !self.driving_in {
-            self.state = Some(PinState::TriState);
-        }
-    }
-
     fn set_signal_in_bool_state(&mut self, state: PinState) -> Result<(), RiotError> {
         if self.driving_out {
             let Some(current_state) = self.state else {
@@ -116,6 +53,81 @@ impl ContentionPin {
         self.driving_out = true;
         self.state = Some(state);
         Ok(())
+    }
+}
+
+impl SinglePinNew for ContentionPin {
+    fn new(name: String) -> Self {
+        Self {
+            name,
+            state: None,
+            driving_in: false,
+            driving_out: true,
+        }
+    }
+}
+
+impl SinglePin for ContentionPin {
+    fn read(&self) -> Result<bool, RiotError> {
+        let Some(state) = self.state else {
+            return Err(RiotError::PinUninitialised {
+                name: self.name.clone(),
+            });
+        };
+
+        match state {
+            PinState::High => Ok(true),
+            PinState::Low => Ok(false),
+            PinState::TriState => Err(RiotError::PinReadWhileTriStated {
+                name: self.name.clone(),
+            }),
+        }
+    }
+
+    fn state(&self) -> Option<PinState> {
+        self.state
+    }
+
+    fn set_signal_in(&mut self, state: PinState) -> Result<(), RiotError> {
+        if matches!(state, PinState::TriState) {
+            self.tristate_in();
+            Ok(())
+        } else {
+            self.set_signal_in_bool_state(state)
+        }
+    }
+
+    fn drive_in(&mut self, state: bool) -> Result<(), RiotError> {
+        self.set_signal_in_bool_state(PinState::from_bool(state))
+    }
+
+    fn tristate_in(&mut self) {
+        self.driving_in = false;
+        if !self.driving_out {
+            self.state = Some(PinState::TriState);
+        }
+    }
+}
+
+impl SinglePinOutput for ContentionPin {
+    fn set_signal_out(&mut self, state: PinState) -> Result<(), RiotError> {
+        if matches!(state, PinState::TriState) {
+            self.tristate_out();
+            Ok(())
+        } else {
+            self.set_signal_out_bool_state(state)
+        }
+    }
+
+    fn drive_out(&mut self, state: bool) -> Result<(), RiotError> {
+        self.set_signal_out_bool_state(PinState::from_bool(state))
+    }
+
+    fn tristate_out(&mut self) {
+        self.driving_out = false;
+        if !self.driving_in {
+            self.state = Some(PinState::TriState);
+        }
     }
 }
 

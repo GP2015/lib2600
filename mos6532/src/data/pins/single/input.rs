@@ -1,16 +1,24 @@
-use crate::{RiotError, data::pins::state::PinState};
+use crate::{
+    RiotError,
+    data::pins::{
+        single::{SinglePin, SinglePinNew},
+        state::PinState,
+    },
+};
 
 pub struct InputPin {
     name: String,
     state: Option<PinState>,
 }
 
-impl InputPin {
-    pub(crate) fn new(name: String) -> Self {
+impl SinglePinNew for InputPin {
+    fn new(name: String) -> Self {
         Self { name, state: None }
     }
+}
 
-    pub fn read(&self) -> Result<bool, RiotError> {
+impl SinglePin for InputPin {
+    fn read(&self) -> Result<bool, RiotError> {
         let Some(state) = self.state else {
             return Err(RiotError::PinUninitialised {
                 name: self.name.clone(),
@@ -26,19 +34,21 @@ impl InputPin {
         }
     }
 
-    pub fn state(&self) -> Option<PinState> {
+    fn state(&self) -> Option<PinState> {
         self.state
     }
 
-    pub fn set_signal_in(&mut self, state: PinState) {
+    fn set_signal_in(&mut self, state: PinState) -> Result<(), RiotError> {
         self.state = Some(state);
+        Ok(())
     }
 
-    pub fn drive_in(&mut self, state: bool) {
+    fn drive_in(&mut self, state: bool) -> Result<(), RiotError> {
         self.state = Some(PinState::from_bool(state));
+        Ok(())
     }
 
-    pub fn tristate_in(&mut self) {
+    fn tristate_in(&mut self) {
         self.state = Some(PinState::TriState);
     }
 }
