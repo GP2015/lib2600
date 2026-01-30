@@ -7,7 +7,7 @@ impl Riot {
     }
 
     pub(super) fn update_edc(&mut self) -> Result<(), RiotError> {
-        let new_pa7 = self.pin.pa().read_bit(7)?;
+        let new_pa7 = self.pin.pa.read_bit(7)?;
 
         if new_pa7 != self.reg.old_pa7.read()? && new_pa7 == self.reg.edc_use_pos_edge.read()? {
             self.reg.edc_interrupt_flag.write(true);
