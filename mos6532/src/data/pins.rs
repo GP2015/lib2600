@@ -3,8 +3,8 @@ pub mod single;
 pub mod state;
 
 use crate::data::pins::{
-    bus::{Bus, address::AddressBus, data::ContentionByteBus},
-    single::{SinglePin, SinglePinNew, contention::ContentionPin, input::InputPin},
+    bus::{address::AddressBus, data::ContentionByteBus},
+    single::{SinglePinNew, contention::ContentionPin, input::InputPin},
 };
 
 type InputPinType = InputPin;
@@ -12,25 +12,17 @@ type OutputPinType = ContentionPin;
 type AddressBusType = AddressBus<InputPin>;
 type TwoWayBusType = ContentionByteBus<ContentionPin>;
 
-macro_rules! pin_getter {
-    ($name:ident, $obj:ident) => {
-        pub fn $name(&mut self) -> &mut impl $obj {
-            &mut self.$name
-        }
-    };
-}
-
 pub struct Pins {
-    pub(crate) a: AddressBusType,
-    pub(crate) db: TwoWayBusType,
-    pub(crate) pa: TwoWayBusType,
-    pub(crate) pb: TwoWayBusType,
-    pub(crate) res: InputPinType,
-    pub(crate) cs1: InputPinType,
-    pub(crate) cs2: InputPinType,
-    pub(crate) rs: InputPinType,
-    pub(crate) rw: InputPinType,
-    pub(crate) irq: OutputPinType,
+    pub a: AddressBusType,
+    pub db: TwoWayBusType,
+    pub pa: TwoWayBusType,
+    pub pb: TwoWayBusType,
+    pub res: InputPinType,
+    pub cs1: InputPinType,
+    pub cs2: InputPinType,
+    pub rs: InputPinType,
+    pub rw: InputPinType,
+    pub irq: OutputPinType,
 }
 
 impl Pins {
@@ -48,15 +40,4 @@ impl Pins {
             irq: OutputPinType::new(String::from("/IRQ")),
         }
     }
-
-    pin_getter!(a, Bus);
-    pin_getter!(db, Bus);
-    pin_getter!(pa, Bus);
-    pin_getter!(pb, Bus);
-    pin_getter!(res, SinglePin);
-    pin_getter!(cs1, SinglePin);
-    pin_getter!(cs2, SinglePin);
-    pin_getter!(rw, SinglePin);
-    pin_getter!(rs, SinglePin);
-    pin_getter!(irq, SinglePin);
 }
