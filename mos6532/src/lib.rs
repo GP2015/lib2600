@@ -5,7 +5,7 @@ mod helpers;
 mod riot;
 
 pub use crate::{
-    data::pins::{bus::Bus, single::SinglePin, state::PinState},
+    data::pins::{Pins, bus::Bus, single::SinglePin, state::PinState},
     error::RiotError,
     riot::Riot,
 };
