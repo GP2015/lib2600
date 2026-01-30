@@ -3,14 +3,14 @@ pub mod single;
 pub mod state;
 
 use crate::data::pins::{
-    bus::{address::AddressBus, data::ContentionByteBus},
+    bus::{address::AddressBus, data::DataBus},
     single::{SinglePinNew, contention::ContentionPin, input::InputPin},
 };
 
 type InputPinType = InputPin;
 type OutputPinType = ContentionPin;
 type AddressBusType = AddressBus<InputPin>;
-type TwoWayBusType = ContentionByteBus<ContentionPin>;
+type TwoWayBusType = DataBus<ContentionPin>;
 
 pub struct Pins {
     pub a: AddressBusType,

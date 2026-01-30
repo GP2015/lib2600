@@ -9,13 +9,13 @@ use crate::{
     },
 };
 
-pub struct ContentionByteBus<T> {
+pub struct DataBus<T> {
     name: String,
     size: usize,
     pins: Vec<T>,
 }
 
-impl<T> ContentionByteBus<T>
+impl<T> DataBus<T>
 where
     T: SinglePinNew,
 {
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<T> Bus for ContentionByteBus<T>
+impl<T> Bus for DataBus<T>
 where
     T: SinglePin,
 {
@@ -128,7 +128,7 @@ where
     }
 }
 
-impl<T> BusOutput for ContentionByteBus<T>
+impl<T> BusOutput for DataBus<T>
 where
     T: SinglePinOutput,
 {
