@@ -1,5 +1,5 @@
 mod common;
-use mos6532::Riot;
+use mos6532::{Bus, Riot, SinglePin};
 use rstest::rstest;
 
 #[rstest]
@@ -10,25 +10,25 @@ fn read_write_ram_success(#[from(common::riot_post_reset)] mut riot: Riot) {
 
 #[rstest]
 fn read_write_ram_success_manual(#[from(common::riot_post_reset_select)] mut riot: Riot) {
-    riot.write_rs(false);
-    riot.write_rw(false);
-    riot.write_a(0x45).unwrap();
-    riot.write_db(0x67);
+    riot.rs().drive_in(false).unwrap();
+    riot.rw().drive_in(false).unwrap();
+    riot.a().drive_value_in(0x45).unwrap();
+    riot.db().drive_value_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.write_rw(true);
-    riot.write_db(0x89);
+    riot.rw().drive_in(true).unwrap();
+    riot.db().drive_value_in(0x89).unwrap();
     riot.pulse_phi2().unwrap();
-    assert_eq!(riot.read_db().unwrap(), 0x67);
+    assert_eq!(riot.db().read().unwrap(), 0x67);
 }
 
 #[rstest]
 fn write_ram_deselected(#[from(common::riot_post_reset_select)] mut riot: Riot) {
-    riot.write_cs1(false);
-    riot.write_rs(false);
-    riot.write_rw(false);
-    riot.write_a(0x45).unwrap();
-    riot.write_db(0x67);
+    riot.cs1().drive_in(false).unwrap();
+    riot.rs().drive_in(false).unwrap();
+    riot.rw().drive_in(false).unwrap();
+    riot.a().drive_value_in(0x45).unwrap();
+    riot.db().drive_value_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert!(riot.read_ram_pulse(0x45).is_err());
 }
@@ -37,11 +37,11 @@ fn write_ram_deselected(#[from(common::riot_post_reset_select)] mut riot: Riot) 
 fn read_ram_deselected(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
 
-    riot.write_db(0x89);
-    riot.write_cs1(false);
-    riot.write_rw(true);
+    riot.db().drive_value_in(0x89).unwrap();
+    riot.cs1().drive_in(false).unwrap();
+    riot.rw().drive_in(true).unwrap();
     riot.pulse_phi2().unwrap();
-    assert_eq!(riot.read_db().unwrap(), 0x89);
+    assert_eq!(riot.db().read().unwrap(), 0x89);
 }
 
 #[rstest]

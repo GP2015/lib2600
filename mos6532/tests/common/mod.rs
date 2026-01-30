@@ -1,19 +1,19 @@
-use mos6532::Riot;
+use mos6532::{Bus, Riot, SinglePin};
 use rstest::fixture;
 
 #[allow(dead_code)]
 #[fixture]
 pub fn riot_post_reset() -> Riot {
     let mut riot = Riot::new();
-    riot.write_pa_bit(7, false);
+    riot.pa().drive_in_bit(7, false).unwrap();
     riot.reset_pulse().unwrap();
-    riot.write_res(true);
+    riot.res().drive_in(true).unwrap();
     riot
 }
 
 #[allow(dead_code)]
 #[fixture]
 pub fn riot_post_reset_select(#[from(riot_post_reset)] mut riot: Riot) -> Riot {
-    riot.select();
+    riot.select().unwrap();
     riot
 }
