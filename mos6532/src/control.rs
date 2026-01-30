@@ -4,7 +4,10 @@ mod misc;
 mod ram;
 mod timer;
 
-use crate::{Riot, RiotError};
+use crate::{
+    Riot, RiotError,
+    data::pins::{bus::Bus, single::SinglePin},
+};
 
 #[derive(PartialEq, Debug)]
 enum Instruction {
@@ -164,8 +167,8 @@ mod tests {
     #[case(false, Instruction::WriteRam)]
     #[case(true, Instruction::ReadRam)]
     fn address_ram(mut riot: Riot, #[case] rw: bool, #[case] res: Instruction) {
-        riot.pin.rs.drive_in(false);
-        riot.pin.rw.drive_in(rw);
+        riot.pin.rs.drive_in(false).unwrap();
+        riot.pin.rw.drive_in(rw).unwrap();
         assert_eq!(riot.decode_instruction().unwrap(), res);
     }
 
@@ -185,8 +188,8 @@ mod tests {
         #[case] a0: bool,
         #[case] instr: Instruction,
     ) {
-        riot.pin.rs.drive_in(true);
-        riot.pin.rw.drive_in(rw);
+        riot.pin.rs.drive_in(true).unwrap();
+        riot.pin.rw.drive_in(rw).unwrap();
         riot.pin.a.drive_in_bit(2, false).unwrap();
         riot.pin.a.drive_in_bit(1, a1).unwrap();
         riot.pin.a.drive_in_bit(0, a0).unwrap();
@@ -209,8 +212,8 @@ mod tests {
         #[case] enable_irq: bool,
         #[case] instr: Instruction,
     ) {
-        riot.pin.rs.drive_in(true);
-        riot.pin.rw.drive_in(false);
+        riot.pin.rs.drive_in(true).unwrap();
+        riot.pin.rw.drive_in(false).unwrap();
         riot.pin.a.drive_in_bit(4, true).unwrap();
         riot.pin.a.drive_in_bit(3, enable_irq).unwrap();
         riot.pin.a.drive_in_bit(2, true).unwrap();
@@ -221,8 +224,8 @@ mod tests {
 
     #[rstest]
     fn address_read_timer(mut riot: Riot, #[values(false, true)] enable_irq: bool) {
-        riot.pin.rs.drive_in(true);
-        riot.pin.rw.drive_in(true);
+        riot.pin.rs.drive_in(true).unwrap();
+        riot.pin.rw.drive_in(true).unwrap();
         riot.pin.a.drive_in_bit(3, enable_irq).unwrap();
         riot.pin.a.drive_in_bit(2, true).unwrap();
         riot.pin.a.drive_in_bit(0, false).unwrap();
@@ -232,8 +235,8 @@ mod tests {
 
     #[rstest]
     fn address_read_interrupt_flag(mut riot: Riot) {
-        riot.pin.rs.drive_in(true);
-        riot.pin.rw.drive_in(true);
+        riot.pin.rs.drive_in(true).unwrap();
+        riot.pin.rw.drive_in(true).unwrap();
         riot.pin.a.drive_in_bit(2, true).unwrap();
         riot.pin.a.drive_in_bit(0, true).unwrap();
         let instruction = Instruction::ReadInterruptFlag;
@@ -246,8 +249,8 @@ mod tests {
         #[values(false, true)] enable_irq: bool,
         #[values(false, true)] use_pos_edge: bool,
     ) {
-        riot.pin.rs.drive_in(true);
-        riot.pin.rw.drive_in(false);
+        riot.pin.rs.drive_in(true).unwrap();
+        riot.pin.rw.drive_in(false).unwrap();
         riot.pin.a.drive_in_bit(4, false).unwrap();
         riot.pin.a.drive_in_bit(2, true).unwrap();
         riot.pin.a.drive_in_bit(1, enable_irq).unwrap();

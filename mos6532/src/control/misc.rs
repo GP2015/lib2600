@@ -1,4 +1,7 @@
-use crate::{Riot, RiotError};
+use crate::{
+    Riot, RiotError,
+    data::pins::bus::{Bus, BusOutput},
+};
 
 impl Riot {
     pub(super) fn reset(&mut self) -> Result<(), RiotError> {
@@ -23,7 +26,7 @@ impl Riot {
         let timer_flag_usize = self.reg.timer_flag.read()? as usize;
         let interrupt_reg = (edc_interrupt_flag_usize << 7) | (timer_flag_usize << 6);
 
-        self.pin.db.drive_value_out(interrupt_reg as u8)?;
+        self.pin.db.drive_value_out(interrupt_reg)?;
 
         self.reg.edc_interrupt_flag.write(false);
 

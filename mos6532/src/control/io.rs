@@ -1,4 +1,7 @@
-use crate::{Riot, RiotError};
+use crate::{
+    Riot, RiotError,
+    data::pins::bus::{Bus, BusOutput},
+};
 
 const ATYPE: bool = false;
 const BTYPE: bool = true;
@@ -19,7 +22,7 @@ impl Riot {
             ATYPE => &mut self.reg.ddra,
             BTYPE => &mut self.reg.ddrb,
         }
-        .write(byte as usize);
+        .write(byte);
 
         self.update_peripheral(reg)
     }
@@ -39,7 +42,7 @@ impl Riot {
         }
         .read()?;
 
-        self.pin.db.drive_value_out(byte as u8)?;
+        self.pin.db.drive_value_out(byte)?;
         Ok(())
     }
 
@@ -58,7 +61,7 @@ impl Riot {
             ATYPE => &mut self.reg.ora,
             BTYPE => &mut self.reg.orb,
         }
-        .write(byte as usize);
+        .write(byte);
 
         self.update_peripheral(reg)
     }

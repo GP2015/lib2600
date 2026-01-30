@@ -1,6 +1,10 @@
 use crate::{
     RiotError,
-    data::{pins::Pins, ram::Ram, registers::Registers},
+    data::{
+        pins::{Pins, bus::BusOutput},
+        ram::Ram,
+        registers::Registers,
+    },
 };
 
 pub struct Riot {

@@ -77,7 +77,7 @@ mod tests {
         mut reg: InputPin,
         #[values(PinState::High, PinState::Low, PinState::TriState)] state: PinState,
     ) {
-        reg.set_signal_in(state);
+        reg.set_signal_in(state).unwrap();
         assert_eq!(reg.state().unwrap(), state);
     }
 
@@ -85,7 +85,7 @@ mod tests {
     #[case(true, PinState::High)]
     #[case(false, PinState::Low)]
     fn drive_in(mut reg: InputPin, #[case] istate: bool, #[case] ostate: PinState) {
-        reg.drive_in(istate);
+        reg.drive_in(istate).unwrap();
         assert_eq!(reg.state().unwrap(), ostate);
     }
 
@@ -97,7 +97,7 @@ mod tests {
 
     #[rstest]
     fn read_bool(mut reg: InputPin, #[values(true, false)] state: bool) {
-        reg.drive_in(state);
+        reg.drive_in(state).unwrap();
         assert_eq!(reg.read().unwrap(), state);
     }
 
