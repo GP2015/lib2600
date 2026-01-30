@@ -141,7 +141,7 @@ fn write_output_p_manual(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_value_in(0x67);
+    riot.db().drive_value_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
 }
@@ -179,7 +179,7 @@ fn write_output_p_deselected(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_value_in(0x67);
+    riot.db().drive_value_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0);
 }

@@ -12,6 +12,10 @@ fn initial_pa7(#[default(false)] state: bool) -> Riot {
 }
 
 #[rstest]
-fn edc() {
-    let riot = initial_pa7(true);
+fn edc(
+    #[from(initial_pa7)]
+    #[with(false)]
+    riot: Riot,
+) {
+    //
 }
