@@ -96,9 +96,7 @@ where
         }
 
         for bit in 0..self.size {
-            let b = bit_utils::get_bit_of_usize(val, bit);
-            let signal = PinState::from_bool(b);
-            self.pins[bit].set_signal_in(signal);
+            self.pins[bit].drive_in(bit_utils::get_bit_of_usize(val, bit))?;
         }
 
         Ok(())
@@ -110,7 +108,7 @@ where
 
     fn tristate_in(&mut self) {
         for bit in 0..self.size {
-            self.pins[bit].set_signal_in(PinState::TriState);
+            self.pins[bit].tristate_in();
         }
     }
 
@@ -123,7 +121,7 @@ where
             });
         }
 
-        self.pins[bit].set_signal_in(state);
+        self.pins[bit].set_signal_in(state)?;
         Ok(())
     }
 

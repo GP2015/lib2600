@@ -91,9 +91,7 @@ where
 
     fn drive_value_in(&mut self, val: usize) -> Result<(), RiotError> {
         for bit in 0..self.size {
-            let b = bit_utils::get_bit_of_usize(val, bit);
-            let signal = PinState::from_bool(b);
-            self.pins[bit].set_signal_in(signal)?;
+            self.pins[bit].drive_in(bit_utils::get_bit_of_usize(val, bit))?;
         }
 
         Ok(())
@@ -105,7 +103,7 @@ where
 
     fn tristate_in(&mut self) {
         for bit in 0..self.size {
-            self.pins[bit].set_signal_in(PinState::TriState).unwrap();
+            self.pins[bit].tristate_in();
         }
     }
 
@@ -136,9 +134,7 @@ where
 {
     fn drive_value_out(&mut self, val: usize) -> Result<(), RiotError> {
         for bit in 0..self.size {
-            let b = bit_utils::get_bit_of_usize(val, bit);
-            let signal = PinState::from_bool(b);
-            self.pins[bit].set_signal_out(signal)?;
+            self.pins[bit].drive_out(bit_utils::get_bit_of_usize(val, bit))?;
         }
 
         Ok(())
@@ -146,7 +142,7 @@ where
 
     fn tristate_out(&mut self) {
         for bit in 0..self.size {
-            self.pins[bit].set_signal_out(PinState::TriState).unwrap();
+            self.pins[bit].tristate_out();
         }
     }
 
