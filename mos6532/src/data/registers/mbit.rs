@@ -1,4 +1,4 @@
-use crate::{data::bitutils, error::RiotError};
+use crate::{data::bit_utils, error::RiotError};
 
 pub struct MBitReg {
     name: String,
@@ -45,12 +45,12 @@ impl MBitReg {
     }
 
     pub fn write(&mut self, val: usize) {
-        if cfg!(debug_assertions) && bitutils::usize_exceeds_bit_count(val, self.size) {
+        if cfg!(debug_assertions) && bit_utils::usize_exceeds_bit_count(val, self.size) {
             panic!("writing excessively large value to register should not be possible");
         }
 
         for bit in 0..self.size {
-            self.bits[bit] = Some(bitutils::get_bit_of_usize(val, bit))
+            self.bits[bit] = Some(bit_utils::get_bit_of_usize(val, bit))
         }
     }
 

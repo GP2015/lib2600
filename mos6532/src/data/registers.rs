@@ -1,8 +1,8 @@
-mod bitreg;
-mod mbitreg;
-mod valreg;
+mod bit;
+mod mbit;
+mod val;
 
-use crate::data::registers::{bitreg::BitReg, mbitreg::MBitReg, valreg::ValueReg};
+use crate::data::registers::{bit::BitReg, mbit::MBitReg, val::ValueReg};
 
 pub struct Registers {
     pub ddra: MBitReg,
