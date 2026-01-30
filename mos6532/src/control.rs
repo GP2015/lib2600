@@ -44,7 +44,7 @@ enum Instruction {
 }
 
 impl Riot {
-    pub(super) fn tick(&mut self) -> Result<(), RiotError> {
+    pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         if !self.pin.res.read()? {
             self.reset()?;
             return Ok(());

@@ -47,10 +47,6 @@ impl Riot {
     pin_getter!(rs, SinglePin);
     pin_getter!(irq, SinglePin);
 
-    pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
-        self.tick()
-    }
-
     pub fn release_db(&mut self) {
         self.pin.db.tri_state_out();
     }
