@@ -1,7 +1,5 @@
-use crate::{
-    Riot, RiotError,
-    data::pins::bus::{Bus, BusOutput},
-};
+use crate::{Riot, RiotError};
+use emu_utils::pin::{Bus, BusOutput};
 
 impl Riot {
     pub(super) fn reset(&mut self) -> Result<(), RiotError> {

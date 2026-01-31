@@ -1,4 +1,5 @@
-use crate::{Riot, RiotError, data::pins::bus::Bus};
+use crate::{Riot, RiotError};
+use emu_utils::pin::Bus;
 
 impl Riot {
     pub(super) fn write_edc(&mut self, enable_irq: bool, use_pos_edge: bool) {

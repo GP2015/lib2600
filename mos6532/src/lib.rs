@@ -4,8 +4,5 @@ mod error;
 mod helpers;
 mod riot;
 
-pub use crate::{
-    data::pins::{bus::Bus, single::SinglePin, state::PinState},
-    error::RiotError,
-    riot::Riot,
-};
+pub use crate::{error::RiotError, riot::Riot};
+pub use emu_utils::pin::{Bus, PinState, SinglePin};
