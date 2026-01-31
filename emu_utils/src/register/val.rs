@@ -1,0 +1,105 @@
+use crate::register::RegError;
+use num_traits::{NumOps, One};
+
+pub struct ValueReg<T> {
+    name: String,
+    value: Option<T>,
+}
+
+impl<T> ValueReg<T>
+where
+    T: Copy + NumOps + One,
+{
+    pub fn new(name: String) -> Self {
+        Self { name, value: None }
+    }
+
+    pub fn read(&self) -> Result<T, RegError> {
+        let Some(val) = self.value else {
+            return Err(RegError::RegisterUninitialised {
+                name: self.name.clone(),
+            });
+        };
+
+        Ok(val)
+    }
+
+    pub fn write(&mut self, value: T) -> Result<(), RegError> {
+        self.value = Some(value);
+        Ok(())
+    }
+
+    pub fn is_written(&self) -> bool {
+        self.value.is_some()
+    }
+
+    // pub fn increment(&mut self) -> Result<(), RegError> {
+    //     let Some(val) = self.value else {
+    //         return Err(RegError::RegisterUninitialised {
+    //             name: self.name.clone(),
+    //         });
+    //     };
+
+    //     self.value = Some(val + T::one());
+    //     Ok(())
+    // }
+
+    // pub fn decrement(&mut self) -> Result<(), RegError> {
+    //     let Some(val) = self.value else {
+    //         return Err(RegError::RegisterUninitialised {
+    //             name: self.name.clone(),
+    //         });
+    //     };
+
+    //     self.value = Some(val - T::one());
+    //     Ok(())
+    // }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read() {
+        let mut reg = ValueReg::new(String::new());
+        reg.write(0x67).unwrap();
+        assert_eq!(reg.read().unwrap(), 0x67);
+    }
+
+    #[test]
+    fn read_uninitialised() {
+        let reg = ValueReg::<usize>::new(String::new());
+        assert!(reg.read().is_err());
+    }
+
+    #[test]
+    fn write() {
+        let mut reg = ValueReg::new(String::new());
+        assert!(reg.write(0x67).is_ok());
+    }
+
+    #[test]
+    fn is_written() {
+        let mut reg = ValueReg::new(String::new());
+        assert!(!reg.is_written());
+        assert!(reg.write(0x67).is_ok());
+        assert!(reg.is_written());
+    }
+
+    // #[test]
+    // fn increment() {
+    //     let mut reg = ValueReg::new(String::new());
+    //     reg.write(0x67).unwrap();
+    //     reg.increment().unwrap();
+    //     assert_eq!(reg.read().unwrap(), 0x68);
+    // }
+
+    // #[test]
+    // fn decrement() {
+    //     let mut reg = ValueReg::new(String::new());
+    //     reg.write(0x67).unwrap();
+    //     reg.decrement().unwrap();
+    //     assert_eq!(reg.read().unwrap(), 0x66);
+    // }
+}
