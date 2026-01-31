@@ -1,16 +1,27 @@
 use crate::{
-    Bus, RiotError, SinglePin,
+    Bus, SinglePin,
     data::{
-        pins::{Pins, bus::BusOutput},
+        pins::{Pins, bus::BusOutput, single::SinglePinOutput},
         ram::Ram,
         registers::Registers,
     },
 };
+use paste::paste;
 
-macro_rules! pin_getter {
+macro_rules! create_pin_input {
     ($name:ident, $obj:ident) => {
         pub fn $name(&mut self) -> &mut impl $obj {
             &mut self.pin.$name
+        }
+    };
+}
+
+macro_rules! create_pin_output {
+    ($pin:ident, $obj:ident) => {
+        paste! {
+            pub(crate) fn [<$pin _o>](&mut self) -> &mut impl $obj {
+                &mut self.pin.$pin
+            }
         }
     };
 }
@@ -36,18 +47,23 @@ impl Riot {
         }
     }
 
-    pin_getter!(a, Bus);
-    pin_getter!(db, Bus);
-    pin_getter!(pa, Bus);
-    pin_getter!(pb, Bus);
-    pin_getter!(res, SinglePin);
-    pin_getter!(cs1, SinglePin);
-    pin_getter!(cs2, SinglePin);
-    pin_getter!(rw, SinglePin);
-    pin_getter!(rs, SinglePin);
-    pin_getter!(irq, SinglePin);
-
     pub fn release_db(&mut self) {
-        self.pin.db.tri_state_out();
+        self.db_o().tri_state_out();
     }
+
+    create_pin_input!(a, Bus);
+    create_pin_input!(db, Bus);
+    create_pin_input!(pa, Bus);
+    create_pin_input!(pb, Bus);
+    create_pin_input!(res, SinglePin);
+    create_pin_input!(cs1, SinglePin);
+    create_pin_input!(cs2, SinglePin);
+    create_pin_input!(rw, SinglePin);
+    create_pin_input!(rs, SinglePin);
+    create_pin_input!(irq, SinglePin);
+
+    create_pin_output!(db, BusOutput);
+    create_pin_output!(pa, BusOutput);
+    create_pin_output!(pb, BusOutput);
+    create_pin_output!(irq, SinglePinOutput);
 }
