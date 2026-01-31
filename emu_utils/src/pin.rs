@@ -4,7 +4,9 @@ mod state;
 
 pub use crate::pin::{
     bus::{Bus, BusOutput, contention::ContentionBus, input::InputBus},
-    single::{SinglePin, SinglePinOutput, contention::ContentionPin, input::InputPin},
+    single::{
+        SinglePin, SinglePinNew, SinglePinOutput, contention::ContentionPin, input::InputPin,
+    },
     state::PinState,
 };
 use thiserror::Error;

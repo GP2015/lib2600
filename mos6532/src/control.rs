@@ -1,13 +1,11 @@
+use crate::{Riot, RiotError};
+use emu_utils::pin::{Bus, SinglePin};
+
 mod edc;
 mod io;
 mod misc;
 mod ram;
 mod timer;
-
-use crate::{
-    Riot, RiotError,
-    data::pins::{bus::Bus, single::SinglePin},
-};
 
 #[derive(PartialEq, Debug)]
 enum Instruction {

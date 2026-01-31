@@ -1,19 +1,19 @@
-use crate::register::RegError;
+use crate::register::RegisterError;
 
-pub struct BitReg {
+pub struct BitRegister {
     name: String,
     state: Option<bool>,
 }
 
-impl BitReg {
+impl BitRegister {
     pub fn new(name: String) -> Self {
         Self { name, state: None }
     }
 
-    pub fn read(&self) -> Result<bool, RegError> {
+    pub fn read(&self) -> Result<bool, RegisterError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RegError::RegisterUninitialised {
+            None => Err(RegisterError::RegisterUninitialised {
                 name: self.name.clone(),
             }),
         }
@@ -30,18 +30,18 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn reg() -> BitReg {
-        BitReg::new(String::new())
+    fn reg() -> BitRegister {
+        BitRegister::new(String::new())
     }
 
     #[rstest]
-    fn write_read(mut reg: BitReg, #[values(false, true)] state: bool) {
+    fn write_read(mut reg: BitRegister, #[values(false, true)] state: bool) {
         reg.write(state);
         assert_eq!(reg.read().unwrap(), state);
     }
 
     #[rstest]
-    fn read_uninitialised(reg: BitReg) {
+    fn read_uninitialised(reg: BitRegister) {
         assert!(reg.read().is_err());
     }
 }
