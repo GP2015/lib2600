@@ -16,7 +16,7 @@ impl Riot {
     }
 
     fn write_ddr(&mut self, reg: bool) -> Result<(), RiotError> {
-        let byte = self.pin.db.read()?;
+        let byte = self.db().read()?;
 
         match reg {
             ATYPE => &mut self.reg.ddra,
@@ -42,7 +42,7 @@ impl Riot {
         }
         .read()?;
 
-        self.pin.db.drive_value_out(byte)?;
+        self.db_o().drive_value_out(byte)?;
         Ok(())
     }
 
@@ -55,7 +55,7 @@ impl Riot {
     }
 
     fn write_or(&mut self, reg: bool) -> Result<(), RiotError> {
-        let byte = self.pin.db.read()?;
+        let byte = self.db().read()?;
 
         match reg {
             ATYPE => &mut self.reg.ora,
@@ -67,8 +67,8 @@ impl Riot {
     }
 
     pub(super) fn read_ora(&mut self) -> Result<(), RiotError> {
-        let byte = self.pin.pa.read()?;
-        self.pin.db.drive_value_out(byte)?;
+        let byte = self.pa().read()?;
+        self.db_o().drive_value_out(byte)?;
         Ok(())
     }
 
@@ -76,9 +76,9 @@ impl Riot {
         for bit in 0..8 {
             let state = match self.reg.ddrb.read_bit(bit)? {
                 true => self.reg.orb.read_bit(bit)?,
-                false => self.pin.pb.read_bit(bit)?,
+                false => self.pb().read_bit(bit)?,
             };
-            self.pin.db.drive_out_bit(bit, state)?;
+            self.db_o().drive_out_bit(bit, state)?;
         }
 
         Ok(())
@@ -95,13 +95,13 @@ impl Riot {
                 ATYPE => {
                     if self.reg.ddra.read_bit(bit)? {
                         let state = self.reg.ora.read_bit(bit)?;
-                        self.pin.pa.drive_out_bit(bit, state)?;
+                        self.pa_o().drive_out_bit(bit, state)?;
                     }
                 }
                 BTYPE => {
                     if self.reg.ddrb.read_bit(bit)? {
                         let state = self.reg.orb.read_bit(bit)?;
-                        self.pin.pb.drive_out_bit(bit, state)?;
+                        self.pb_o().drive_out_bit(bit, state)?;
                     }
                 }
             };

@@ -45,14 +45,14 @@ enum Instruction {
 
 impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
-        if !self.pin.res.read()? {
+        if !self.res().read()? {
             self.reset()?;
             return Ok(());
         }
 
         self.update_peripherals()?;
 
-        if !self.pin.cs1.read()? || self.pin.cs2.read()? {
+        if !self.cs1().read()? || self.cs2().read()? {
             return Ok(());
         }
 
@@ -63,61 +63,61 @@ impl Riot {
     }
 
     fn decode_instruction(&mut self) -> Result<Instruction, RiotError> {
-        let instruction = if self.pin.rs.read()? {
-            if self.pin.a.read_bit(2)? {
-                if self.pin.rw.read()? {
-                    if self.pin.a.read_bit(0)? {
+        let instruction = if self.rs().read()? {
+            if self.a().read_bit(2)? {
+                if self.rw().read()? {
+                    if self.a().read_bit(0)? {
                         Instruction::ReadInterruptFlag
                     } else {
-                        let enable_irq = self.pin.a.read_bit(3)?;
+                        let enable_irq = self.a().read_bit(3)?;
                         Instruction::ReadTimer { enable_irq }
                     }
-                } else if self.pin.a.read_bit(4)? {
-                    let enable_irq = self.pin.a.read_bit(3)?;
+                } else if self.a().read_bit(4)? {
+                    let enable_irq = self.a().read_bit(3)?;
 
-                    if self.pin.a.read_bit(1)? {
-                        if self.pin.a.read_bit(0)? {
+                    if self.a().read_bit(1)? {
+                        if self.a().read_bit(0)? {
                             Instruction::WriteTimer1024T { enable_irq }
                         } else {
                             Instruction::WriteTimer64T { enable_irq }
                         }
-                    } else if self.pin.a.read_bit(0)? {
+                    } else if self.a().read_bit(0)? {
                         Instruction::WriteTimer8T { enable_irq }
                     } else {
                         Instruction::WriteTimer1T { enable_irq }
                     }
                 } else {
-                    let enable_irq = self.pin.a.read_bit(1)?;
-                    let use_pos_edge = self.pin.a.read_bit(0)?;
+                    let enable_irq = self.a().read_bit(1)?;
+                    let use_pos_edge = self.a().read_bit(0)?;
                     Instruction::WriteEdc {
                         enable_irq,
                         use_pos_edge,
                     }
                 }
-            } else if self.pin.a.read_bit(0)? {
-                if self.pin.a.read_bit(1)? {
-                    if self.pin.rw.read()? {
+            } else if self.a().read_bit(0)? {
+                if self.a().read_bit(1)? {
+                    if self.rw().read()? {
                         Instruction::ReadDdrb
                     } else {
                         Instruction::WriteDdrb
                     }
-                } else if self.pin.rw.read()? {
+                } else if self.rw().read()? {
                     Instruction::ReadDdra
                 } else {
                     Instruction::WriteDdra
                 }
-            } else if self.pin.a.read_bit(1)? {
-                if self.pin.rw.read()? {
+            } else if self.a().read_bit(1)? {
+                if self.rw().read()? {
                     Instruction::ReadOrb
                 } else {
                     Instruction::WriteOrb
                 }
-            } else if self.pin.rw.read()? {
+            } else if self.rw().read()? {
                 Instruction::ReadOra
             } else {
                 Instruction::WriteOra
             }
-        } else if self.pin.rw.read()? {
+        } else if self.rw().read()? {
             Instruction::ReadRam
         } else {
             Instruction::WriteRam
