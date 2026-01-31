@@ -1,12 +1,12 @@
-use crate::{bit, register::RegError};
+use crate::{bit, register::RegisterError};
 
-pub struct MBitReg {
+pub struct MBitRegister {
     name: String,
     bits: Vec<Option<bool>>,
     size: usize,
 }
 
-impl MBitReg {
+impl MBitRegister {
     pub fn new(size: usize, name: String) -> Self {
         Self {
             name,
@@ -15,12 +15,12 @@ impl MBitReg {
         }
     }
 
-    pub fn read(&self) -> Result<usize, RegError> {
+    pub fn read(&self) -> Result<usize, RegisterError> {
         let mut combined = 0;
 
         for bit in (0..self.size).rev() {
             let Some(val) = self.bits[bit] else {
-                return Err(RegError::RegisterBitUninitialised {
+                return Err(RegisterError::RegisterBitUninitialised {
                     name: self.name.clone(),
                     bit,
                 });
@@ -33,9 +33,9 @@ impl MBitReg {
         Ok(combined)
     }
 
-    pub fn read_bit(&self, bit: usize) -> Result<bool, RegError> {
+    pub fn read_bit(&self, bit: usize) -> Result<bool, RegisterError> {
         let Some(val) = self.bits[bit] else {
-            return Err(RegError::RegisterBitUninitialised {
+            return Err(RegisterError::RegisterBitUninitialised {
                 name: self.name.clone(),
                 bit,
             });
@@ -54,7 +54,7 @@ impl MBitReg {
         }
     }
 
-    pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RegError> {
+    pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RegisterError> {
         self.bits[bit] = Some(state);
         Ok(())
     }
@@ -66,18 +66,18 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn reg() -> MBitReg {
-        MBitReg::new(8, String::new())
+    fn reg() -> MBitRegister {
+        MBitRegister::new(8, String::new())
     }
 
     #[rstest]
-    fn read(mut reg: MBitReg) {
+    fn read(mut reg: MBitRegister) {
         reg.write(0x67);
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
     #[rstest]
-    fn read_uninitialised(mut reg: MBitReg) {
+    fn read_uninitialised(mut reg: MBitRegister) {
         for i in 0..7 {
             reg.write_bit(i, true).unwrap();
         }
@@ -88,7 +88,7 @@ mod tests {
     }
 
     #[rstest]
-    fn read_bits(mut reg: MBitReg) {
+    fn read_bits(mut reg: MBitRegister) {
         reg.write(0b11010110);
         assert!(!reg.read_bit(0).unwrap());
         assert!(reg.read_bit(1).unwrap());
@@ -97,14 +97,14 @@ mod tests {
     }
 
     #[rstest]
-    fn read_uninitialised_bits(mut reg: MBitReg) {
+    fn read_uninitialised_bits(mut reg: MBitRegister) {
         assert!(reg.read_bit(6).is_err());
         reg.write_bit(6, true).unwrap();
         assert!(reg.read_bit(6).unwrap());
     }
 
     #[rstest]
-    fn write_bits(mut reg: MBitReg) {
+    fn write_bits(mut reg: MBitRegister) {
         reg.write(0b11010110);
         reg.write_bit(0, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010110);

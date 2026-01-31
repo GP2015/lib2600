@@ -2,11 +2,11 @@ mod bit;
 mod mbit;
 mod val;
 
-pub use crate::register::{bit::BitReg, mbit::MBitReg, val::ValueReg};
+pub use crate::register::{bit::BitRegister, mbit::MBitRegister, val::ValueRegister};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum RegError {
+pub enum RegisterError {
     #[error("cannot access {name} register as it is uninitialised")]
     RegisterUninitialised { name: String },
 
