@@ -1,30 +1,37 @@
 use crate::pin::{PinError, PinState, SinglePin, single::SinglePinNew};
 
-pub struct InputPin {
+pub struct InputPin<E> {
     name: String,
     state: Option<PinState>,
+    err_type: std::marker::PhantomData<E>,
 }
 
-impl SinglePinNew for InputPin {
+impl<E> SinglePinNew for InputPin<E> {
     fn new(name: String) -> Self {
-        Self { name, state: None }
+        Self {
+            name,
+            state: None,
+            err_type: std::marker::PhantomData,
+        }
     }
 }
 
-impl SinglePin for InputPin {
-    fn read(&self) -> Result<bool, PinError> {
+impl<E: From<PinError>> SinglePin for InputPin<E> {
+    type Error = E;
+
+    fn read(&self) -> Result<bool, E> {
         let Some(state) = self.state else {
-            return Err(PinError::PinUninitialised {
+            return Err(E::from(PinError::PinUninitialised {
                 name: self.name.clone(),
-            });
+            }));
         };
 
         match state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
-            PinState::TriState => Err(PinError::PinReadWhileTriStated {
+            PinState::TriState => Err(E::from(PinError::PinReadWhileTriStated {
                 name: self.name.clone(),
-            }),
+            })),
         }
     }
 
@@ -32,12 +39,12 @@ impl SinglePin for InputPin {
         self.state
     }
 
-    fn set_signal_in(&mut self, state: PinState) -> Result<(), PinError> {
+    fn set_signal_in(&mut self, state: PinState) -> Result<(), E> {
         self.state = Some(state);
         Ok(())
     }
 
-    fn drive_in(&mut self, state: bool) -> Result<(), PinError> {
+    fn drive_in(&mut self, state: bool) -> Result<(), E> {
         self.state = Some(PinState::from_bool(state));
         Ok(())
     }
@@ -53,12 +60,12 @@ mod tests {
     use rstest::{fixture, rstest};
 
     #[fixture]
-    fn reg() -> InputPin {
+    fn reg() -> InputPin<PinError> {
         InputPin::new(String::new())
     }
 
     #[rstest]
-    fn initial_state(reg: InputPin) {
+    fn initial_state(reg: InputPin<PinError>) {
         assert_eq!(reg.state(), None);
         assert!(matches!(
             reg.read().err().unwrap(),
@@ -68,7 +75,7 @@ mod tests {
 
     #[rstest]
     fn set_and_state(
-        mut reg: InputPin,
+        mut reg: InputPin<PinError>,
         #[values(PinState::High, PinState::Low, PinState::TriState)] state: PinState,
     ) {
         reg.set_signal_in(state).unwrap();
@@ -78,25 +85,25 @@ mod tests {
     #[rstest]
     #[case(true, PinState::High)]
     #[case(false, PinState::Low)]
-    fn drive_in(mut reg: InputPin, #[case] istate: bool, #[case] ostate: PinState) {
+    fn drive_in(mut reg: InputPin<PinError>, #[case] istate: bool, #[case] ostate: PinState) {
         reg.drive_in(istate).unwrap();
         assert_eq!(reg.state().unwrap(), ostate);
     }
 
     #[rstest]
-    fn tri_state_in(mut reg: InputPin) {
+    fn tri_state_in(mut reg: InputPin<PinError>) {
         reg.tri_state_in();
         assert_eq!(reg.state().unwrap(), PinState::TriState);
     }
 
     #[rstest]
-    fn read_bool(mut reg: InputPin, #[values(true, false)] state: bool) {
+    fn read_bool(mut reg: InputPin<PinError>, #[values(true, false)] state: bool) {
         reg.drive_in(state).unwrap();
         assert_eq!(reg.read().unwrap(), state);
     }
 
     #[rstest]
-    fn read_tri_state(mut reg: InputPin) {
+    fn read_tri_state(mut reg: InputPin<PinError>) {
         reg.tri_state_in();
         assert!(matches!(
             reg.read().err().unwrap(),

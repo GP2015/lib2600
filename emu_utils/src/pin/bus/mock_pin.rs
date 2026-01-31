@@ -1,23 +1,29 @@
 use crate::pin::{PinError, PinState, SinglePin, SinglePinOutput, single::SinglePinNew};
 
-pub struct MockPin {
+pub struct MockPin<E> {
     state: Option<PinState>,
+    err_type: std::marker::PhantomData<E>,
 }
 
-impl MockPin {
+impl<E> MockPin<E> {
     fn set_signal(&mut self, state: PinState) {
         self.state = Some(state);
     }
 }
 
-impl SinglePinNew for MockPin {
+impl<E> SinglePinNew for MockPin<E> {
     fn new(_: String) -> Self {
-        Self { state: None }
+        Self {
+            state: None,
+            err_type: std::marker::PhantomData,
+        }
     }
 }
 
-impl SinglePin for MockPin {
-    fn read(&self) -> Result<bool, PinError> {
+impl<E: From<PinError>> SinglePin for MockPin<E> {
+    type Error = E;
+
+    fn read(&self) -> Result<bool, E> {
         match self.state {
             Some(PinState::High) => Ok(true),
             Some(PinState::Low) => Ok(false),
@@ -29,12 +35,12 @@ impl SinglePin for MockPin {
         self.state
     }
 
-    fn set_signal_in(&mut self, state: PinState) -> Result<(), PinError> {
+    fn set_signal_in(&mut self, state: PinState) -> Result<(), E> {
         self.set_signal(state);
         Ok(())
     }
 
-    fn drive_in(&mut self, state: bool) -> Result<(), PinError> {
+    fn drive_in(&mut self, state: bool) -> Result<(), E> {
         self.set_signal(PinState::from_bool(state));
         Ok(())
     }
@@ -44,13 +50,15 @@ impl SinglePin for MockPin {
     }
 }
 
-impl SinglePinOutput for MockPin {
-    fn set_signal_out(&mut self, state: PinState) -> Result<(), PinError> {
+impl<E: From<PinError>> SinglePinOutput for MockPin<E> {
+    type Error = E;
+
+    fn set_signal_out(&mut self, state: PinState) -> Result<(), E> {
         self.set_signal(state);
         Ok(())
     }
 
-    fn drive_out(&mut self, state: bool) -> Result<(), PinError> {
+    fn drive_out(&mut self, state: bool) -> Result<(), E> {
         self.set_signal(PinState::from_bool(state));
         Ok(())
     }
