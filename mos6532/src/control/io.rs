@@ -20,7 +20,7 @@ impl Riot {
             ATYPE => &mut self.reg.ddra,
             BTYPE => &mut self.reg.ddrb,
         }
-        .write(byte);
+        .write(byte)?;
 
         self.update_peripheral(reg)
     }
@@ -59,7 +59,7 @@ impl Riot {
             ATYPE => &mut self.reg.ora,
             BTYPE => &mut self.reg.orb,
         }
-        .write(byte);
+        .write(byte)?;
 
         self.update_peripheral(reg)
     }
