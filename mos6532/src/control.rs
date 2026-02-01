@@ -1,11 +1,12 @@
+mod edc;
+mod interrupt;
+mod io;
+mod ram;
+mod reset;
+mod timer;
+
 use crate::{Riot, RiotError};
 use emu_utils::pin::{Bus, SinglePin};
-
-mod edc;
-mod io;
-mod misc;
-mod ram;
-mod timer;
 
 #[derive(PartialEq, Debug)]
 enum Instruction {
@@ -42,7 +43,7 @@ enum Instruction {
 }
 
 impl Riot {
-    pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
+    pub fn process_changes(&mut self) -> Result<(), RiotError> {
         if !self.res().read()? {
             self.reset()?;
             return Ok(());
