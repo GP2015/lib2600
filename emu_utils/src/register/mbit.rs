@@ -3,6 +3,7 @@ use crate::{
     register::{BitRegister, RegisterError},
 };
 
+#[derive(Clone)]
 pub struct MBitRegister {
     name: String,
     size: usize,

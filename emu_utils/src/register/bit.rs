@@ -1,5 +1,6 @@
 use crate::register::RegisterError;
 
+#[derive(Clone)]
 pub struct BitRegister {
     name: String,
     state: Option<bool>,

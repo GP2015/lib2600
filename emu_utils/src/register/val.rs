@@ -1,6 +1,7 @@
 use crate::register::RegisterError;
 use num_traits::{NumOps, One};
 
+#[derive(Clone)]
 pub struct ValueRegister<T> {
     name: String,
     value: Option<T>,
