@@ -1,31 +1,46 @@
-use crate::{bit, register::RegisterError};
+use crate::{
+    bit,
+    register::{BitRegister, RegisterError},
+};
 
 pub struct MBitRegister {
     name: String,
-    bits: Vec<Option<bool>>,
     size: usize,
+    bits: Vec<BitRegister>,
 }
 
 impl MBitRegister {
     pub fn new(size: usize, name: String) -> Self {
         Self {
-            name,
-            bits: vec![None; size],
             size,
+            bits: (0..size)
+                .map(|bit| BitRegister::new(format!("{} bit {}", name, bit)))
+                .collect(),
+            name,
         }
+    }
+
+    pub fn state(&self) -> Vec<Option<bool>> {
+        self.bits.iter().map(|bit| bit.state()).collect()
+    }
+
+    pub fn bit_state(&self, bit: usize) -> Result<Option<bool>, RegisterError> {
+        if bit >= self.size {
+            return Err(RegisterError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            });
+        }
+
+        Ok(self.bits[bit].state())
     }
 
     pub fn read(&self) -> Result<usize, RegisterError> {
         let mut combined = 0;
 
         for bit in (0..self.size).rev() {
-            let Some(val) = self.bits[bit] else {
-                return Err(RegisterError::RegisterBitUninitialised {
-                    name: self.name.clone(),
-                    bit,
-                });
-            };
-
+            let val = self.bits[bit].read()?;
             combined <<= 1;
             combined |= val as usize;
         }
@@ -34,28 +49,67 @@ impl MBitRegister {
     }
 
     pub fn read_bit(&self, bit: usize) -> Result<bool, RegisterError> {
-        let Some(val) = self.bits[bit] else {
-            return Err(RegisterError::RegisterBitUninitialised {
+        if bit >= self.size {
+            return Err(RegisterError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
+                size: self.size,
             });
-        };
+        }
 
-        Ok(val)
+        self.bits[bit].read()
     }
 
-    pub fn write(&mut self, val: usize) {
-        if cfg!(debug_assertions) && bit::usize_exceeds_bit_count(val, self.size) {
-            panic!("writing excessively large value to register should not be possible");
+    pub fn write(&mut self, val: usize) -> Result<(), RegisterError> {
+        if bit::usize_exceeds_bit_count(val, self.size) {
+            return Err(RegisterError::WriteValueTooLarge {
+                name: self.name.clone(),
+                value: val,
+                size: self.size,
+            });
         }
 
         for bit in 0..self.size {
-            self.bits[bit] = Some(bit::get_bit_of_usize(val, bit))
+            self.bits[bit].write(bit::get_bit_of_usize(val, bit));
+        }
+
+        Ok(())
+    }
+
+    pub fn write_value_wrapped(&mut self, val: usize) {
+        self.write(bit::get_low_bits_of_usize(val, self.size))
+            .unwrap()
+    }
+
+    pub fn undefine(&mut self) {
+        for bit in 0..self.size {
+            self.bits[bit].undefine();
         }
     }
 
     pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RegisterError> {
-        self.bits[bit] = Some(state);
+        if bit >= self.size {
+            return Err(RegisterError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            });
+        }
+
+        self.bits[bit].write(state);
+        Ok(())
+    }
+
+    pub fn undefine_bit(&mut self, bit: usize) -> Result<(), RegisterError> {
+        if bit >= self.size {
+            return Err(RegisterError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            });
+        }
+
+        self.bits[bit].undefine();
         Ok(())
     }
 }
@@ -72,7 +126,7 @@ mod tests {
 
     #[rstest]
     fn read(mut reg: MBitRegister) {
-        reg.write(0x67);
+        reg.write(0x67).unwrap();
         assert_eq!(reg.read().unwrap(), 0x67);
     }
 
@@ -89,7 +143,7 @@ mod tests {
 
     #[rstest]
     fn read_bits(mut reg: MBitRegister) {
-        reg.write(0b11010110);
+        reg.write(0b11010110).unwrap();
         assert!(!reg.read_bit(0).unwrap());
         assert!(reg.read_bit(1).unwrap());
         assert!(!reg.read_bit(3).unwrap());
@@ -105,7 +159,7 @@ mod tests {
 
     #[rstest]
     fn write_bits(mut reg: MBitRegister) {
-        reg.write(0b11010110);
+        reg.write(0b11010110).unwrap();
         reg.write_bit(0, false).unwrap();
         assert_eq!(reg.read().unwrap(), 0b11010110);
         reg.write_bit(1, false).unwrap();

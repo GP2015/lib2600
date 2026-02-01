@@ -10,10 +10,14 @@ impl BitRegister {
         Self { name, state: None }
     }
 
+    pub fn state(&self) -> Option<bool> {
+        self.state
+    }
+
     pub fn read(&self) -> Result<bool, RegisterError> {
         match self.state {
             Some(state) => Ok(state),
-            None => Err(RegisterError::RegisterUninitialised {
+            None => Err(RegisterError::ReadUndefined {
                 name: self.name.clone(),
             }),
         }
@@ -21,6 +25,10 @@ impl BitRegister {
 
     pub fn write(&mut self, state: bool) {
         self.state = Some(state);
+    }
+
+    pub fn undefine(&mut self) {
+        self.state = None;
     }
 }
 
@@ -41,7 +49,21 @@ mod tests {
     }
 
     #[rstest]
-    fn read_uninitialised(reg: BitRegister) {
-        assert!(reg.read().is_err());
+    fn read_initial(reg: BitRegister) {
+        assert!(matches!(
+            reg.read().err().unwrap(),
+            RegisterError::ReadUndefined { .. }
+        ))
+    }
+
+    #[rstest]
+    fn undefine(mut reg: BitRegister) {
+        reg.write(true);
+        reg.undefine();
+
+        assert!(matches!(
+            reg.read().err().unwrap(),
+            RegisterError::ReadUndefined { .. }
+        ))
     }
 }

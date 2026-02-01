@@ -16,7 +16,7 @@ where
 
     pub fn read(&self) -> Result<T, RegisterError> {
         let Some(val) = self.value else {
-            return Err(RegisterError::RegisterUninitialised {
+            return Err(RegisterError::ReadUndefined {
                 name: self.name.clone(),
             });
         };
