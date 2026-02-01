@@ -64,7 +64,7 @@ impl<T: SinglePin> Bus for InputBus<T> {
         self.pins[bit].read()
     }
 
-    fn drive_value_in(&mut self, val: usize) -> Result<(), Self::Error> {
+    fn drive_in(&mut self, val: usize) -> Result<(), Self::Error> {
         if bit::usize_exceeds_bit_count(val, self.size) {
             return Err(Self::Error::from(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
@@ -80,8 +80,8 @@ impl<T: SinglePin> Bus for InputBus<T> {
         Ok(())
     }
 
-    fn drive_value_in_wrapped(&mut self, val: usize) -> Result<(), Self::Error> {
-        self.drive_value_in(bit::get_low_bits_of_usize(val, self.size))
+    fn wrapping_drive_in(&mut self, val: usize) -> Result<(), Self::Error> {
+        self.drive_in(bit::get_low_bits_of_usize(val, self.size))
     }
 
     fn tri_state_in(&mut self) {
@@ -136,15 +136,15 @@ mod tests {
     }
 
     #[rstest]
-    fn drive_value_and_read(mut bus: BusType) {
-        bus.drive_value_in(0x67).unwrap();
+    fn drive_and_read(mut bus: BusType) {
+        bus.drive_in(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
     }
 
     #[rstest]
-    fn drive_value_large(mut bus: BusType) {
+    fn drive_large(mut bus: BusType) {
         assert!(matches!(
-            bus.drive_value_in(0x167).err().unwrap(),
+            bus.drive_in(0x167).err().unwrap(),
             PinError::DriveValueTooLarge { .. }
         ))
     }
@@ -152,8 +152,8 @@ mod tests {
     #[rstest]
     #[case(0x67, 0x67)]
     #[case(0x167, 0x67)]
-    fn drive_value_wrapped_and_read(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
-        bus.drive_value_in_wrapped(ival).unwrap();
+    fn wrapping_drive_and_read(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
+        bus.wrapping_drive_in(ival).unwrap();
         assert_eq!(bus.read().unwrap(), oval);
     }
 

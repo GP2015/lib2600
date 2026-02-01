@@ -76,7 +76,7 @@ impl MBitRegister {
         Ok(())
     }
 
-    pub fn write_value_wrapped(&mut self, val: usize) {
+    pub fn wrapping_write(&mut self, val: usize) {
         self.write(bit::get_low_bits_of_usize(val, self.size))
             .unwrap()
     }

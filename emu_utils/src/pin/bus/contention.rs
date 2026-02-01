@@ -64,7 +64,7 @@ impl<T: SinglePin> Bus for ContentionBus<T> {
         Ok(self.pins[bit].state())
     }
 
-    fn drive_value_in(&mut self, val: usize) -> Result<(), Self::Error> {
+    fn drive_in(&mut self, val: usize) -> Result<(), Self::Error> {
         if bit::usize_exceeds_bit_count(val, self.size) {
             return Err(Self::Error::from(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
@@ -80,8 +80,8 @@ impl<T: SinglePin> Bus for ContentionBus<T> {
         Ok(())
     }
 
-    fn drive_value_in_wrapped(&mut self, val: usize) -> Result<(), Self::Error> {
-        self.drive_value_in(bit::get_low_bits_of_usize(val, self.size))
+    fn wrapping_drive_in(&mut self, val: usize) -> Result<(), Self::Error> {
+        self.drive_in(bit::get_low_bits_of_usize(val, self.size))
     }
 
     fn tri_state_in(&mut self) {
@@ -125,7 +125,7 @@ impl<T: SinglePin> Bus for ContentionBus<T> {
 impl<T: SinglePinOutput> BusOutput for ContentionBus<T> {
     type Error = T::Error;
 
-    fn drive_value_out(&mut self, val: usize) -> Result<(), Self::Error> {
+    fn drive_out(&mut self, val: usize) -> Result<(), Self::Error> {
         if bit::usize_exceeds_bit_count(val, self.size) {
             return Err(Self::Error::from(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
@@ -203,18 +203,18 @@ mod tests {
     type UndefineBit = fn(&mut BusType, bit: usize) -> EmptyRes;
 
     #[rstest]
-    fn drive_value_and_read(
+    fn drive_and_read(
         mut bus: BusType,
-        #[values(ContentionBus::drive_value_in, ContentionBus::drive_value_out)] func: DriveValue,
+        #[values(ContentionBus::drive_in, ContentionBus::drive_out)] func: DriveValue,
     ) {
         func(&mut bus, 0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
     }
 
     #[rstest]
-    fn drive_value_large(
+    fn drive_large(
         mut bus: BusType,
-        #[values(ContentionBus::drive_value_in, ContentionBus::drive_value_out)] func: DriveValue,
+        #[values(ContentionBus::drive_in, ContentionBus::drive_out)] func: DriveValue,
     ) {
         assert!(matches!(
             func(&mut bus, 0x167).err().unwrap(),
@@ -225,8 +225,8 @@ mod tests {
     #[rstest]
     #[case(0x67, 0x67)]
     #[case(0x167, 0x67)]
-    fn drive_value_in_wrapped_and_read(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
-        bus.drive_value_in_wrapped(ival).unwrap();
+    fn wrapping_drive_in_and_read(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
+        bus.wrapping_drive_in(ival).unwrap();
         assert_eq!(bus.read().unwrap(), oval);
     }
 
