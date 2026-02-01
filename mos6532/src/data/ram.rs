@@ -1,31 +1,26 @@
-use crate::RiotError;
+use emu_utils::register::MBitRegister;
 
 const RAM_SIZE: usize = 128;
 
 pub struct Ram {
-    bytes: [Option<u8>; RAM_SIZE],
+    bytes: Vec<MBitRegister>,
 }
 
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: [None; RAM_SIZE],
+            bytes: (0..RAM_SIZE)
+                .map(|byte| MBitRegister::new(8, format!("RAM byte {:x}", byte)))
+                .collect(),
         }
     }
 
-    pub fn write_byte(&mut self, address: usize, byte: u8) {
-        self.bytes[address] = Some(byte);
-    }
-
-    pub fn read_byte(&self, address: usize) -> Result<u8, RiotError> {
-        match self.bytes[address] {
-            Some(byte) => Ok(byte),
-            None => Err(RiotError::RamByteUninitialised { address }),
-        }
+    pub fn byte(&mut self, address: usize) -> &mut MBitRegister {
+        &mut self.bytes[address]
     }
 
     pub fn reset(&mut self) {
-        self.bytes = [None; RAM_SIZE];
+        self.bytes.iter_mut().for_each(|reg| reg.undefine());
     }
 }
 
@@ -40,30 +35,16 @@ mod tests {
     }
 
     #[rstest]
-    fn read_write_byte(mut ram: Ram) {
-        ram.write_byte(0, 0x67);
-        ram.write_byte(127, 0x89);
-        assert_eq!(ram.read_byte(0).unwrap(), 0x67);
-        assert_eq!(ram.read_byte(127).unwrap(), 0x89);
-    }
-
-    #[rstest]
-    fn overwrite_byte(mut ram: Ram) {
-        ram.write_byte(23, 0x67);
-        ram.write_byte(23, 0x89);
-        assert_eq!(ram.read_byte(23).unwrap(), 0x89);
-    }
-
-    #[rstest]
     fn read_uninitialised_byte(mut ram: Ram) {
-        ram.write_byte(23, 0x67);
-        assert!(ram.read_byte(45).is_err());
+        assert_eq!(ram.byte(67).state(), vec![None; 8]);
     }
 
     #[rstest]
-    fn reset_byte(mut ram: Ram) {
-        ram.write_byte(23, 0x67);
+    fn reset(mut ram: Ram) {
+        ram.byte(23).write(0x45).unwrap();
+        ram.byte(67).write(0x89).unwrap();
         ram.reset();
-        assert!(ram.read_byte(23).is_err());
+        assert_eq!(ram.byte(23).state(), vec![None; 8]);
+        assert_eq!(ram.byte(67).state(), vec![None; 8]);
     }
 }
