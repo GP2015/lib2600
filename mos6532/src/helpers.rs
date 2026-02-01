@@ -21,12 +21,12 @@ impl Riot {
     fn general_ram_pulse(&mut self, rw: bool, address: usize) -> Result<(), RiotError> {
         self.rs().drive_in(false)?;
         self.rw().drive_in(rw)?;
-        self.a().drive_value_in(address)?;
+        self.a().drive_in(address)?;
         self.general_pulse()
     }
 
     pub fn write_ram_pulse(&mut self, address: usize, data: usize) -> Result<(), RiotError> {
-        self.db().drive_value_in(data)?;
+        self.db().drive_in(data)?;
         self.general_ram_pulse(false, address)
     }
 
@@ -45,7 +45,7 @@ impl Riot {
     }
 
     pub fn write_ora_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_value_in(data)?;
+        self.db().drive_in(data)?;
         self.general_io_pulse(false, false, false)
     }
 
@@ -55,7 +55,7 @@ impl Riot {
     }
 
     pub fn write_orb_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_value_in(data)?;
+        self.db().drive_in(data)?;
         self.general_io_pulse(false, true, false)
     }
 
@@ -65,7 +65,7 @@ impl Riot {
     }
 
     pub fn write_ddra_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_value_in(data)?;
+        self.db().drive_in(data)?;
         self.general_io_pulse(true, false, false)
     }
 
@@ -75,7 +75,7 @@ impl Riot {
     }
 
     pub fn write_ddrb_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_value_in(data)?;
+        self.db().drive_in(data)?;
         self.general_io_pulse(true, true, false)
     }
 

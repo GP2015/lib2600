@@ -28,8 +28,8 @@ fn read_or_pulse(riot: &mut Riot, reg: bool) -> Result<usize, RiotError> {
 
 fn write_p(riot: &mut Riot, reg: bool, data: usize) {
     match reg {
-        ATYPE => riot.pa().drive_value_in(data).unwrap(),
-        BTYPE => riot.pb().drive_value_in(data).unwrap(),
+        ATYPE => riot.pa().drive_in(data).unwrap(),
+        BTYPE => riot.pb().drive_in(data).unwrap(),
     }
 }
 
@@ -141,7 +141,7 @@ fn write_output_p_manual(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_value_in(0x67).unwrap();
+    riot.db().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
 }
@@ -179,7 +179,7 @@ fn write_output_p_deselected(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_value_in(0x67).unwrap();
+    riot.db().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0);
 }

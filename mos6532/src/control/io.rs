@@ -40,7 +40,7 @@ impl Riot {
         }
         .read()?;
 
-        self.db_o().drive_value_out(byte)?;
+        self.db_o().drive_out(byte)?;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl Riot {
 
     pub(super) fn read_ora(&mut self) -> Result<(), RiotError> {
         let byte = self.pa().read()?;
-        self.db_o().drive_value_out(byte)?;
+        self.db_o().drive_out(byte)?;
         Ok(())
     }
 

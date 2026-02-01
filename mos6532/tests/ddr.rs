@@ -20,11 +20,11 @@ fn read_write_ddr_success_manual(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_value_in(0x67).unwrap();
+    riot.db().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
     riot.rw().drive_in(true).unwrap();
-    riot.db().drive_value_in(0x89).unwrap();
+    riot.db().drive_in(0x89).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x67);
 }
@@ -40,7 +40,7 @@ fn write_ddr_deselected(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_value_in(0x67).unwrap();
+    riot.db().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
     riot.cs1().drive_in(true).unwrap();
@@ -59,10 +59,10 @@ fn read_ddr_deselected(
     riot.a().drive_in_bit(2, false).unwrap();
     riot.a().drive_in_bit(1, a1).unwrap();
     riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_value_in(0x67).unwrap();
+    riot.db().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.db().drive_value_in(0x89).unwrap();
+    riot.db().drive_in(0x89).unwrap();
     riot.cs1().drive_in(false).unwrap();
     riot.rw().drive_in(true).unwrap();
     riot.pulse_phi2().unwrap();

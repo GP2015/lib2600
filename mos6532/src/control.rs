@@ -50,11 +50,11 @@ impl Riot {
 
         self.update_peripherals()?;
 
+        self.update_edc()?;
+
         if !self.cs1().read()? || self.cs2().read()? {
             return Ok(());
         }
-
-        self.update_edc()?;
 
         let instruction = self.decode_instruction()?;
         self.execute_instruction(instruction)
