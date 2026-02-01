@@ -13,21 +13,21 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum PinError {
-    #[error("cannot access {name} pin as it is uninitialised")]
-    PinUninitialised { name: String },
+    #[error("cannot access {name} pin as it is currently undefined")]
+    ReadUndefined { name: String },
 
     #[error("cannot read {name} pin as it is currently tri-stated")]
-    PinReadWhileTriStated { name: String },
+    ReadTriStated { name: String },
 
     #[error("pin {name}{bit} does not exist")]
-    BusPinOutOfRange {
+    BitOutOfRange {
         name: String,
         bit: usize,
         size: usize,
     },
 
     #[error("cannot drive value {value} to {name} bus without wrapping")]
-    BusDriveValueTooLarge {
+    DriveValueTooLarge {
         name: String,
         value: usize,
         size: usize,
@@ -41,7 +41,7 @@ pub enum PinError {
     },
 
     #[error(
-        "cannot drive pin {name} {state} as it is currently being driven with an unknown state"
+        "cannot resolve contention on pin {name} since it is being driven with an undefined state"
     )]
-    PotentialShortCircuit { name: String, state: PinState },
+    PotentialShortCircuit { name: String },
 }

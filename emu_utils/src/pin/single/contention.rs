@@ -2,51 +2,73 @@ use crate::pin::{PinError, PinState, SinglePin, SinglePinOutput, single::SingleP
 
 pub struct ContentionPin<E> {
     name: String,
-    state: Option<PinState>,
+    state: PinState,
     driving_in: bool,
     driving_out: bool,
     err_type: std::marker::PhantomData<E>,
 }
 
+#[derive(Clone, Copy)]
+enum DriveDirection {
+    In,
+    Out,
+}
+
 impl<E: From<PinError>> ContentionPin<E> {
-    fn set_signal_in_bool_state(&mut self, state: PinState) -> Result<(), E> {
-        if self.driving_out {
-            let Some(current_state) = self.state else {
+    fn other_drive_direction_from(&self, dir: DriveDirection) -> bool {
+        match dir {
+            DriveDirection::In => self.driving_out,
+            DriveDirection::Out => self.driving_in,
+        }
+    }
+
+    fn set_this_drive_direction(&mut self, dir: DriveDirection, state: bool) {
+        match dir {
+            DriveDirection::In => self.driving_in = state,
+            DriveDirection::Out => self.driving_out = state,
+        }
+    }
+
+    fn drive(&mut self, next_state_b: bool, drive_dir: DriveDirection) -> Result<(), E> {
+        let next_state = PinState::from_bool(next_state_b);
+
+        if self.other_drive_direction_from(drive_dir) {
+            if matches!(self.state, PinState::Undefined) {
                 return Err(E::from(PinError::PotentialShortCircuit {
                     name: self.name.clone(),
-                    state,
                 }));
             };
 
-            if current_state != state {
+            if self.state != next_state {
                 return Err(E::from(PinError::ShortCircuit {
                     name: self.name.clone(),
-                    current_state,
-                    next_state: state,
+                    current_state: self.state,
+                    next_state,
                 }));
             }
         }
 
-        self.driving_in = true;
-        self.state = Some(state);
+        self.set_this_drive_direction(drive_dir, true);
+        self.state = next_state;
         Ok(())
     }
 
-    fn set_signal_out_bool_state(&mut self, state: PinState) -> Result<(), E> {
-        if self.driving_in {
-            let current_state = self.state.unwrap();
+    fn tri_state(&mut self, drive_dir: DriveDirection) {
+        self.set_this_drive_direction(drive_dir, false);
+        if !self.other_drive_direction_from(drive_dir) {
+            self.state = PinState::TriState;
+        }
+    }
 
-            if current_state != state {
-                return Err(E::from(PinError::ShortCircuit {
-                    name: self.name.clone(),
-                    current_state,
-                    next_state: state,
-                }));
-            }
+    fn undefine(&mut self, drive_dir: DriveDirection) -> Result<(), E> {
+        if self.other_drive_direction_from(drive_dir) {
+            return Err(E::from(PinError::PotentialShortCircuit {
+                name: self.name.clone(),
+            }));
         }
 
-        self.driving_out = true;
-        self.state = Some(state);
+        self.set_this_drive_direction(drive_dir, true);
+        self.state = PinState::Undefined;
         Ok(())
     }
 }
@@ -55,7 +77,7 @@ impl<E> SinglePinNew for ContentionPin<E> {
     fn new(name: String) -> Self {
         Self {
             name,
-            state: None,
+            state: PinState::Undefined,
             driving_in: false,
             driving_out: true,
             err_type: std::marker::PhantomData,
@@ -66,72 +88,69 @@ impl<E> SinglePinNew for ContentionPin<E> {
 impl<E: From<PinError>> SinglePin for ContentionPin<E> {
     type Error = E;
 
-    fn read(&self) -> Result<bool, E> {
-        let Some(state) = self.state else {
-            return Err(E::from(PinError::PinUninitialised {
-                name: self.name.clone(),
-            }));
-        };
+    fn state(&self) -> PinState {
+        self.state
+    }
 
-        match state {
+    fn read(&self) -> Result<bool, E> {
+        match self.state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
-            PinState::TriState => Err(E::from(PinError::PinReadWhileTriStated {
+            PinState::TriState => Err(E::from(PinError::ReadTriStated {
+                name: self.name.clone(),
+            })),
+            PinState::Undefined => Err(E::from(PinError::ReadUndefined {
                 name: self.name.clone(),
             })),
         }
     }
 
-    fn state(&self) -> Option<PinState> {
-        self.state
-    }
-
-    fn set_signal_in(&mut self, state: PinState) -> Result<(), E> {
-        if matches!(state, PinState::TriState) {
-            self.tri_state_in();
-            Ok(())
-        } else {
-            self.set_signal_in_bool_state(state)?;
-            Ok(())
-        }
-    }
-
-    fn drive_in(&mut self, state: bool) -> Result<(), E> {
-        self.set_signal_in_bool_state(PinState::from_bool(state))?;
+    fn signal_in(&mut self, state: PinState) -> Result<(), E> {
+        match state {
+            PinState::High => self.drive(true, DriveDirection::In)?,
+            PinState::Low => self.drive(false, DriveDirection::In)?,
+            PinState::TriState => self.tri_state(DriveDirection::In),
+            PinState::Undefined => self.undefine(DriveDirection::In)?,
+        };
         Ok(())
     }
 
+    fn drive_in(&mut self, state: bool) -> Result<(), E> {
+        self.drive(state, DriveDirection::In)
+    }
+
     fn tri_state_in(&mut self) {
-        self.driving_in = false;
-        if !self.driving_out {
-            self.state = Some(PinState::TriState);
-        }
+        self.tri_state(DriveDirection::In)
+    }
+
+    fn undefine_in(&mut self) -> Result<(), E> {
+        self.undefine(DriveDirection::In)
     }
 }
 
 impl<E: From<PinError>> SinglePinOutput for ContentionPin<E> {
     type Error = E;
 
-    fn set_signal_out(&mut self, state: PinState) -> Result<(), E> {
-        if matches!(state, PinState::TriState) {
-            self.tri_state_out();
-            Ok(())
-        } else {
-            self.set_signal_out_bool_state(state)?;
-            Ok(())
-        }
-    }
-
-    fn drive_out(&mut self, state: bool) -> Result<(), E> {
-        self.set_signal_out_bool_state(PinState::from_bool(state))?;
+    fn signal_out(&mut self, state: PinState) -> Result<(), E> {
+        match state {
+            PinState::High => self.drive(true, DriveDirection::Out)?,
+            PinState::Low => self.drive(false, DriveDirection::Out)?,
+            PinState::TriState => self.tri_state(DriveDirection::Out),
+            PinState::Undefined => self.undefine(DriveDirection::Out)?,
+        };
         Ok(())
     }
 
+    fn drive_out(&mut self, state: bool) -> Result<(), E> {
+        self.drive(state, DriveDirection::Out)
+    }
+
     fn tri_state_out(&mut self) {
-        self.driving_out = false;
-        if !self.driving_in {
-            self.state = Some(PinState::TriState);
-        }
+        self.tri_state(DriveDirection::Out)
+    }
+
+    fn undefine_out(&mut self) -> Result<(), E> {
+        self.undefine(DriveDirection::Out)
     }
 }
 
@@ -140,72 +159,62 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
+    type PinType = ContentionPin<PinError>;
+
     #[fixture]
-    fn reg_default() -> ContentionPin<PinError> {
+    fn reg_default() -> PinType {
         ContentionPin::new(String::new())
     }
 
     #[fixture]
-    fn reg_tri_state_out() -> ContentionPin<PinError> {
+    fn reg_tri_state_out() -> PinType {
         let mut reg = ContentionPin::new(String::new());
         reg.tri_state_out();
         reg
     }
 
+    type EmptyRes = Result<(), PinError>;
+    type Signal = fn(&mut PinType, state: PinState) -> EmptyRes;
+    type Drive = fn(&mut PinType, state: bool) -> EmptyRes;
+    type TriState = fn(&mut PinType);
+    type Undefine = fn(&mut PinType) -> EmptyRes;
+
     #[rstest]
-    fn initial_state(#[from(reg_default)] reg: ContentionPin<PinError>) {
-        assert_eq!(reg.state(), None);
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            PinError::PinUninitialised { .. }
-        ));
+    fn initial_state(#[from(reg_default)] reg: PinType) {
+        assert_eq!(reg.state(), PinState::Undefined);
     }
 
     #[rstest]
-    fn initial_bool_in(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
-        #[values(true, false)] state: bool,
+    fn get_state(
+        #[from(reg_default)] mut reg: PinType,
+        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
+        state: PinState,
     ) {
-        assert!(matches!(
-            reg.drive_in(state).err().unwrap(),
-            PinError::PotentialShortCircuit { .. }
-        ));
+        reg.signal_out(state).unwrap();
+        assert_eq!(reg.state(), state);
     }
 
     #[rstest]
-    fn initial_tri_state_in(#[from(reg_default)] mut reg: ContentionPin<PinError>) {
-        reg.tri_state_in();
-        assert_eq!(reg.state(), None);
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            PinError::PinUninitialised { .. }
-        ));
-    }
-
-    #[rstest]
-    fn set_and_state(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
-        #[values(PinState::High, PinState::Low, PinState::TriState)] state: PinState,
-    ) {
-        reg.set_signal_out(state).unwrap();
-        assert_eq!(reg.state().unwrap(), state);
-    }
-
-    #[rstest]
-    fn read_bool(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
-        #[values(true, false)] state: bool,
-    ) {
+    fn read_bool(#[from(reg_default)] mut reg: PinType, #[values(true, false)] state: bool) {
         reg.drive_out(state).unwrap();
         assert_eq!(reg.read().unwrap(), state);
     }
 
     #[rstest]
-    fn read_tri_state(#[from(reg_default)] mut reg: ContentionPin<PinError>) {
+    fn read_tri_state(#[from(reg_default)] mut reg: PinType) {
         reg.tri_state_out();
         assert!(matches!(
             reg.read().err().unwrap(),
-            PinError::PinReadWhileTriStated { .. }
+            PinError::ReadTriStated { .. }
+        ));
+    }
+
+    #[rstest]
+    fn read_undefined(#[from(reg_default)] mut reg: PinType) {
+        reg.undefine_out().unwrap();
+        assert!(matches!(
+            reg.read().err().unwrap(),
+            PinError::ReadUndefined { .. }
         ));
     }
 
@@ -215,58 +224,60 @@ mod tests {
     #[case(PinState::Low, PinState::TriState, PinState::Low)]
     #[case(PinState::TriState, PinState::High, PinState::High)]
     #[case(PinState::TriState, PinState::Low, PinState::Low)]
-    fn safe_bool_reads(
-        #[from(reg_tri_state_out)] mut reg: ContentionPin<PinError>,
+    #[case(PinState::High, PinState::High, PinState::High)]
+    #[case(PinState::Low, PinState::Low, PinState::Low)]
+    fn safe_two_way_driving(
+        #[from(reg_tri_state_out)] mut reg: PinType,
         #[case] istate: PinState,
         #[case] ostate: PinState,
         #[case] state: PinState,
     ) {
-        reg.set_signal_in(istate).unwrap();
-        reg.set_signal_out(ostate).unwrap();
-        assert_eq!(reg.state().unwrap(), state);
+        reg.signal_in(istate).unwrap();
+        reg.signal_out(ostate).unwrap();
+        assert_eq!(reg.state(), state);
     }
 
     #[rstest]
-    #[case(true, PinState::High)]
-    #[case(false, PinState::Low)]
-    fn drive_in(
-        #[from(reg_tri_state_out)] mut reg: ContentionPin<PinError>,
-        #[case] istate: bool,
-        #[case] ostate: PinState,
+    fn drive(
+        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[values(true, false)] b: bool,
+        #[values(ContentionPin::drive_in, ContentionPin::drive_out)] func: Drive,
     ) {
-        reg.drive_out(istate).unwrap();
-        assert_eq!(reg.state().unwrap(), ostate);
+        func(&mut reg, b).unwrap();
+        assert_eq!(reg.state(), PinState::from_bool(b));
     }
 
     #[rstest]
-    #[case(true, PinState::High)]
-    #[case(false, PinState::Low)]
-    fn drive_out(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
-        #[case] istate: bool,
-        #[case] ostate: PinState,
+    fn signal(
+        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
+        state: PinState,
+        #[values(ContentionPin::signal_in, ContentionPin::signal_out)] func: Signal,
     ) {
-        reg.drive_out(istate).unwrap();
-        assert_eq!(reg.state().unwrap(), ostate);
+        func(&mut reg, state).unwrap();
+        assert_eq!(reg.state(), state);
     }
 
     #[rstest]
-    fn tri_state_in(#[from(reg_tri_state_out)] mut reg: ContentionPin<PinError>) {
-        reg.tri_state_in();
-        assert_eq!(reg.state().unwrap(), PinState::TriState);
-    }
-
-    #[rstest]
-    fn tri_state_out(#[from(reg_default)] mut reg: ContentionPin<PinError>) {
-        reg.tri_state_out();
-        assert_eq!(reg.state().unwrap(), PinState::TriState);
-    }
-
-    #[rstest]
-    fn safe_contention(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
-        #[values(true, false)] state: bool,
+    fn tri_state(
+        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[values(ContentionPin::tri_state_in, ContentionPin::tri_state_out)] func: TriState,
     ) {
+        func(&mut reg);
+        assert_eq!(reg.state(), PinState::TriState);
+    }
+
+    #[rstest]
+    fn undefine(
+        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[values(ContentionPin::undefine_in, ContentionPin::undefine_out)] func: Undefine,
+    ) {
+        func(&mut reg).unwrap();
+        assert_eq!(reg.state(), PinState::Undefined);
+    }
+
+    #[rstest]
+    fn contention_swap(#[from(reg_default)] mut reg: PinType, #[values(true, false)] state: bool) {
         reg.drive_out(state).unwrap();
         reg.drive_in(state).unwrap();
         assert_eq!(reg.read().unwrap(), state);
@@ -277,26 +288,52 @@ mod tests {
     }
 
     #[rstest]
-    fn in_short_circuit(
-        #[from(reg_default)] mut reg: ContentionPin<PinError>,
+    fn short_circuit(
+        #[from(reg_tri_state_out)] mut reg: PinType,
         #[values(true, false)] state: bool,
+        #[values(true, false)] dir: bool,
     ) {
-        reg.drive_out(state).unwrap();
+        if dir {
+            reg.drive_in(state).unwrap();
+        } else {
+            reg.drive_out(state).unwrap();
+        }
+
         assert!(matches!(
-            reg.drive_in(!state).err().unwrap(),
+            if dir {
+                reg.drive_out(!state).err().unwrap()
+            } else {
+                reg.drive_in(!state).err().unwrap()
+            },
             PinError::ShortCircuit { .. }
         ));
     }
 
     #[rstest]
-    fn out_short_circuit(
-        #[from(reg_tri_state_out)] mut reg: ContentionPin<PinError>,
-        #[values(true, false)] state: bool,
+    #[case(PinState::High, PinState::Undefined)]
+    #[case(PinState::Low, PinState::Undefined)]
+    #[case(PinState::Undefined, PinState::High)]
+    #[case(PinState::Undefined, PinState::Low)]
+    #[case(PinState::Undefined, PinState::Undefined)]
+    fn potential_short_circuit(
+        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[case] istate: PinState,
+        #[case] ostate: PinState,
+        #[values(true, false)] dir: bool,
     ) {
-        reg.drive_in(state).unwrap();
+        if dir {
+            reg.signal_in(istate).unwrap();
+        } else {
+            reg.signal_out(istate).unwrap();
+        }
+
         assert!(matches!(
-            reg.drive_out(!state).err().unwrap(),
-            PinError::ShortCircuit { .. }
+            if dir {
+                reg.signal_out(ostate).err().unwrap()
+            } else {
+                reg.signal_in(ostate).err().unwrap()
+            },
+            PinError::PotentialShortCircuit { .. }
         ));
     }
 }
