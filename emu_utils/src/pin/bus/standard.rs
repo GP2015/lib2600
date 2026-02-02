@@ -9,30 +9,6 @@ pub struct StandardBus<T> {
     pins: Vec<T>,
 }
 
-impl<T> StandardBus<T> {
-    fn pin<E: From<PinError>>(&self, bit: usize) -> Result<&T, E> {
-        if bit >= self.size {
-            return Err(E::from(PinError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size,
-            }));
-        }
-        Ok(&self.pins[bit])
-    }
-
-    fn pin_mut<E: From<PinError>>(&mut self, bit: usize) -> Result<&mut T, E> {
-        if bit >= self.size {
-            return Err(E::from(PinError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size,
-            }));
-        }
-        Ok(&mut self.pins[bit])
-    }
-}
-
 impl<T: SinglePinNew> StandardBus<T> {
     pub fn new(name: String, size: usize) -> Self {
         Self {
@@ -48,36 +24,65 @@ impl<T: SinglePinNew> StandardBus<T> {
 impl<T: SinglePin> Bus for StandardBus<T> {
     type Error = T::Error;
 
+    fn pin(&self, bit: usize) -> Result<&impl SinglePin, Self::Error> {
+        if bit >= self.size {
+            return Err(Self::Error::from(PinError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            }));
+        }
+        Ok(&self.pins[bit])
+    }
+
+    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePin, Self::Error> {
+        if bit >= self.size {
+            return Err(Self::Error::from(PinError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            }));
+        }
+        Ok(&mut self.pins[bit])
+    }
+
     fn state(&self) -> Vec<PinState> {
         self.pins.iter().map(|pin| pin.state()).collect()
+    }
+
+    fn prev_state(&self) -> Vec<PinState> {
+        self.pins.iter().map(|pin| pin.prev_state()).collect()
     }
 
     fn state_as_bool(&self) -> Vec<Option<bool>> {
         self.pins.iter().map(|pin| pin.state_as_bool()).collect()
     }
 
+    fn prev_state_as_bool(&self) -> Vec<Option<bool>> {
+        self.pins
+            .iter()
+            .map(|pin| pin.prev_state_as_bool())
+            .collect()
+    }
+
     fn read(&self) -> Result<usize, Self::Error> {
         let mut combined = 0;
-
         for bit in (0..self.size).rev() {
             let val = self.pins[bit].read()?;
             combined <<= 1;
             combined |= val as usize;
         }
-
         Ok(combined)
     }
 
-    fn bit_state(&self, bit: usize) -> Result<PinState, Self::Error> {
-        Ok(self.pin(bit)?.state())
-    }
-
-    fn bit_state_as_bool(&self, bit: usize) -> Result<Option<bool>, Self::Error> {
-        Ok(self.pin(bit)?.state_as_bool())
-    }
-
-    fn read_bit(&self, bit: usize) -> Result<bool, Self::Error> {
-        self.pin(bit)?.read()
+    fn read_prev(&self) -> Result<usize, Self::Error> {
+        let mut combined = 0;
+        for bit in (0..self.size).rev() {
+            let val = self.pins[bit].read_prev()?;
+            combined <<= 1;
+            combined |= val as usize;
+        }
+        Ok(combined)
     }
 
     fn drive_in(&mut self, val: usize) -> Result<(), Self::Error> {
@@ -110,26 +115,32 @@ impl<T: SinglePin> Bus for StandardBus<T> {
         }
         Ok(())
     }
-
-    fn signal_in_bit(&mut self, bit: usize, state: PinState) -> Result<(), Self::Error> {
-        self.pin_mut(bit)?.signal_in(state)
-    }
-
-    fn drive_in_bit(&mut self, bit: usize, state: bool) -> Result<(), Self::Error> {
-        self.signal_in_bit(bit, PinState::from_bool(state))
-    }
-
-    fn tri_state_in_bit(&mut self, bit: usize) -> Result<(), Self::Error> {
-        self.signal_in_bit(bit, PinState::TriState)
-    }
-
-    fn undefine_in_bit(&mut self, bit: usize) -> Result<(), Self::Error> {
-        self.signal_in_bit(bit, PinState::Undefined)
-    }
 }
 
 impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
     type Error = T::Error;
+
+    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput, Self::Error> {
+        if bit >= self.size {
+            return Err(Self::Error::from(PinError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            }));
+        }
+        Ok(&self.pins[bit])
+    }
+
+    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput, Self::Error> {
+        if bit >= self.size {
+            return Err(Self::Error::from(PinError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size,
+            }));
+        }
+        Ok(&mut self.pins[bit])
+    }
 
     fn drive_out(&mut self, val: usize) -> Result<(), Self::Error> {
         if bit::usize_exceeds_bit_count(val, self.size) {
@@ -158,23 +169,6 @@ impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
             self.pins[bit].undefine_out()?;
         }
         Ok(())
-    }
-
-    fn signal_out_bit(&mut self, bit: usize, state: PinState) -> Result<(), Self::Error> {
-        self.pin_mut(bit)?.signal_out(state)?;
-        Ok(())
-    }
-
-    fn drive_out_bit(&mut self, bit: usize, state: bool) -> Result<(), Self::Error> {
-        self.signal_out_bit(bit, PinState::from_bool(state))
-    }
-
-    fn tri_state_out_bit(&mut self, bit: usize) -> Result<(), Self::Error> {
-        self.signal_out_bit(bit, PinState::TriState)
-    }
-
-    fn undefine_out_bit(&mut self, bit: usize) -> Result<(), Self::Error> {
-        self.signal_out_bit(bit, PinState::Undefined)
     }
 }
 
