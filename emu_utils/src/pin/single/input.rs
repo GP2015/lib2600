@@ -1,17 +1,18 @@
-use crate::pin::{PinError, PinState, SinglePin, single::SinglePinNew};
+use delegate::delegate;
+
+use crate::pin::{
+    PinError, PinState, SinglePin,
+    single::{SinglePinNew, core::PinCore},
+};
 
 pub struct InputPin<E> {
-    name: String,
-    state: PinState,
-    err_type: std::marker::PhantomData<E>,
+    core: PinCore<E>,
 }
 
 impl<E> SinglePinNew for InputPin<E> {
     fn new(name: String) -> Self {
         Self {
-            name,
-            state: PinState::Undefined,
-            err_type: std::marker::PhantomData,
+            core: PinCore::new(name),
         }
     }
 }
@@ -19,39 +20,30 @@ impl<E> SinglePinNew for InputPin<E> {
 impl<E: From<PinError>> SinglePin for InputPin<E> {
     type Error = E;
 
-    fn state(&self) -> PinState {
-        self.state
-    }
-
-    fn read(&self) -> Result<bool, E> {
-        match self.state {
-            PinState::High => Ok(true),
-            PinState::Low => Ok(false),
-            PinState::TriState => Err(E::from(PinError::ReadTriStated {
-                name: self.name.clone(),
-            })),
-            PinState::Undefined => Err(E::from(PinError::ReadUndefined {
-                name: self.name.clone(),
-            })),
+    delegate! {
+        to self.core{
+            fn state(&self) -> PinState;
+            fn state_as_bool(&self) -> Option<bool>;
+            fn read(&self) -> Result<bool, Self::Error>;
         }
     }
 
     fn signal_in(&mut self, state: PinState) -> Result<(), E> {
-        self.state = state;
+        self.core.set(state);
         Ok(())
     }
 
     fn drive_in(&mut self, state: bool) -> Result<(), E> {
-        self.state = PinState::from_bool(state);
+        self.core.set(PinState::from_bool(state));
         Ok(())
     }
 
     fn tri_state_in(&mut self) {
-        self.state = PinState::TriState;
+        self.core.set(PinState::TriState);
     }
 
     fn undefine_in(&mut self) -> Result<(), E> {
-        self.state = PinState::Undefined;
+        self.core.set(PinState::Undefined);
         Ok(())
     }
 }
@@ -69,12 +61,7 @@ mod tests {
     }
 
     #[rstest]
-    fn initial_state(reg: PinType) {
-        assert_eq!(reg.state(), PinState::Undefined);
-    }
-
-    #[rstest]
-    fn set_and_state(
+    fn signal(
         mut reg: PinType,
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
@@ -99,29 +86,5 @@ mod tests {
     fn undefine_in(mut reg: PinType) {
         reg.undefine_in().unwrap();
         assert_eq!(reg.state(), PinState::Undefined);
-    }
-
-    #[rstest]
-    fn read_bool(mut reg: PinType, #[values(true, false)] state: bool) {
-        reg.drive_in(state).unwrap();
-        assert_eq!(reg.read().unwrap(), state);
-    }
-
-    #[rstest]
-    fn read_tri_state(mut reg: PinType) {
-        reg.tri_state_in();
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            PinError::ReadTriStated { .. }
-        ));
-    }
-
-    #[rstest]
-    fn read_undefined(mut reg: PinType) {
-        reg.undefine_in().unwrap();
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            PinError::ReadUndefined { .. }
-        ));
     }
 }

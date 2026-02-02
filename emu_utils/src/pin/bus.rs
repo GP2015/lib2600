@@ -1,16 +1,14 @@
-pub mod contention;
-pub mod input;
-
-#[cfg(test)]
-mod mock_pin;
+pub mod standard;
 
 use crate::pin::PinState;
 
 pub trait Bus {
     type Error;
     fn state(&self) -> Vec<PinState>;
-    fn bit_state(&self, bit: usize) -> Result<PinState, Self::Error>;
+    fn state_as_bool(&self) -> Vec<Option<bool>>;
     fn read(&self) -> Result<usize, Self::Error>;
+    fn bit_state(&self, bit: usize) -> Result<PinState, Self::Error>;
+    fn bit_state_as_bool(&self, bit: usize) -> Result<Option<bool>, Self::Error>;
     fn read_bit(&self, bit: usize) -> Result<bool, Self::Error>;
     fn drive_in(&mut self, val: usize) -> Result<(), Self::Error>;
     fn wrapping_drive_in(&mut self, val: usize) -> Result<(), Self::Error>;
