@@ -3,6 +3,7 @@ use crate::pin::{PinError, PinState};
 pub struct PinCore<E> {
     name: String,
     state: PinState,
+    prev_state: PinState,
     err_type: std::marker::PhantomData<E>,
 }
 
@@ -10,6 +11,7 @@ impl<E> PinCore<E> {
     pub fn new(name: String, initial_state: PinState) -> Self {
         Self {
             name,
+            prev_state: PinState::TriState,
             state: initial_state,
             err_type: std::marker::PhantomData,
         }
@@ -23,23 +25,27 @@ impl<E> PinCore<E> {
         self.state
     }
 
+    pub fn prev_state(&self) -> PinState {
+        self.prev_state
+    }
+
     pub fn state_as_bool(&self) -> Option<bool> {
-        match self.state {
-            PinState::High => Some(true),
-            PinState::Low => Some(false),
-            PinState::TriState => None,
-            PinState::Undefined => None,
-        }
+        PinState::as_bool(&self.state)
+    }
+
+    pub fn prev_state_as_bool(&self) -> Option<bool> {
+        PinState::as_bool(&self.prev_state)
     }
 
     pub fn set(&mut self, state: PinState) {
+        self.prev_state = self.state;
         self.state = state;
     }
 }
 
 impl<E: From<PinError>> PinCore<E> {
-    pub fn read(&self) -> Result<bool, E> {
-        match self.state {
+    fn read_given_state(&self, state: PinState) -> Result<bool, E> {
+        match state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
             PinState::TriState => Err(E::from(PinError::ReadTriStated {
@@ -49,6 +55,14 @@ impl<E: From<PinError>> PinCore<E> {
                 name: self.name.clone(),
             })),
         }
+    }
+
+    pub fn read(&self) -> Result<bool, E> {
+        self.read_given_state(self.state)
+    }
+
+    pub fn read_prev(&self) -> Result<bool, E> {
+        self.read_given_state(self.prev_state)
     }
 }
 

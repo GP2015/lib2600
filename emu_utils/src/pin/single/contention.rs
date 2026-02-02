@@ -102,8 +102,11 @@ impl<E: From<PinError>> SinglePin for ContentionPin<E> {
     delegate! {
         to self.core{
             fn state(&self) -> PinState;
+            fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
+            fn prev_state_as_bool(&self) -> Option<bool>;
             fn read(&self) -> Result<bool, Self::Error>;
+            fn read_prev(&self) -> Result<bool, Self::Error>;
         }
     }
 
