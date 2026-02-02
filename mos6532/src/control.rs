@@ -6,7 +6,7 @@ mod reset;
 mod timer;
 
 use crate::{Riot, RiotError};
-use emu_utils::pin::{Bus, SinglePin};
+use emu_utils::pin::{Bus, PinState, SinglePin};
 
 #[derive(PartialEq, Debug)]
 enum Instruction {
@@ -43,15 +43,31 @@ enum Instruction {
 }
 
 impl Riot {
-    pub fn process_changes(&mut self) -> Result<(), RiotError> {
+    pub(crate) fn internal_process_changes(&mut self) -> Result<(), RiotError> {
+        self.handle_phi2()?;
+        self.update_edc()
+    }
+
+    fn handle_phi2(&mut self) -> Result<(), RiotError> {
+        let new_phi2 = self.phi2().state();
+
+        match (self.reg.old_phi2, new_phi2) {
+            (_, PinState::TriState) => return Err(RiotError::non_standard("tristated PHI2 pin")),
+            (_, PinState::Undefined) => return Err(RiotError::non_standard("undefined PHI2 pin")),
+            (PinState::Low, PinState::High) => self.on_rising_phi2_edge()?,
+            (PinState::High, PinState::Low) => self.on_falling_phi2_edge()?,
+            _ => (),
+        }
+
+        self.reg.old_phi2 = new_phi2;
+        Ok(())
+    }
+
+    fn on_rising_phi2_edge(&mut self) -> Result<(), RiotError> {
         if !self.res().read()? {
             self.reset()?;
             return Ok(());
         }
-
-        self.update_peripherals()?;
-
-        self.update_edc()?;
 
         if !self.cs1().read()? || self.cs2().read()? {
             return Ok(());
@@ -59,6 +75,10 @@ impl Riot {
 
         let instruction = self.decode_instruction()?;
         self.execute_instruction(instruction)
+    }
+
+    fn on_falling_phi2_edge(&mut self) -> Result<(), RiotError> {
+        Ok(())
     }
 
     fn decode_instruction(&mut self) -> Result<Instruction, RiotError> {

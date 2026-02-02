@@ -1,21 +1,31 @@
 use crate::{Bus, Riot, RiotError, SinglePin};
 
 impl Riot {
+    pub fn clock_pulse(&mut self) -> Result<(), RiotError> {
+        self.phi2().drive_in(false)?;
+        self.process_changes()?;
+        self.phi2().drive_in(true)?;
+        self.process_changes()?;
+        self.phi2().drive_in(false)?;
+        self.process_changes()
+    }
+
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
         self.res().drive_in(false)?;
-        self.pulse_phi2()?;
+        self.clock_pulse()?;
         Ok(())
     }
 
     pub fn select(&mut self) -> Result<(), RiotError> {
         self.cs1().drive_in(true)?;
-        self.cs2().drive_in(false)
+        self.cs2().drive_in(false)?;
+        self.process_changes()
     }
 
     fn general_pulse(&mut self) -> Result<(), RiotError> {
         self.res().drive_in(true)?;
         self.select()?;
-        self.pulse_phi2()
+        self.clock_pulse()
     }
 
     fn general_ram_pulse(&mut self, rw: bool, address: usize) -> Result<(), RiotError> {

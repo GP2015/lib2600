@@ -8,4 +8,13 @@ pub enum RiotError {
 
     #[error(transparent)]
     RegisterError(#[from] RegisterError),
+
+    #[error("non-standard usage not yet implemented: {0}")]
+    NonStandardUsage(String),
+}
+
+impl RiotError {
+    pub(crate) fn non_standard(s: &str) -> Self {
+        Self::NonStandardUsage(String::from(s))
+    }
 }

@@ -1,6 +1,11 @@
-use emu_utils::register::{BitRegister, MBitRegister, ValueRegister};
+use emu_utils::{
+    pin::PinState,
+    register::{BitRegister, MBitRegister, ValueRegister},
+};
 
 pub struct Registers {
+    pub old_phi2: PinState,
+
     pub ddra: MBitRegister,
     pub ddrb: MBitRegister,
     pub ora: MBitRegister,
@@ -9,7 +14,6 @@ pub struct Registers {
     pub edc_use_pos_edge: BitRegister,
     pub edc_enable_irq: BitRegister,
     pub edc_interrupt_flag: BitRegister,
-    pub old_pa7: BitRegister,
 
     pub timer: ValueRegister<u8>,
     pub sub_timer: ValueRegister<usize>,
@@ -20,6 +24,8 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Self {
         Self {
+            old_phi2: PinState::TriState,
+
             ddra: MBitRegister::new(8, String::from("DDRA")),
             ddrb: MBitRegister::new(8, String::from("DDRB")),
             ora: MBitRegister::new(8, String::from("ORA")),
@@ -28,7 +34,6 @@ impl Registers {
             edc_use_pos_edge: BitRegister::new(String::from("Edge-Detect Polarity")),
             edc_enable_irq: BitRegister::new(String::from("Edge-Detect IRQ Control")),
             edc_interrupt_flag: BitRegister::new(String::from("Edge-Detect Interrupt Flag")),
-            old_pa7: BitRegister::new(String::from("Old PA7 State")),
 
             timer: ValueRegister::new(String::from("Timer")),
             sub_timer: ValueRegister::new(String::from("Sub-Timer")),

@@ -7,7 +7,11 @@ use paste::paste;
 
 macro_rules! create_pin_input {
     ($name:ident, $obj:ident) => {
-        pub fn $name(&mut self) -> &mut impl $obj<Error = RiotError> {
+        pub fn $name(&mut self) -> &impl $obj<Error = RiotError> {
+            &self.pin.$name
+        }
+
+        pub fn $name_mut(&mut self) -> &mut impl $obj<Error = RiotError> {
             &mut self.pin.$name
         }
     };
@@ -16,7 +20,11 @@ macro_rules! create_pin_input {
 macro_rules! create_pin_output {
     ($pin:ident, $obj:ident) => {
         paste! {
-            pub(crate) fn [<$pin _o>](&mut self) -> &mut impl $obj<Error = RiotError> {
+            pub(crate) fn [<$pin _o>](&mut self) -> &impl $obj<Error = RiotError> {
+                &self.pin.$pin
+            }
+
+            pub(crate) fn [<$pin _o_mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
                 &mut self.pin.$pin
             }
         }
@@ -24,7 +32,7 @@ macro_rules! create_pin_output {
 }
 
 pub struct Riot {
-    pub pin: Pins,
+    pub(crate) pin: Pins,
     pub(crate) reg: Registers,
     pub(crate) ram: Ram,
 }
@@ -44,6 +52,10 @@ impl Riot {
         }
     }
 
+    pub fn process_changes(&mut self) -> Result<(), RiotError> {
+        self.internal_process_changes()
+    }
+
     pub fn release_db(&mut self) {
         self.db_o().tri_state_out();
     }
@@ -53,6 +65,7 @@ impl Riot {
     create_pin_input!(pa, Bus);
     create_pin_input!(pb, Bus);
     create_pin_input!(res, SinglePin);
+    create_pin_input!(phi2, SinglePin);
     create_pin_input!(cs1, SinglePin);
     create_pin_input!(cs2, SinglePin);
     create_pin_input!(rw, SinglePin);
