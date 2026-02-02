@@ -7,10 +7,10 @@ pub struct PinCore<E> {
 }
 
 impl<E> PinCore<E> {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, initial_state: PinState) -> Self {
         Self {
             name,
-            state: PinState::Undefined,
+            state: initial_state,
             err_type: std::marker::PhantomData,
         }
     }
@@ -60,28 +60,32 @@ mod tests {
     type PinType = PinCore<PinError>;
 
     #[fixture]
-    fn reg() -> PinType {
-        PinCore::new(String::from("reg"))
+    fn pin() -> PinType {
+        PinCore::new(String::from("pin"), PinState::Undefined)
     }
 
     #[rstest]
-    fn initial_state(reg: PinType) {
-        assert_eq!(reg.state(), PinState::Undefined);
+    fn initial_state(
+        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
+        state: PinState,
+    ) {
+        let pin = PinCore::<PinState>::new(String::new(), state);
+        assert_eq!(pin.state(), state);
     }
 
     #[rstest]
-    fn name(reg: PinType) {
-        assert_eq!(reg.name(), String::from("reg"));
+    fn name(pin: PinType) {
+        assert_eq!(pin.name(), String::from("pin"));
     }
 
     #[rstest]
     fn get_state(
-        mut reg: PinType,
+        mut pin: PinType,
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        reg.set(state);
-        assert_eq!(reg.state(), state);
+        pin.set(state);
+        assert_eq!(pin.state(), state);
     }
 
     #[rstest]
@@ -89,31 +93,31 @@ mod tests {
     #[case(PinState::Low, Some(false))]
     #[case(PinState::TriState, None)]
     #[case(PinState::Undefined, None)]
-    fn state_as_bool(mut reg: PinType, #[case] state: PinState, #[case] b: Option<bool>) {
-        reg.set(state);
-        assert_eq!(reg.state_as_bool(), b);
+    fn state_as_bool(mut pin: PinType, #[case] state: PinState, #[case] b: Option<bool>) {
+        pin.set(state);
+        assert_eq!(pin.state_as_bool(), b);
     }
 
     #[rstest]
-    fn read_bool(mut reg: PinType, #[values(true, false)] state: bool) {
-        reg.set(PinState::from_bool(state));
-        assert_eq!(reg.read().unwrap(), state);
+    fn read_bool(mut pin: PinType, #[values(true, false)] state: bool) {
+        pin.set(PinState::from_bool(state));
+        assert_eq!(pin.read().unwrap(), state);
     }
 
     #[rstest]
-    fn read_tri_state(mut reg: PinType) {
-        reg.set(PinState::TriState);
+    fn read_tri_state(mut pin: PinType) {
+        pin.set(PinState::TriState);
         assert!(matches!(
-            reg.read().err().unwrap(),
+            pin.read().err().unwrap(),
             PinError::ReadTriStated { .. }
         ));
     }
 
     #[rstest]
-    fn read_undefined(mut reg: PinType) {
-        reg.set(PinState::Undefined);
+    fn read_undefined(mut pin: PinType) {
+        pin.set(PinState::Undefined);
         assert!(matches!(
-            reg.read().err().unwrap(),
+            pin.read().err().unwrap(),
             PinError::ReadUndefined { .. }
         ));
     }

@@ -89,7 +89,7 @@ impl<E: From<PinError>> ContentionPin<E> {
 impl<E> SinglePinNew for ContentionPin<E> {
     fn new(name: String) -> Self {
         Self {
-            core: PinCore::new(name),
+            core: PinCore::new(name, PinState::Undefined),
             driving_in: false,
             driving_out: true,
         }
@@ -152,15 +152,20 @@ mod tests {
     type PinType = ContentionPin<PinError>;
 
     #[fixture]
-    fn reg_default() -> PinType {
+    fn pin_default() -> PinType {
         ContentionPin::new(String::new())
     }
 
+    #[rstest]
+    fn initial_state(#[from(pin_default)] pin: PinType) {
+        assert_eq!(pin.state(), PinState::Undefined);
+    }
+
     #[fixture]
-    fn reg_tri_state_out() -> PinType {
-        let mut reg = ContentionPin::new(String::new());
-        reg.tri_state_out();
-        reg
+    fn pin_tri_state_out() -> PinType {
+        let mut pin = ContentionPin::new(String::new());
+        pin.tri_state_out();
+        pin
     }
 
     type EmptyRes = Result<(), PinError>;
@@ -171,41 +176,41 @@ mod tests {
 
     #[rstest]
     fn signal(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
         #[values(ContentionPin::signal_in, ContentionPin::signal_out)] func: Signal,
     ) {
-        func(&mut reg, state).unwrap();
-        assert_eq!(reg.state(), state);
+        func(&mut pin, state).unwrap();
+        assert_eq!(pin.state(), state);
     }
 
     #[rstest]
     fn drive(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(true, false)] b: bool,
         #[values(ContentionPin::drive_in, ContentionPin::drive_out)] func: Drive,
     ) {
-        func(&mut reg, b).unwrap();
-        assert_eq!(reg.state(), PinState::from_bool(b));
+        func(&mut pin, b).unwrap();
+        assert_eq!(pin.state(), PinState::from_bool(b));
     }
 
     #[rstest]
     fn tri_state(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(ContentionPin::tri_state_in, ContentionPin::tri_state_out)] func: TriState,
     ) {
-        func(&mut reg);
-        assert_eq!(reg.state(), PinState::TriState);
+        func(&mut pin);
+        assert_eq!(pin.state(), PinState::TriState);
     }
 
     #[rstest]
     fn undefine(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(ContentionPin::undefine_in, ContentionPin::undefine_out)] func: Undefine,
     ) {
-        func(&mut reg).unwrap();
-        assert_eq!(reg.state(), PinState::Undefined);
+        func(&mut pin).unwrap();
+        assert_eq!(pin.state(), PinState::Undefined);
     }
 
     #[rstest]
@@ -217,44 +222,44 @@ mod tests {
     #[case(PinState::High, PinState::High, PinState::High)]
     #[case(PinState::Low, PinState::Low, PinState::Low)]
     fn safe_two_way_driving(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[case] istate: PinState,
         #[case] ostate: PinState,
         #[case] state: PinState,
     ) {
-        reg.signal_in(istate).unwrap();
-        reg.signal_out(ostate).unwrap();
-        assert_eq!(reg.state(), state);
+        pin.signal_in(istate).unwrap();
+        pin.signal_out(ostate).unwrap();
+        assert_eq!(pin.state(), state);
     }
 
     #[rstest]
-    fn contention_swap(#[from(reg_default)] mut reg: PinType, #[values(true, false)] state: bool) {
-        reg.drive_out(state).unwrap();
-        reg.drive_in(state).unwrap();
-        assert_eq!(reg.read().unwrap(), state);
-        reg.tri_state_out();
-        reg.drive_in(!state).unwrap();
-        reg.drive_out(!state).unwrap();
-        assert_eq!(reg.read().unwrap(), !state);
+    fn contention_swap(#[from(pin_default)] mut pin: PinType, #[values(true, false)] state: bool) {
+        pin.drive_out(state).unwrap();
+        pin.drive_in(state).unwrap();
+        assert_eq!(pin.read().unwrap(), state);
+        pin.tri_state_out();
+        pin.drive_in(!state).unwrap();
+        pin.drive_out(!state).unwrap();
+        assert_eq!(pin.read().unwrap(), !state);
     }
 
     #[rstest]
     fn short_circuit(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(true, false)] state: bool,
         #[values(true, false)] dir: bool,
     ) {
         if dir {
-            reg.drive_in(state).unwrap();
+            pin.drive_in(state).unwrap();
         } else {
-            reg.drive_out(state).unwrap();
+            pin.drive_out(state).unwrap();
         }
 
         assert!(matches!(
             if dir {
-                reg.drive_out(!state).err().unwrap()
+                pin.drive_out(!state).err().unwrap()
             } else {
-                reg.drive_in(!state).err().unwrap()
+                pin.drive_in(!state).err().unwrap()
             },
             PinError::ShortCircuit { .. }
         ));
@@ -267,22 +272,22 @@ mod tests {
     #[case(PinState::Undefined, PinState::Low)]
     #[case(PinState::Undefined, PinState::Undefined)]
     fn potential_short_circuit(
-        #[from(reg_tri_state_out)] mut reg: PinType,
+        #[from(pin_tri_state_out)] mut pin: PinType,
         #[case] istate: PinState,
         #[case] ostate: PinState,
         #[values(true, false)] dir: bool,
     ) {
         if dir {
-            reg.signal_in(istate).unwrap();
+            pin.signal_in(istate).unwrap();
         } else {
-            reg.signal_out(istate).unwrap();
+            pin.signal_out(istate).unwrap();
         }
 
         assert!(matches!(
             if dir {
-                reg.signal_out(ostate).err().unwrap()
+                pin.signal_out(ostate).err().unwrap()
             } else {
-                reg.signal_in(ostate).err().unwrap()
+                pin.signal_in(ostate).err().unwrap()
             },
             PinError::PotentialShortCircuit { .. }
         ));

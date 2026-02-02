@@ -12,7 +12,7 @@ pub struct InputPin<E> {
 impl<E> SinglePinNew for InputPin<E> {
     fn new(name: String) -> Self {
         Self {
-            core: PinCore::new(name),
+            core: PinCore::new(name, PinState::TriState),
         }
     }
 }
@@ -56,35 +56,40 @@ mod tests {
     type PinType = InputPin<PinError>;
 
     #[fixture]
-    fn reg() -> PinType {
+    fn pin() -> PinType {
         InputPin::new(String::new())
     }
 
     #[rstest]
+    fn initial_state(pin: PinType) {
+        assert_eq!(pin.state(), PinState::TriState);
+    }
+
+    #[rstest]
     fn signal(
-        mut reg: PinType,
+        mut pin: PinType,
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        reg.signal_in(state).unwrap();
-        assert_eq!(reg.state(), state);
+        pin.signal_in(state).unwrap();
+        assert_eq!(pin.state(), state);
     }
 
     #[rstest]
-    fn drive_in(mut reg: PinType, #[values(true, false)] b: bool) {
-        reg.drive_in(b).unwrap();
-        assert_eq!(reg.state(), PinState::from_bool(b));
+    fn drive_in(mut pin: PinType, #[values(true, false)] b: bool) {
+        pin.drive_in(b).unwrap();
+        assert_eq!(pin.state(), PinState::from_bool(b));
     }
 
     #[rstest]
-    fn tri_state_in(mut reg: PinType) {
-        reg.tri_state_in();
-        assert_eq!(reg.state(), PinState::TriState);
+    fn tri_state_in(mut pin: PinType) {
+        pin.tri_state_in();
+        assert_eq!(pin.state(), PinState::TriState);
     }
 
     #[rstest]
-    fn undefine_in(mut reg: PinType) {
-        reg.undefine_in().unwrap();
-        assert_eq!(reg.state(), PinState::Undefined);
+    fn undefine_in(mut pin: PinType) {
+        pin.undefine_in().unwrap();
+        assert_eq!(pin.state(), PinState::Undefined);
     }
 }

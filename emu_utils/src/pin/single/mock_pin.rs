@@ -12,7 +12,7 @@ pub struct MockPin<E> {
 impl<E> SinglePinNew for MockPin<E> {
     fn new(name: String) -> Self {
         Self {
-            core: PinCore::new(name),
+            core: PinCore::new(name, PinState::Undefined),
         }
     }
 }
