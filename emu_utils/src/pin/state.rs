@@ -16,12 +16,11 @@ pub enum PinState {
 }
 
 impl PinState {
-    pub(crate) fn from_bool(b: bool) -> Self {
+    pub fn from_bool(b: bool) -> Self {
         if b { PinState::High } else { PinState::Low }
     }
 
-    #[cfg(test)]
-    pub(crate) fn as_bool(&self) -> Option<bool> {
+    pub fn as_bool(&self) -> Option<bool> {
         match self {
             PinState::High => Some(true),
             PinState::Low => Some(false),
