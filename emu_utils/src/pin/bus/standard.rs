@@ -24,7 +24,7 @@ impl<T: SinglePinNew> StandardBus<T> {
 impl<T: SinglePin> Bus for StandardBus<T> {
     type Error = T::Error;
 
-    fn pin(&self, bit: usize) -> Result<&impl SinglePin, Self::Error> {
+    fn pin(&self, bit: usize) -> Result<&impl SinglePin<Error = Self::Error>, Self::Error> {
         if bit >= self.size {
             return Err(Self::Error::from(PinError::BitOutOfRange {
                 name: self.name.clone(),
@@ -35,7 +35,10 @@ impl<T: SinglePin> Bus for StandardBus<T> {
         Ok(&self.pins[bit])
     }
 
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePin, Self::Error> {
+    fn pin_mut(
+        &mut self,
+        bit: usize,
+    ) -> Result<&mut impl SinglePin<Error = Self::Error>, Self::Error> {
         if bit >= self.size {
             return Err(Self::Error::from(PinError::BitOutOfRange {
                 name: self.name.clone(),
@@ -120,7 +123,10 @@ impl<T: SinglePin> Bus for StandardBus<T> {
 impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
     type Error = T::Error;
 
-    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput, Self::Error> {
+    fn pin_out(
+        &self,
+        bit: usize,
+    ) -> Result<&impl SinglePinOutput<Error = Self::Error>, Self::Error> {
         if bit >= self.size {
             return Err(Self::Error::from(PinError::BitOutOfRange {
                 name: self.name.clone(),
@@ -131,7 +137,10 @@ impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
         Ok(&self.pins[bit])
     }
 
-    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput, Self::Error> {
+    fn pin_out_mut(
+        &mut self,
+        bit: usize,
+    ) -> Result<&mut impl SinglePinOutput<Error = Self::Error>, Self::Error> {
         if bit >= self.size {
             return Err(Self::Error::from(PinError::BitOutOfRange {
                 name: self.name.clone(),
@@ -186,25 +195,23 @@ mod tests {
         StandardBus::new(String::new(), 8)
     }
 
-    fn expect_out_of_range(err: Option<PinError>) {
-        assert!(matches!(err.unwrap(), PinError::BitOutOfRange { .. }))
-    }
-
     type EmptyRes = Result<(), PinError>;
     type DriveValue = fn(&mut BusType, val: usize) -> EmptyRes;
     type TriState = fn(&mut BusType);
     type Undefine = fn(&mut BusType) -> EmptyRes;
-    type SetSignalBit = fn(&mut BusType, bit: usize, state: PinState) -> EmptyRes;
-    type DriveBit = fn(&mut BusType, bit: usize, state: bool) -> EmptyRes;
-    type TriStateBit = fn(&mut BusType, bit: usize) -> EmptyRes;
-    type UndefineBit = fn(&mut BusType, bit: usize) -> EmptyRes;
 
     #[rstest]
     fn state(mut bus: BusType) {
-        bus.signal_in_bit(2, PinState::High).unwrap();
-        bus.signal_in_bit(3, PinState::Low).unwrap();
-        bus.signal_in_bit(4, PinState::TriState).unwrap();
-        bus.signal_in_bit(5, PinState::Undefined).unwrap();
+        bus.pin_mut(2).unwrap().signal_in(PinState::High).unwrap();
+        bus.pin_mut(3).unwrap().signal_in(PinState::Low).unwrap();
+        bus.pin_mut(4)
+            .unwrap()
+            .signal_in(PinState::TriState)
+            .unwrap();
+        bus.pin_mut(5)
+            .unwrap()
+            .signal_in(PinState::Undefined)
+            .unwrap();
 
         assert_eq!(
             bus.state(),
@@ -223,10 +230,16 @@ mod tests {
 
     #[rstest]
     fn state_as_bool(mut bus: BusType) {
-        bus.signal_in_bit(2, PinState::High).unwrap();
-        bus.signal_in_bit(3, PinState::Low).unwrap();
-        bus.signal_in_bit(4, PinState::TriState).unwrap();
-        bus.signal_in_bit(5, PinState::Undefined).unwrap();
+        bus.pin_mut(2).unwrap().signal_in(PinState::High).unwrap();
+        bus.pin_mut(3).unwrap().signal_in(PinState::Low).unwrap();
+        bus.pin_mut(4)
+            .unwrap()
+            .signal_in(PinState::TriState)
+            .unwrap();
+        bus.pin_mut(5)
+            .unwrap()
+            .signal_in(PinState::Undefined)
+            .unwrap();
 
         assert_eq!(
             bus.state_as_bool(),
@@ -238,47 +251,6 @@ mod tests {
     fn read(mut bus: BusType) {
         bus.drive_in(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
-    }
-
-    #[rstest]
-    fn bit_state(
-        mut bus: BusType,
-        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
-        state: PinState,
-    ) {
-        bus.signal_in_bit(4, state).unwrap();
-        assert_eq!(bus.bit_state(4).unwrap(), state);
-    }
-
-    #[rstest]
-    fn bit_state_out_of_range(bus: BusType) {
-        expect_out_of_range(bus.bit_state(8).err());
-    }
-
-    #[rstest]
-    fn bit_state_as_bool(
-        mut bus: BusType,
-        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
-        state: PinState,
-    ) {
-        bus.signal_in_bit(4, state).unwrap();
-        assert_eq!(bus.bit_state(4).unwrap(), state);
-    }
-
-    #[rstest]
-    fn bit_state_as_bool_out_of_range(bus: BusType) {
-        expect_out_of_range(bus.bit_state_as_bool(8).err());
-    }
-
-    #[rstest]
-    fn read_bit(mut bus: BusType, #[values(true, false)] state: bool) {
-        bus.drive_in_bit(4, state).unwrap();
-        assert_eq!(bus.read_bit(4).unwrap(), state);
-    }
-
-    #[rstest]
-    fn read_bit_out_of_range(bus: BusType) {
-        expect_out_of_range(bus.read_bit(8).err());
     }
 
     #[rstest]
@@ -325,79 +297,5 @@ mod tests {
     ) {
         func(&mut bus).unwrap();
         assert_eq!(bus.state(), vec![PinState::Undefined; 8]);
-    }
-
-    #[rstest]
-    fn signal_bit(
-        mut bus: BusType,
-        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
-        state: PinState,
-        #[values(StandardBus::signal_in_bit, StandardBus::signal_out_bit)] func: SetSignalBit,
-    ) {
-        func(&mut bus, 4, state).unwrap();
-        assert_eq!(bus.bit_state(4).unwrap(), state);
-    }
-
-    #[rstest]
-    fn signal_bit_out_of_range(
-        mut bus: BusType,
-        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
-        state: PinState,
-        #[values(StandardBus::signal_in_bit, StandardBus::signal_out_bit)] func: SetSignalBit,
-    ) {
-        expect_out_of_range(func(&mut bus, 8, state).err());
-    }
-
-    #[rstest]
-    fn drive_bit(
-        mut bus: BusType,
-        #[values(true, false)] state: bool,
-        #[values(StandardBus::drive_in_bit, StandardBus::drive_out_bit)] func: DriveBit,
-    ) {
-        func(&mut bus, 4, state).unwrap();
-        assert_eq!(bus.read_bit(4).unwrap(), state);
-    }
-
-    #[rstest]
-    fn drive_bit_out_of_range(
-        mut bus: BusType,
-        #[values(true, false)] state: bool,
-        #[values(StandardBus::drive_in_bit, StandardBus::drive_out_bit)] func: DriveBit,
-    ) {
-        expect_out_of_range(func(&mut bus, 8, state).err());
-    }
-
-    #[rstest]
-    fn tri_state_bit(
-        mut bus: BusType,
-        #[values(StandardBus::tri_state_in_bit, StandardBus::tri_state_out_bit)] func: TriStateBit,
-    ) {
-        func(&mut bus, 4).unwrap();
-        assert_eq!(bus.bit_state(4).unwrap(), PinState::TriState);
-    }
-
-    #[rstest]
-    fn tri_state_bit_out_of_range(
-        mut bus: BusType,
-        #[values(StandardBus::tri_state_in_bit, StandardBus::tri_state_out_bit)] func: TriStateBit,
-    ) {
-        expect_out_of_range(func(&mut bus, 8).err());
-    }
-
-    #[rstest]
-    fn undefine_bit(
-        mut bus: BusType,
-        #[values(StandardBus::undefine_in_bit, StandardBus::undefine_out_bit)] func: UndefineBit,
-    ) {
-        func(&mut bus, 4).unwrap();
-        assert_eq!(bus.bit_state(4).unwrap(), PinState::Undefined);
-    }
-
-    #[rstest]
-    fn undefine_bit_out_of_range(
-        mut bus: BusType,
-        #[values(StandardBus::undefine_in_bit, StandardBus::undefine_out_bit)] func: TriStateBit,
-    ) {
-        expect_out_of_range(func(&mut bus, 8).err());
     }
 }

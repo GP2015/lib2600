@@ -4,8 +4,11 @@ use crate::pin::{PinState, SinglePin, SinglePinOutput};
 
 pub trait Bus {
     type Error;
-    fn pin(&self, bit: usize) -> Result<&impl SinglePin, Self::Error>;
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePin, Self::Error>;
+    fn pin(&self, bit: usize) -> Result<&impl SinglePin<Error = Self::Error>, Self::Error>;
+    fn pin_mut(
+        &mut self,
+        bit: usize,
+    ) -> Result<&mut impl SinglePin<Error = Self::Error>, Self::Error>;
     fn state(&self) -> Vec<PinState>;
     fn prev_state(&self) -> Vec<PinState>;
     fn state_as_bool(&self) -> Vec<Option<bool>>;
@@ -20,8 +23,14 @@ pub trait Bus {
 
 pub trait BusOutput {
     type Error;
-    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput, Self::Error>;
-    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput, Self::Error>;
+    fn pin_out(
+        &self,
+        bit: usize,
+    ) -> Result<&impl SinglePinOutput<Error = Self::Error>, Self::Error>;
+    fn pin_out_mut(
+        &mut self,
+        bit: usize,
+    ) -> Result<&mut impl SinglePinOutput<Error = Self::Error>, Self::Error>;
     fn drive_out(&mut self, val: usize) -> Result<(), Self::Error>;
     fn tri_state_out(&mut self);
     fn undefine_out(&mut self) -> Result<(), Self::Error>;
