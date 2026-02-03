@@ -62,14 +62,14 @@ impl<E: From<PinError>> ContentionPin<E> {
         }
 
         self.set_this_drive_direction(true, drive_dir);
-        self.core.set(next_state);
+        self.core.set_signal(next_state);
         Ok(())
     }
 
     fn tri_state(&mut self, drive_dir: DriveDirection) {
         self.set_this_drive_direction(false, drive_dir);
         if !self.other_drive_direction_from(drive_dir) {
-            self.core.set(PinState::TriState);
+            self.core.set_signal(PinState::TriState);
         }
     }
 
@@ -81,7 +81,7 @@ impl<E: From<PinError>> ContentionPin<E> {
         }
 
         self.set_this_drive_direction(true, drive_dir);
-        self.core.set(PinState::Undefined);
+        self.core.set_signal(PinState::Undefined);
         Ok(())
     }
 }
@@ -100,7 +100,7 @@ impl<E: From<PinError>> SinglePin for ContentionPin<E> {
     type Error = E;
 
     delegate! {
-        to self.core{
+        to self.core {
             fn state(&self) -> PinState;
             fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;

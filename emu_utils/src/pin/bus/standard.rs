@@ -202,55 +202,58 @@ mod tests {
 
     #[rstest]
     fn state(mut bus: BusType) {
-        bus.pin_mut(2).unwrap().signal_in(PinState::High).unwrap();
-        bus.pin_mut(3).unwrap().signal_in(PinState::Low).unwrap();
-        bus.pin_mut(4)
-            .unwrap()
-            .signal_in(PinState::TriState)
-            .unwrap();
-        bus.pin_mut(5)
-            .unwrap()
-            .signal_in(PinState::Undefined)
-            .unwrap();
+        let states = [
+            PinState::Undefined,
+            PinState::Undefined,
+            PinState::High,
+            PinState::Low,
+            PinState::TriState,
+            PinState::Undefined,
+            PinState::Undefined,
+            PinState::Undefined,
+        ];
 
-        assert_eq!(
-            bus.state(),
-            vec![
-                PinState::Undefined,
-                PinState::Undefined,
-                PinState::High,
-                PinState::Low,
-                PinState::TriState,
-                PinState::Undefined,
-                PinState::Undefined,
-                PinState::Undefined,
-            ]
-        )
+        for (i, state) in states.iter().enumerate() {
+            bus.pin_mut(i).unwrap().signal_in(*state).unwrap();
+        }
+
+        assert_eq!(bus.state(), states);
+        bus.drive_in(0x67).unwrap();
+        assert_eq!(bus.prev_state(), states);
     }
 
     #[rstest]
     fn state_as_bool(mut bus: BusType) {
-        bus.pin_mut(2).unwrap().signal_in(PinState::High).unwrap();
-        bus.pin_mut(3).unwrap().signal_in(PinState::Low).unwrap();
-        bus.pin_mut(4)
-            .unwrap()
-            .signal_in(PinState::TriState)
-            .unwrap();
-        bus.pin_mut(5)
-            .unwrap()
-            .signal_in(PinState::Undefined)
-            .unwrap();
+        let states = [
+            PinState::Undefined,
+            PinState::Undefined,
+            PinState::High,
+            PinState::Low,
+            PinState::TriState,
+            PinState::Undefined,
+            PinState::Undefined,
+            PinState::Undefined,
+        ];
 
-        assert_eq!(
-            bus.state_as_bool(),
-            vec![None, None, Some(true), Some(false), None, None, None, None,]
-        )
+        for (i, state) in states.iter().enumerate() {
+            bus.pin_mut(i).unwrap().signal_in(*state).unwrap();
+        }
+
+        for (i, state) in bus.state_as_bool().iter().enumerate() {
+            assert_eq!(*state, PinState::as_bool(&states[i]));
+        }
+        bus.drive_in(0x67).unwrap();
+        for (i, state) in bus.prev_state_as_bool().iter().enumerate() {
+            assert_eq!(*state, PinState::as_bool(&states[i]));
+        }
     }
 
     #[rstest]
     fn read(mut bus: BusType) {
         bus.drive_in(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
+        bus.drive_in(0x89).unwrap();
+        assert_eq!(bus.read_prev().unwrap(), 0x67);
     }
 
     #[rstest]

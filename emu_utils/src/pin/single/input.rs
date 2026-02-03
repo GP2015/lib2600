@@ -21,7 +21,7 @@ impl<E: From<PinError>> SinglePin for InputPin<E> {
     type Error = E;
 
     delegate! {
-        to self.core{
+        to self.core {
             fn state(&self) -> PinState;
             fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
@@ -32,21 +32,21 @@ impl<E: From<PinError>> SinglePin for InputPin<E> {
     }
 
     fn signal_in(&mut self, state: PinState) -> Result<(), E> {
-        self.core.set(state);
+        self.core.set_signal(state);
         Ok(())
     }
 
     fn drive_in(&mut self, state: bool) -> Result<(), E> {
-        self.core.set(PinState::from_bool(state));
+        self.core.set_signal(PinState::from_bool(state));
         Ok(())
     }
 
     fn tri_state_in(&mut self) {
-        self.core.set(PinState::TriState);
+        self.core.set_signal(PinState::TriState);
     }
 
     fn undefine_in(&mut self) -> Result<(), E> {
-        self.core.set(PinState::Undefined);
+        self.core.set_signal(PinState::Undefined);
         Ok(())
     }
 }
