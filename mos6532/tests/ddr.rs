@@ -15,16 +15,16 @@ fn read_write_ddr_success_manual(
     #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a1: bool,
 ) {
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.rw().drive_in(true).unwrap();
-    riot.db().drive_in(0x89).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x89).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x67);
 }
@@ -34,17 +34,17 @@ fn write_ddr_deselected(
     #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a1: bool,
 ) {
-    riot.cs1().drive_in(false).unwrap();
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.cs1().drive_in(true).unwrap();
-    riot.rw().drive_in(true).unwrap();
+    riot.cs1_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0);
 }
@@ -54,17 +54,17 @@ fn read_ddr_deselected(
     #[from(common::riot_post_reset_select)] mut riot: Riot,
     #[values(false, true)] a1: bool,
 ) {
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, true).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.db().drive_in(0x89).unwrap();
-    riot.cs1().drive_in(false).unwrap();
-    riot.rw().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x89).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x89);
 }

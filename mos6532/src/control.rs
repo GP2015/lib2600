@@ -49,18 +49,13 @@ impl Riot {
     }
 
     fn handle_phi2(&mut self) -> Result<(), RiotError> {
-        let new_phi2 = self.phi2().state();
-
-        match (self.reg.old_phi2, new_phi2) {
-            (_, PinState::TriState) => return Err(RiotError::non_standard("tristated PHI2 pin")),
-            (_, PinState::Undefined) => return Err(RiotError::non_standard("undefined PHI2 pin")),
-            (PinState::Low, PinState::High) => self.on_rising_phi2_edge()?,
-            (PinState::High, PinState::Low) => self.on_falling_phi2_edge()?,
-            _ => (),
+        match (self.phi2().prev_state(), self.phi2().state()) {
+            (_, PinState::TriState) => Err(RiotError::non_standard("tristated PHI2 pin")),
+            (_, PinState::Undefined) => Err(RiotError::non_standard("undefined PHI2 pin")),
+            (PinState::Low, PinState::High) => self.on_rising_phi2_edge(),
+            (PinState::High, PinState::Low) => self.on_falling_phi2_edge(),
+            _ => Ok(()),
         }
-
-        self.reg.old_phi2 = new_phi2;
-        Ok(())
     }
 
     fn on_rising_phi2_edge(&mut self) -> Result<(), RiotError> {
@@ -83,38 +78,38 @@ impl Riot {
 
     fn decode_instruction(&mut self) -> Result<Instruction, RiotError> {
         let instruction = if self.rs().read()? {
-            if self.a().read_bit(2)? {
+            if self.a().pin(2)?.read()? {
                 if self.rw().read()? {
-                    if self.a().read_bit(0)? {
+                    if self.a().pin(0)?.read()? {
                         Instruction::ReadInterruptFlag
                     } else {
-                        let enable_irq = self.a().read_bit(3)?;
+                        let enable_irq = self.a().pin(3)?.read()?;
                         Instruction::ReadTimer { enable_irq }
                     }
-                } else if self.a().read_bit(4)? {
-                    let enable_irq = self.a().read_bit(3)?;
+                } else if self.a().pin(4)?.read()? {
+                    let enable_irq = self.a().pin(3)?.read()?;
 
-                    if self.a().read_bit(1)? {
-                        if self.a().read_bit(0)? {
+                    if self.a().pin(1)?.read()? {
+                        if self.a().pin(0)?.read()? {
                             Instruction::WriteTimer1024T { enable_irq }
                         } else {
                             Instruction::WriteTimer64T { enable_irq }
                         }
-                    } else if self.a().read_bit(0)? {
+                    } else if self.a().pin(0)?.read()? {
                         Instruction::WriteTimer8T { enable_irq }
                     } else {
                         Instruction::WriteTimer1T { enable_irq }
                     }
                 } else {
-                    let enable_irq = self.a().read_bit(1)?;
-                    let use_pos_edge = self.a().read_bit(0)?;
+                    let enable_irq = self.a().pin(1)?.read()?;
+                    let use_pos_edge = self.a().pin(0)?.read()?;
                     Instruction::WriteEdc {
                         enable_irq,
                         use_pos_edge,
                     }
                 }
-            } else if self.a().read_bit(0)? {
-                if self.a().read_bit(1)? {
+            } else if self.a().pin(0)?.read()? {
+                if self.a().pin(1)?.read()? {
                     if self.rw().read()? {
                         Instruction::ReadDdrb
                     } else {
@@ -125,7 +120,7 @@ impl Riot {
                 } else {
                     Instruction::WriteDdra
                 }
-            } else if self.a().read_bit(1)? {
+            } else if self.a().pin(1)?.read()? {
                 if self.rw().read()? {
                     Instruction::ReadOrb
                 } else {
@@ -186,8 +181,8 @@ mod tests {
     #[case(false, Instruction::WriteRam)]
     #[case(true, Instruction::ReadRam)]
     fn address_ram(mut riot: Riot, #[case] rw: bool, #[case] res: Instruction) {
-        riot.rs().drive_in(false).unwrap();
-        riot.rw().drive_in(rw).unwrap();
+        riot.rs_mut().drive_in(false).unwrap();
+        riot.rw_mut().drive_in(rw).unwrap();
         assert_eq!(riot.decode_instruction().unwrap(), res);
     }
 
@@ -207,11 +202,11 @@ mod tests {
         #[case] a0: bool,
         #[case] instr: Instruction,
     ) {
-        riot.rs().drive_in(true).unwrap();
-        riot.rw().drive_in(rw).unwrap();
-        riot.a().drive_in_bit(2, false).unwrap();
-        riot.a().drive_in_bit(1, a1).unwrap();
-        riot.a().drive_in_bit(0, a0).unwrap();
+        riot.rs_mut().drive_in(true).unwrap();
+        riot.rw_mut().drive_in(rw).unwrap();
+        riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+        riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+        riot.a_mut().pin_mut(0).unwrap().drive_in(a0).unwrap();
         assert_eq!(riot.decode_instruction().unwrap(), instr);
     }
 
@@ -231,33 +226,41 @@ mod tests {
         #[case] enable_irq: bool,
         #[case] instr: Instruction,
     ) {
-        riot.rs().drive_in(true).unwrap();
-        riot.rw().drive_in(false).unwrap();
-        riot.a().drive_in_bit(4, true).unwrap();
-        riot.a().drive_in_bit(3, enable_irq).unwrap();
-        riot.a().drive_in_bit(2, true).unwrap();
-        riot.a().drive_in_bit(1, a1).unwrap();
-        riot.a().drive_in_bit(0, a0).unwrap();
+        riot.rs_mut().drive_in(true).unwrap();
+        riot.rw_mut().drive_in(false).unwrap();
+        riot.a_mut().pin_mut(4).unwrap().drive_in(true).unwrap();
+        riot.a_mut()
+            .pin_mut(3)
+            .unwrap()
+            .drive_in(enable_irq)
+            .unwrap();
+        riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap();
+        riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+        riot.a_mut().pin_mut(0).unwrap().drive_in(a0).unwrap();
         assert_eq!(riot.decode_instruction().unwrap(), instr);
     }
 
     #[rstest]
     fn address_read_timer(mut riot: Riot, #[values(false, true)] enable_irq: bool) {
-        riot.rs().drive_in(true).unwrap();
-        riot.rw().drive_in(true).unwrap();
-        riot.a().drive_in_bit(3, enable_irq).unwrap();
-        riot.a().drive_in_bit(2, true).unwrap();
-        riot.a().drive_in_bit(0, false).unwrap();
+        riot.rs_mut().drive_in(true).unwrap();
+        riot.rw_mut().drive_in(true).unwrap();
+        riot.a_mut()
+            .pin_mut(3)
+            .unwrap()
+            .drive_in(enable_irq)
+            .unwrap();
+        riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap();
+        riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap();
         let instruction = Instruction::ReadTimer { enable_irq };
         assert_eq!(instruction, riot.decode_instruction().unwrap(),);
     }
 
     #[rstest]
     fn address_read_interrupt_flag(mut riot: Riot) {
-        riot.rs().drive_in(true).unwrap();
-        riot.rw().drive_in(true).unwrap();
-        riot.a().drive_in_bit(2, true).unwrap();
-        riot.a().drive_in_bit(0, true).unwrap();
+        riot.rs_mut().drive_in(true).unwrap();
+        riot.rw_mut().drive_in(true).unwrap();
+        riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap();
+        riot.a_mut().pin_mut(0).unwrap().drive_in(true).unwrap();
         let instruction = Instruction::ReadInterruptFlag;
         assert_eq!(instruction, riot.decode_instruction().unwrap());
     }
@@ -268,12 +271,20 @@ mod tests {
         #[values(false, true)] enable_irq: bool,
         #[values(false, true)] use_pos_edge: bool,
     ) {
-        riot.rs().drive_in(true).unwrap();
-        riot.rw().drive_in(false).unwrap();
-        riot.a().drive_in_bit(4, false).unwrap();
-        riot.a().drive_in_bit(2, true).unwrap();
-        riot.a().drive_in_bit(1, enable_irq).unwrap();
-        riot.a().drive_in_bit(0, use_pos_edge).unwrap();
+        riot.rs_mut().drive_in(true).unwrap();
+        riot.rw_mut().drive_in(false).unwrap();
+        riot.a_mut().pin_mut(4).unwrap().drive_in(false).unwrap();
+        riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap();
+        riot.a_mut()
+            .pin_mut(1)
+            .unwrap()
+            .drive_in(enable_irq)
+            .unwrap();
+        riot.a_mut()
+            .pin_mut(0)
+            .unwrap()
+            .drive_in(use_pos_edge)
+            .unwrap();
 
         let instruction = Instruction::WriteEdc {
             enable_irq,

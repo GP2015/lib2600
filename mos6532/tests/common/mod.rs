@@ -6,7 +6,7 @@ use rstest::fixture;
 pub fn riot_post_reset() -> Riot {
     let mut riot = Riot::new();
     riot.reset_pulse().unwrap();
-    riot.res().drive_in(true).unwrap();
+    riot.res_mut().drive_in(true).unwrap();
     riot
 }
 

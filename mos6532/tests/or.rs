@@ -28,8 +28,8 @@ fn read_or_pulse(riot: &mut Riot, reg: bool) -> Result<usize, RiotError> {
 
 fn write_p(riot: &mut Riot, reg: bool, data: usize) {
     match reg {
-        ATYPE => riot.pa().drive_in(data).unwrap(),
-        BTYPE => riot.pb().drive_in(data).unwrap(),
+        ATYPE => riot.pa_mut().drive_in(data).unwrap(),
+        BTYPE => riot.pb_mut().drive_in(data).unwrap(),
     }
 }
 
@@ -122,7 +122,7 @@ fn output_p_update_on_deselected_pulse(
     write_or_pulse(&mut riot, reg, 0x67).unwrap();
     write_p(&mut riot, reg, 0x89);
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x89);
-    riot.cs1().drive_in(false).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
 }
@@ -136,12 +136,12 @@ fn write_output_p_manual(
     #[case] a1: bool,
 ) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0x67);
 }
@@ -155,11 +155,11 @@ fn read_input_p_manual(
     #[case] a1: bool,
 ) {
     write_p(&mut riot, reg, 0x67);
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(true).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, false).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x67);
 }
@@ -173,13 +173,13 @@ fn write_output_p_deselected(
     #[case] a1: bool,
 ) {
     write_ddr_pulse(&mut riot, reg, 0xFF).unwrap();
-    riot.cs1().drive_in(false).unwrap();
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, false).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(read_p(&mut riot, reg).unwrap(), 0);
 }
@@ -193,12 +193,12 @@ fn read_input_p_deselected(
     #[case] a1: bool,
 ) {
     write_p(&mut riot, reg, 0x67);
-    riot.cs1().drive_in(false).unwrap();
-    riot.rs().drive_in(true).unwrap();
-    riot.rw().drive_in(true).unwrap();
-    riot.a().drive_in_bit(2, false).unwrap();
-    riot.a().drive_in_bit(1, a1).unwrap();
-    riot.a().drive_in_bit(0, false).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rs_mut().drive_in(true).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
+    riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap();
+    riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap();
+    riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap();
     riot.pulse_phi2().unwrap();
     assert!(riot.db().read().is_err());
 }

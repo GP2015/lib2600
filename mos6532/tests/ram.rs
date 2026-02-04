@@ -10,25 +10,25 @@ fn read_write_ram_success(#[from(common::riot_post_reset)] mut riot: Riot) {
 
 #[rstest]
 fn read_write_ram_success_manual(#[from(common::riot_post_reset_select)] mut riot: Riot) {
-    riot.rs().drive_in(false).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in(0x45).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.rs_mut().drive_in(false).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().drive_in(0x45).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
 
-    riot.rw().drive_in(true).unwrap();
-    riot.db().drive_in(0x89).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x89).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x67);
 }
 
 #[rstest]
 fn write_ram_deselected(#[from(common::riot_post_reset_select)] mut riot: Riot) {
-    riot.cs1().drive_in(false).unwrap();
-    riot.rs().drive_in(false).unwrap();
-    riot.rw().drive_in(false).unwrap();
-    riot.a().drive_in(0x45).unwrap();
-    riot.db().drive_in(0x67).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rs_mut().drive_in(false).unwrap();
+    riot.rw_mut().drive_in(false).unwrap();
+    riot.a_mut().drive_in(0x45).unwrap();
+    riot.db_mut().drive_in(0x67).unwrap();
     riot.pulse_phi2().unwrap();
     assert!(riot.read_ram_pulse(0x45).is_err());
 }
@@ -37,9 +37,9 @@ fn write_ram_deselected(#[from(common::riot_post_reset_select)] mut riot: Riot) 
 fn read_ram_deselected(#[from(common::riot_post_reset)] mut riot: Riot) {
     riot.write_ram_pulse(0x45, 0x67).unwrap();
 
-    riot.db().drive_in(0x89).unwrap();
-    riot.cs1().drive_in(false).unwrap();
-    riot.rw().drive_in(true).unwrap();
+    riot.db_mut().drive_in(0x89).unwrap();
+    riot.cs1_mut().drive_in(false).unwrap();
+    riot.rw_mut().drive_in(true).unwrap();
     riot.pulse_phi2().unwrap();
     assert_eq!(riot.db().read().unwrap(), 0x89);
 }

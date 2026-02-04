@@ -12,7 +12,7 @@ impl Riot {
     pub(super) fn read_ram(&mut self) -> Result<(), RiotError> {
         let addr = self.a().read()?;
         let byte = self.ram.byte(addr).read()?;
-        self.db_o().drive_out(byte)?;
+        self.db_out_mut().drive_out(byte)?;
         Ok(())
     }
 }

@@ -5,9 +5,9 @@ use rstest::{fixture, rstest};
 #[fixture]
 fn initial_pa7(#[default(false)] state: bool) -> Riot {
     let mut riot = Riot::new();
-    riot.pa().drive_in_bit(7, state).unwrap();
+    riot.pa_mut().pin_mut(7).unwrap().drive_in(state).unwrap();
     riot.reset_pulse().unwrap();
-    riot.res().drive_in(true).unwrap();
+    riot.res_mut().drive_in(true).unwrap();
     riot
 }
 

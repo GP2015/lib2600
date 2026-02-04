@@ -1,42 +1,42 @@
 use crate::{Bus, Riot, RiotError, SinglePin};
 
 impl Riot {
-    pub fn clock_pulse(&mut self) -> Result<(), RiotError> {
-        self.phi2().drive_in(false)?;
+    pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
+        self.phi2_mut().drive_in(false)?;
         self.process_changes()?;
-        self.phi2().drive_in(true)?;
+        self.phi2_mut().drive_in(true)?;
         self.process_changes()?;
-        self.phi2().drive_in(false)?;
+        self.phi2_mut().drive_in(false)?;
         self.process_changes()
     }
 
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
-        self.res().drive_in(false)?;
-        self.clock_pulse()?;
+        self.res_mut().drive_in(false)?;
+        self.pulse_phi2()?;
         Ok(())
     }
 
     pub fn select(&mut self) -> Result<(), RiotError> {
-        self.cs1().drive_in(true)?;
-        self.cs2().drive_in(false)?;
+        self.cs1_mut().drive_in(true)?;
+        self.cs2_mut().drive_in(false)?;
         self.process_changes()
     }
 
     fn general_pulse(&mut self) -> Result<(), RiotError> {
-        self.res().drive_in(true)?;
+        self.res_mut().drive_in(true)?;
         self.select()?;
-        self.clock_pulse()
+        self.pulse_phi2()
     }
 
     fn general_ram_pulse(&mut self, rw: bool, address: usize) -> Result<(), RiotError> {
-        self.rs().drive_in(false)?;
-        self.rw().drive_in(rw)?;
-        self.a().drive_in(address)?;
+        self.rs_mut().drive_in(false)?;
+        self.rw_mut().drive_in(rw)?;
+        self.a_mut().drive_in(address)?;
         self.general_pulse()
     }
 
     pub fn write_ram_pulse(&mut self, address: usize, data: usize) -> Result<(), RiotError> {
-        self.db().drive_in(data)?;
+        self.db_mut().drive_in(data)?;
         self.general_ram_pulse(false, address)
     }
 
@@ -46,16 +46,16 @@ impl Riot {
     }
 
     fn general_io_pulse(&mut self, a0: bool, a1: bool, rw: bool) -> Result<(), RiotError> {
-        self.rs().drive_in(true)?;
-        self.rw().drive_in(rw)?;
-        self.a().drive_in_bit(2, false)?;
-        self.a().drive_in_bit(0, a0)?;
-        self.a().drive_in_bit(1, a1)?;
+        self.rs_mut().drive_in(true)?;
+        self.rw_mut().drive_in(rw)?;
+        self.a_mut().pin_mut(2)?.drive_in(false)?;
+        self.a_mut().pin_mut(1)?.drive_in(a1)?;
+        self.a_mut().pin_mut(0)?.drive_in(a0)?;
         self.general_pulse()
     }
 
     pub fn write_ora_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_in(data)?;
+        self.db_mut().drive_in(data)?;
         self.general_io_pulse(false, false, false)
     }
 
@@ -65,7 +65,7 @@ impl Riot {
     }
 
     pub fn write_orb_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_in(data)?;
+        self.db_mut().drive_in(data)?;
         self.general_io_pulse(false, true, false)
     }
 
@@ -75,7 +75,7 @@ impl Riot {
     }
 
     pub fn write_ddra_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_in(data)?;
+        self.db_mut().drive_in(data)?;
         self.general_io_pulse(true, false, false)
     }
 
@@ -85,7 +85,7 @@ impl Riot {
     }
 
     pub fn write_ddrb_pulse(&mut self, data: usize) -> Result<(), RiotError> {
-        self.db().drive_in(data)?;
+        self.db_mut().drive_in(data)?;
         self.general_io_pulse(true, true, false)
     }
 
@@ -97,10 +97,10 @@ impl Riot {
     // Add timer control methods here.
 
     pub fn read_interrupt_flag_pulse(&mut self) -> Result<usize, RiotError> {
-        self.rs().drive_in(true)?;
-        self.rw().drive_in(true)?;
-        self.a().drive_in_bit(2, true)?;
-        self.a().drive_in_bit(0, true)?;
+        self.rs_mut().drive_in(true)?;
+        self.rw_mut().drive_in(true)?;
+        self.a_mut().pin_mut(2)?.drive_in(true)?;
+        self.a_mut().pin_mut(0)?.drive_in(true)?;
         self.general_pulse()?;
         self.db().read()
     }
@@ -110,12 +110,12 @@ impl Riot {
         enable_irq: bool,
         use_pos_edge: bool,
     ) -> Result<(), RiotError> {
-        self.rs().drive_in(true)?;
-        self.rw().drive_in(false)?;
-        self.a().drive_in_bit(4, false)?;
-        self.a().drive_in_bit(2, true)?;
-        self.a().drive_in_bit(1, enable_irq)?;
-        self.a().drive_in_bit(0, use_pos_edge)?;
+        self.rs_mut().drive_in(true)?;
+        self.rw_mut().drive_in(false)?;
+        self.a_mut().pin_mut(4)?.drive_in(false)?;
+        self.a_mut().pin_mut(2)?.drive_in(true)?;
+        self.a_mut().pin_mut(1)?.drive_in(enable_irq)?;
+        self.a_mut().pin_mut(0)?.drive_in(use_pos_edge)?;
         self.general_pulse()
     }
 }

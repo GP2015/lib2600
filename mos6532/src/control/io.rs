@@ -1,5 +1,5 @@
 use crate::{Riot, RiotError};
-use emu_utils::pin::{Bus, BusOutput};
+use emu_utils::pin::{Bus, BusOutput, SinglePin, SinglePinOutput};
 
 const ATYPE: bool = false;
 const BTYPE: bool = true;
@@ -40,7 +40,7 @@ impl Riot {
         }
         .read()?;
 
-        self.db_o().drive_out(byte)?;
+        self.db_out_mut().drive_out(byte)?;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl Riot {
 
     pub(super) fn read_ora(&mut self) -> Result<(), RiotError> {
         let byte = self.pa().read()?;
-        self.db_o().drive_out(byte)?;
+        self.db_out_mut().drive_out(byte)?;
         Ok(())
     }
 
@@ -74,9 +74,9 @@ impl Riot {
         for bit in 0..8 {
             let state = match self.reg.ddrb.read_bit(bit)? {
                 true => self.reg.orb.read_bit(bit)?,
-                false => self.pb().read_bit(bit)?,
+                false => self.pb().pin(bit)?.read()?,
             };
-            self.db_o().drive_out_bit(bit, state)?;
+            self.db_out_mut().pin_out_mut(bit)?.drive_out(state)?;
         }
 
         Ok(())
@@ -88,13 +88,13 @@ impl Riot {
                 ATYPE => {
                     if self.reg.ddra.read_bit(bit)? {
                         let state = self.reg.ora.read_bit(bit)?;
-                        self.pa_o().drive_out_bit(bit, state)?;
+                        self.pa_out_mut().pin_out_mut(bit)?.drive_out(state)?;
                     }
                 }
                 BTYPE => {
                     if self.reg.ddrb.read_bit(bit)? {
                         let state = self.reg.orb.read_bit(bit)?;
-                        self.pb_o().drive_out_bit(bit, state)?;
+                        self.pb_out_mut().pin_out_mut(bit)?.drive_out(state)?;
                     }
                 }
             };

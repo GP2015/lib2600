@@ -4,8 +4,6 @@ use emu_utils::{
 };
 
 pub struct Registers {
-    pub old_phi2: PinState,
-
     pub ddra: MBitRegister,
     pub ddrb: MBitRegister,
     pub ora: MBitRegister,
@@ -24,8 +22,6 @@ pub struct Registers {
 impl Registers {
     pub fn new() -> Self {
         Self {
-            old_phi2: PinState::TriState,
-
             ddra: MBitRegister::new(8, String::from("DDRA")),
             ddrb: MBitRegister::new(8, String::from("DDRB")),
             ora: MBitRegister::new(8, String::from("ORA")),

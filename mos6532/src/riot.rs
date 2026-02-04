@@ -7,12 +7,14 @@ use paste::paste;
 
 macro_rules! create_pin_input {
     ($name:ident, $obj:ident) => {
-        pub fn $name(&mut self) -> &impl $obj<Error = RiotError> {
+        pub fn $name(&self) -> &impl $obj<Error = RiotError> {
             &self.pin.$name
         }
 
-        pub fn $name_mut(&mut self) -> &mut impl $obj<Error = RiotError> {
-            &mut self.pin.$name
+        paste! {
+            pub fn [<$name _mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
+                &mut self.pin.$name
+            }
         }
     };
 }
@@ -20,11 +22,11 @@ macro_rules! create_pin_input {
 macro_rules! create_pin_output {
     ($pin:ident, $obj:ident) => {
         paste! {
-            pub(crate) fn [<$pin _o>](&mut self) -> &impl $obj<Error = RiotError> {
+            pub(crate) fn [<$pin _out>](&self) -> &impl $obj<Error = RiotError> {
                 &self.pin.$pin
             }
 
-            pub(crate) fn [<$pin _o_mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
+            pub(crate) fn [<$pin _out_mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
                 &mut self.pin.$pin
             }
         }
@@ -57,7 +59,7 @@ impl Riot {
     }
 
     pub fn release_db(&mut self) {
-        self.db_o().tri_state_out();
+        self.db_out_mut().tri_state_out();
     }
 
     create_pin_input!(a, Bus);
