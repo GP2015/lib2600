@@ -3,9 +3,9 @@ mod single;
 mod state;
 
 pub use crate::pin::{
-    bus::{Bus, BusOutput, standard::StandardBus},
+    bus::{Bus, BusOutput, BusSetup, standard::StandardBus},
     single::{
-        SinglePin, SinglePinNew, SinglePinOutput, contention::ContentionPin, input::InputPin,
+        SinglePin, SinglePinOutput, SinglePinSetup, contention::ContentionPin, input::InputPin,
     },
     state::PinState,
 };

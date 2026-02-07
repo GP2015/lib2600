@@ -2,17 +2,23 @@ use delegate::delegate;
 
 use crate::pin::{
     PinError, PinState, SinglePin, SinglePinOutput,
-    single::{CallbackFn, SinglePinNew, core::PinCore},
+    single::{CallbackFn, SinglePinSetup, core::PinCore},
 };
 
 pub struct MockPin<E> {
     core: PinCore<E>,
 }
 
-impl<E: From<PinError>> SinglePinNew<E> for MockPin<E> {
-    fn new(name: String, callback: Option<Box<dyn CallbackFn<E>>>) -> Self {
+impl<E: From<PinError>> SinglePinSetup<E> for MockPin<E> {
+    fn new(name: String) -> Self {
         Self {
-            core: PinCore::new(name, PinState::Undefined, callback),
+            core: PinCore::new(name, PinState::Undefined),
+        }
+    }
+
+    delegate! {
+        to self.core {
+            fn assign_callback(&mut self, callback: Option<Box<dyn CallbackFn<E>>>);
         }
     }
 }
@@ -21,11 +27,8 @@ impl<E: From<PinError>> SinglePin<E> for MockPin<E> {
     delegate! {
         to self.core {
             fn state(&self) -> PinState;
-            fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
-            fn prev_state_as_bool(&self) -> Option<bool>;
             fn read(&self) -> Result<bool, E>;
-            fn read_prev(&self) -> Result<bool, E>;
         }
     }
 

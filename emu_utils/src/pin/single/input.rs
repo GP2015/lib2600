@@ -1,6 +1,6 @@
 use crate::pin::{
     PinError, PinState, SinglePin,
-    single::{CallbackFn, SinglePinNew, core::PinCore},
+    single::{CallbackFn, SinglePinSetup, core::PinCore},
 };
 use delegate::delegate;
 
@@ -8,10 +8,16 @@ pub struct InputPin<E> {
     core: PinCore<E>,
 }
 
-impl<E: From<PinError>> SinglePinNew<E> for InputPin<E> {
-    fn new(name: String, callback: Option<Box<dyn CallbackFn<E>>>) -> Self {
+impl<E: From<PinError>> SinglePinSetup<E> for InputPin<E> {
+    fn new(name: String) -> Self {
         Self {
-            core: PinCore::new(name, PinState::TriState, callback),
+            core: PinCore::new(name, PinState::TriState),
+        }
+    }
+
+    delegate! {
+        to self.core {
+            fn assign_callback(&mut self, callback: Option<Box<dyn CallbackFn<E>>>);
         }
     }
 }
@@ -20,11 +26,8 @@ impl<E: From<PinError>> SinglePin<E> for InputPin<E> {
     delegate! {
         to self.core {
             fn state(&self) -> PinState;
-            fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
-            fn prev_state_as_bool(&self) -> Option<bool>;
             fn read(&self) -> Result<bool, E>;
-            fn read_prev(&self) -> Result<bool, E>;
         }
     }
 
@@ -54,7 +57,7 @@ mod tests {
 
     #[fixture]
     fn pin() -> PinType {
-        InputPin::new(String::new(), None)
+        InputPin::new(String::new())
     }
 
     #[rstest]
@@ -80,7 +83,7 @@ mod tests {
 
     #[rstest]
     fn tri_state_in(mut pin: PinType) {
-        pin.tri_state_in();
+        pin.tri_state_in().unwrap();
         assert_eq!(pin.state(), PinState::TriState);
     }
 
