@@ -1,16 +1,34 @@
-use crate::pin::{PinError, PinState};
+use crate::pin::{PinError, PinState, single::CallbackFn};
 
 pub struct PinCore<E> {
     name: String,
+    callback: Option<Box<dyn CallbackFn<E>>>,
     state: PinState,
     prev_state: PinState,
     err_type: std::marker::PhantomData<E>,
 }
 
 impl<E> PinCore<E> {
-    pub fn new(name: String, initial_state: PinState) -> Self {
+    fn handle_callback(&mut self) -> Result<(), E> {
+        if self.prev_state != self.state
+            && let Some(callback) = self.callback.as_mut()
+        {
+            callback(self.prev_state, self.state)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl<E: From<PinError>> PinCore<E> {
+    pub fn new(
+        name: String,
+        initial_state: PinState,
+        callback: Option<Box<dyn CallbackFn<E>>>,
+    ) -> Self {
         Self {
             name,
+            callback,
             prev_state: PinState::TriState,
             state: initial_state,
             err_type: std::marker::PhantomData,
@@ -37,9 +55,10 @@ impl<E> PinCore<E> {
         PinState::as_bool(&self.prev_state)
     }
 
-    pub fn set_signal(&mut self, state: PinState) {
+    pub fn set_signal(&mut self, state: PinState) -> Result<(), E> {
         self.prev_state = self.state;
         self.state = state;
+        self.handle_callback()
     }
 }
 
@@ -75,7 +94,7 @@ mod tests {
 
     #[fixture]
     fn pin() -> PinType {
-        PinCore::new(String::from("pin"), PinState::Undefined)
+        PinCore::new(String::from("pin"), PinState::Undefined, None)
     }
 
     #[rstest]
@@ -83,7 +102,7 @@ mod tests {
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        let pin = PinCore::<PinState>::new(String::new(), state);
+        let pin = PinCore::<PinError>::new(String::new(), state, None);
         assert_eq!(pin.state(), state);
         assert_eq!(pin.prev_state(), PinState::TriState);
     }

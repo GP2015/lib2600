@@ -1,53 +1,47 @@
-use delegate::delegate;
-
 use crate::pin::{
     PinError, PinState, SinglePin,
-    single::{SinglePinNew, core::PinCore},
+    single::{CallbackFn, SinglePinNew, core::PinCore},
 };
+use delegate::delegate;
 
 pub struct InputPin<E> {
     core: PinCore<E>,
 }
 
-impl<E> SinglePinNew for InputPin<E> {
-    fn new(name: String) -> Self {
+impl<E: From<PinError>> SinglePinNew<E> for InputPin<E> {
+    fn new(name: String, callback: Option<Box<dyn CallbackFn<E>>>) -> Self {
         Self {
-            core: PinCore::new(name, PinState::TriState),
+            core: PinCore::new(name, PinState::TriState, callback),
         }
     }
 }
 
-impl<E: From<PinError>> SinglePin for InputPin<E> {
-    type Error = E;
-
+impl<E: From<PinError>> SinglePin<E> for InputPin<E> {
     delegate! {
         to self.core {
             fn state(&self) -> PinState;
             fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
             fn prev_state_as_bool(&self) -> Option<bool>;
-            fn read(&self) -> Result<bool, Self::Error>;
-            fn read_prev(&self) -> Result<bool, Self::Error>;
+            fn read(&self) -> Result<bool, E>;
+            fn read_prev(&self) -> Result<bool, E>;
         }
     }
 
     fn signal_in(&mut self, state: PinState) -> Result<(), E> {
-        self.core.set_signal(state);
-        Ok(())
+        self.core.set_signal(state)
     }
 
     fn drive_in(&mut self, state: bool) -> Result<(), E> {
-        self.core.set_signal(PinState::from_bool(state));
-        Ok(())
+        self.core.set_signal(PinState::from_bool(state))
     }
 
-    fn tri_state_in(&mut self) {
-        self.core.set_signal(PinState::TriState);
+    fn tri_state_in(&mut self) -> Result<(), E> {
+        self.core.set_signal(PinState::TriState)
     }
 
     fn undefine_in(&mut self) -> Result<(), E> {
-        self.core.set_signal(PinState::Undefined);
-        Ok(())
+        self.core.set_signal(PinState::Undefined)
     }
 }
 
@@ -60,7 +54,7 @@ mod tests {
 
     #[fixture]
     fn pin() -> PinType {
-        InputPin::new(String::new())
+        InputPin::new(String::new(), None)
     }
 
     #[rstest]

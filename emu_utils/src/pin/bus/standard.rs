@@ -9,7 +9,7 @@ pub struct StandardBus<T> {
     pins: Vec<T>,
 }
 
-impl<T: SinglePinNew> StandardBus<T> {
+impl<E: From<PinError>, T: SinglePinNew<E>> StandardBus<T> {
     pub fn new(name: String, size: usize) -> Self {
         Self {
             size,
