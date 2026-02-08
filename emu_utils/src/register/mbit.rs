@@ -79,7 +79,7 @@ impl MBitRegister {
 
     pub fn wrapping_write(&mut self, val: usize) {
         self.write(bit::get_low_bits_of_usize(val, self.size))
-            .unwrap()
+            .expect("writing only the low bits should not error");
     }
 
     pub fn undefine(&mut self) {
