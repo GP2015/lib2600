@@ -1,7 +1,4 @@
-use emu_utils::{
-    pin::PinState,
-    register::{BitRegister, MBitRegister, ValueRegister},
-};
+use emu_utils::register::{BitRegister, MBitRegister, ValueRegister};
 
 pub struct Registers {
     pub ddra: MBitRegister,

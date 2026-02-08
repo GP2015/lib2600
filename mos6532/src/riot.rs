@@ -7,12 +7,12 @@ use paste::paste;
 
 macro_rules! create_pin_input {
     ($name:ident, $obj:ident) => {
-        pub fn $name(&self) -> &impl $obj<Error = RiotError> {
+        pub fn $name(&self) -> &impl $obj<RiotError> {
             &self.pin.$name
         }
 
         paste! {
-            pub fn [<$name _mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
+            pub fn [<$name _mut>](&mut self) -> &mut impl $obj<RiotError> {
                 &mut self.pin.$name
             }
         }
@@ -22,11 +22,11 @@ macro_rules! create_pin_input {
 macro_rules! create_pin_output {
     ($pin:ident, $obj:ident) => {
         paste! {
-            pub(crate) fn [<$pin _out>](&self) -> &impl $obj<Error = RiotError> {
+            pub(crate) fn [<$pin _out>](&self) -> &impl $obj<RiotError> {
                 &self.pin.$pin
             }
 
-            pub(crate) fn [<$pin _out_mut>](&mut self) -> &mut impl $obj<Error = RiotError> {
+            pub(crate) fn [<$pin _out_mut>](&mut self) -> &mut impl $obj<RiotError> {
                 &mut self.pin.$pin
             }
         }
@@ -48,18 +48,16 @@ impl Default for Riot {
 impl Riot {
     pub fn new() -> Self {
         Self {
-            pin: Pins::new(),
+            pin: Pins::new(Box::new(Riot::callback_res), Box::new(Riot::callback_phi2)),
             reg: Registers::new(),
             ram: Ram::new(),
         }
     }
 
-    pub fn process_changes(&mut self) -> Result<(), RiotError> {
-        self.internal_process_changes()
-    }
-
     pub fn release_db(&mut self) {
-        self.db_out_mut().tri_state_out();
+        self.db_out_mut()
+            .tri_state_out()
+            .expect("tri-stating the data bus shouldn't error");
     }
 
     create_pin_input!(a, Bus);

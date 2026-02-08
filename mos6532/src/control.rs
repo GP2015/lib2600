@@ -43,13 +43,26 @@ enum Instruction {
 }
 
 impl Riot {
-    pub(crate) fn internal_process_changes(&mut self) -> Result<(), RiotError> {
-        self.handle_phi2()?;
-        self.update_edc()
+    pub(crate) fn callback_res(
+        &mut self,
+        prev_state: PinState,
+        state: PinState,
+    ) -> Result<(), RiotError> {
+        match (prev_state, state) {
+            (_, PinState::TriState) => Err(RiotError::non_standard("tristated PHI2 pin")),
+            (_, PinState::Undefined) => Err(RiotError::non_standard("undefined PHI2 pin")),
+            (PinState::Low, PinState::High) => self.on_rising_phi2_edge(),
+            (PinState::High, PinState::Low) => self.on_falling_phi2_edge(),
+            _ => Ok(()),
+        }
     }
 
-    fn handle_phi2(&mut self) -> Result<(), RiotError> {
-        match (self.phi2().prev_state(), self.phi2().state()) {
+    pub(crate) fn callback_phi2(
+        &mut self,
+        prev_state: PinState,
+        state: PinState,
+    ) -> Result<(), RiotError> {
+        match (prev_state, state) {
             (_, PinState::TriState) => Err(RiotError::non_standard("tristated PHI2 pin")),
             (_, PinState::Undefined) => Err(RiotError::non_standard("undefined PHI2 pin")),
             (PinState::Low, PinState::High) => self.on_rising_phi2_edge(),

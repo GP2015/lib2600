@@ -3,11 +3,8 @@ use crate::{Bus, Riot, RiotError, SinglePin};
 impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.phi2_mut().drive_in(false)?;
-        self.process_changes()?;
         self.phi2_mut().drive_in(true)?;
-        self.process_changes()?;
-        self.phi2_mut().drive_in(false)?;
-        self.process_changes()
+        self.phi2_mut().drive_in(false)
     }
 
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
@@ -18,8 +15,7 @@ impl Riot {
 
     pub fn select(&mut self) -> Result<(), RiotError> {
         self.cs1_mut().drive_in(true)?;
-        self.cs2_mut().drive_in(false)?;
-        self.process_changes()
+        self.cs2_mut().drive_in(false)
     }
 
     fn general_pulse(&mut self) -> Result<(), RiotError> {
