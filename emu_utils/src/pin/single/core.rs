@@ -1,19 +1,27 @@
 use crate::pin::{PinError, PinState, single::CallbackFn};
 
-pub struct PinCore<E> {
+pub struct PinCore<O> {
     name: String,
-    callback: Option<Box<dyn CallbackFn<E>>>,
+    callback: Option<Box<CallbackFn<O>>>,
     state: PinState,
     prev_state: PinState,
-    err_type: std::marker::PhantomData<E>,
 }
 
-impl<E> PinCore<E> {
-    pub fn assign_callback(&mut self, callback: Option<Box<dyn CallbackFn<E>>>) {
-        self.callback = callback;
+impl<O> PinCore<O> {
+    pub fn new(name: String, initial_state: PinState) -> Self {
+        Self {
+            name,
+            callback: None,
+            prev_state: PinState::TriState,
+            state: initial_state,
+        }
     }
 
-    fn handle_callback(&mut self) -> Result<(), E> {
+    pub fn assign_callback(&mut self, callback: Box<CallbackFn<O>>) {
+        self.callback = Some(callback);
+    }
+
+    fn handle_callback(&mut self) -> Result<(), PinError> {
         if self.prev_state != self.state
             && let Some(callback) = self.callback.as_mut()
         {
@@ -22,17 +30,11 @@ impl<E> PinCore<E> {
             Ok(())
         }
     }
-}
 
-impl<E: From<PinError>> PinCore<E> {
-    pub fn new(name: String, initial_state: PinState) -> Self {
-        Self {
-            name,
-            callback: None,
-            prev_state: PinState::TriState,
-            state: initial_state,
-            err_type: std::marker::PhantomData,
-        }
+    pub fn set_signal(&mut self, state: PinState) -> Result<(), PinError> {
+        self.prev_state = self.state;
+        self.state = state;
+        self.handle_callback()
     }
 
     pub fn name(&self) -> String {
@@ -47,24 +49,16 @@ impl<E: From<PinError>> PinCore<E> {
         PinState::as_bool(&self.state)
     }
 
-    pub fn set_signal(&mut self, state: PinState) -> Result<(), E> {
-        self.prev_state = self.state;
-        self.state = state;
-        self.handle_callback()
-    }
-}
-
-impl<E: From<PinError>> PinCore<E> {
-    pub fn read(&self) -> Result<bool, E> {
+    pub fn read(&self) -> Result<bool, PinError> {
         match self.state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
-            PinState::TriState => Err(E::from(PinError::ReadTriStated {
+            PinState::TriState => Err(PinError::ReadTriStated {
                 name: self.name.clone(),
-            })),
-            PinState::Undefined => Err(E::from(PinError::ReadUndefined {
+            }),
+            PinState::Undefined => Err(PinError::ReadUndefined {
                 name: self.name.clone(),
-            })),
+            }),
         }
     }
 }

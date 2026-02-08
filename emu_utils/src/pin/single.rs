@@ -5,28 +5,47 @@ pub mod input;
 #[cfg(test)]
 pub mod mock_pin;
 
-use crate::pin::{PinError, PinState};
+use crate::pin::{PinError, PinState, callback::CallbackFn};
+use delegate::delegate;
 
-pub trait SinglePin<E: From<PinError>> {
+pub trait SinglePinSetup<O> {
+    fn new(name: String) -> Self;
+    fn assign_callback(&mut self, callback: Box<CallbackFn<O>>);
+}
+
+pub trait SinglePinInput {
     fn state(&self) -> PinState;
     fn state_as_bool(&self) -> Option<bool>;
-    fn read(&self) -> Result<bool, E>;
-    fn signal_in(&mut self, state: PinState) -> Result<(), E>;
-    fn drive_in(&mut self, state: bool) -> Result<(), E>;
-    fn tri_state_in(&mut self) -> Result<(), E>;
-    fn undefine_in(&mut self) -> Result<(), E>;
+    fn read(&self) -> Result<bool, PinError>;
+    fn signal_in(&mut self, state: PinState) -> Result<(), PinError>;
+    fn drive_in(&mut self, state: bool) -> Result<(), PinError>;
+    fn tri_state_in(&mut self) -> Result<(), PinError>;
+    fn undefine_in(&mut self) -> Result<(), PinError>;
 }
 
-pub trait CallbackFn<E>: FnMut(PinState, PinState) -> Result<(), E> {}
-
-pub trait SinglePinSetup<E: From<PinError>> {
-    fn new(name: String) -> Self;
-    fn assign_callback(&mut self, callback: Option<Box<dyn CallbackFn<E>>>);
+pub trait SinglePinOutput {
+    fn signal_out(&mut self, state: PinState) -> Result<(), PinError>;
+    fn drive_out(&mut self, state: bool) -> Result<(), PinError>;
+    fn tri_state_out(&mut self) -> Result<(), PinError>;
+    fn undefine_out(&mut self) -> Result<(), PinError>;
 }
 
-pub trait SinglePinOutput<E: From<PinError>> {
-    fn signal_out(&mut self, state: PinState) -> Result<(), E>;
-    fn drive_out(&mut self, state: bool) -> Result<(), E>;
-    fn tri_state_out(&mut self) -> Result<(), E>;
-    fn undefine_out(&mut self) -> Result<(), E>;
+struct SinglePin<'a, O, E> {
+    pin: &'a mut dyn SinglePinInput,
+    obj: &'a mut O,
+    err_type: std::marker::PhantomData<E>,
+}
+
+impl<'a, O, E: From<PinError>> SinglePin<'a, O, E> {
+    delegate! {
+        to self.pin{
+            fn state(&self) -> PinState;
+            fn state_as_bool(&self) -> Option<bool>;
+            fn read(&self) -> Result<bool, PinError>;
+            fn signal_in(&mut self, state: PinState) -> Result<(), PinError>;
+            fn drive_in(&mut self, state: bool) -> Result<(), PinError>;
+            fn tri_state_in(&mut self) -> Result<(), PinError>;
+            fn undefine_in(&mut self) -> Result<(), PinError>;
+        }
+    }
 }
