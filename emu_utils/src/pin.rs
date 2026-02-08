@@ -1,14 +1,10 @@
 mod bus;
-mod callback;
 mod single;
 mod state;
 
 pub use crate::pin::{
-    bus::Bus,
-    callback::CallbackFn,
-    single::{
-        SinglePinInput, SinglePinOutput, SinglePinSetup, contention::ContentionPin, input::InputPin,
-    },
+    bus::{BusCore, BusOutput, standard::StandardBus},
+    single::{SinglePinCore, SinglePinOutput, contention::ContentionPin, input::InputPin},
     state::PinState,
 };
 use thiserror::Error;

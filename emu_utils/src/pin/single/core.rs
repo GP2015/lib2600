@@ -1,40 +1,18 @@
-use crate::pin::{PinError, PinState, single::CallbackFn};
+use crate::pin::{PinError, PinState};
 
-pub struct PinCore<O> {
+pub struct PinCore {
     name: String,
-    callback: Option<Box<CallbackFn<O>>>,
     state: PinState,
     prev_state: PinState,
 }
 
-impl<O> PinCore<O> {
+impl PinCore {
     pub fn new(name: String, initial_state: PinState) -> Self {
         Self {
             name,
-            callback: None,
             prev_state: PinState::TriState,
             state: initial_state,
         }
-    }
-
-    pub fn assign_callback(&mut self, callback: Box<CallbackFn<O>>) {
-        self.callback = Some(callback);
-    }
-
-    fn handle_callback(&mut self) -> Result<(), PinError> {
-        if self.prev_state != self.state
-            && let Some(callback) = self.callback.as_mut()
-        {
-            callback(self.prev_state, self.state)
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn set_signal(&mut self, state: PinState) -> Result<(), PinError> {
-        self.prev_state = self.state;
-        self.state = state;
-        self.handle_callback()
     }
 
     pub fn name(&self) -> String {
@@ -45,12 +23,27 @@ impl<O> PinCore<O> {
         self.state
     }
 
+    pub fn prev_state(&self) -> PinState {
+        self.prev_state
+    }
+
     pub fn state_as_bool(&self) -> Option<bool> {
         PinState::as_bool(&self.state)
     }
 
-    pub fn read(&self) -> Result<bool, PinError> {
-        match self.state {
+    pub fn prev_state_as_bool(&self) -> Option<bool> {
+        PinState::as_bool(&self.prev_state)
+    }
+
+    pub fn set_signal(&mut self, state: PinState) {
+        self.prev_state = self.state;
+        self.state = state;
+    }
+}
+
+impl PinCore {
+    fn read_given_state(&self, state: PinState) -> Result<bool, PinError> {
+        match state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
             PinState::TriState => Err(PinError::ReadTriStated {
@@ -61,6 +54,14 @@ impl<O> PinCore<O> {
             }),
         }
     }
+
+    pub fn read(&self) -> Result<bool, PinError> {
+        self.read_given_state(self.state)
+    }
+
+    pub fn read_prev(&self) -> Result<bool, PinError> {
+        self.read_given_state(self.prev_state)
+    }
 }
 
 #[cfg(test)]
@@ -68,7 +69,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = PinCore<PinError>;
+    type PinType = PinCore;
 
     #[fixture]
     fn pin() -> PinType {
@@ -80,8 +81,9 @@ mod tests {
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        let pin = PinCore::<PinError>::new(String::new(), state);
+        let pin = PinCore::new(String::new(), state);
         assert_eq!(pin.state(), state);
+        assert_eq!(pin.prev_state(), PinState::TriState);
     }
 
     #[rstest]
@@ -95,8 +97,11 @@ mod tests {
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        pin.set_signal(state).unwrap();
+        pin.set_signal(state);
         assert_eq!(pin.state(), state);
+        assert_eq!(pin.prev_state(), PinState::Undefined);
+        pin.set_signal(state);
+        assert_eq!(pin.prev_state(), state);
     }
 
     #[rstest]
@@ -105,14 +110,19 @@ mod tests {
     #[case(PinState::TriState, None)]
     #[case(PinState::Undefined, None)]
     fn state_as_bool(mut pin: PinType, #[case] state: PinState, #[case] b: Option<bool>) {
-        pin.set_signal(state).unwrap();
+        pin.set_signal(state);
         assert_eq!(pin.state_as_bool(), b);
+        assert_eq!(pin.prev_state_as_bool(), None);
+        pin.set_signal(state);
+        assert_eq!(pin.prev_state_as_bool(), b);
     }
 
     #[rstest]
     fn read_bool(mut pin: PinType, #[values(true, false)] state: bool) {
-        pin.set_signal(PinState::from_bool(state)).unwrap();
-        assert_eq!(pin.read().unwrap(), state);
+        pin.set_signal(PinState::from_bool(state));
+        pin.set_signal(PinState::from_bool(!state));
+        assert_eq!(pin.read_prev().unwrap(), state);
+        assert_eq!(pin.read().unwrap(), !state);
     }
 
     fn expect_tri_stated_err(res: Result<bool, PinError>) {
@@ -120,9 +130,14 @@ mod tests {
     }
 
     #[rstest]
-    fn read_tri_state(mut pin: PinType) {
-        pin.set_signal(PinState::TriState).unwrap();
+    fn read_tri_state(
+        mut pin: PinType,
+        #[values(PinState::High, PinState::Low, PinState::Undefined)] state: PinState,
+    ) {
+        pin.set_signal(PinState::TriState);
         expect_tri_stated_err(pin.read());
+        pin.set_signal(state);
+        expect_tri_stated_err(pin.read_prev());
     }
 
     fn expect_undefined_err(res: Result<bool, PinError>) {
@@ -130,8 +145,13 @@ mod tests {
     }
 
     #[rstest]
-    fn read_undefined(mut pin: PinType) {
-        pin.set_signal(PinState::Undefined).unwrap();
+    fn read_undefined(
+        mut pin: PinType,
+        #[values(PinState::High, PinState::Low, PinState::Undefined)] state: PinState,
+    ) {
+        pin.set_signal(PinState::Undefined);
         expect_undefined_err(pin.read());
+        pin.set_signal(state);
+        expect_undefined_err(pin.read_prev());
     }
 }

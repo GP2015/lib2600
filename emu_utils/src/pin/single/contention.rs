@@ -1,12 +1,9 @@
 use delegate::delegate;
 
-use crate::pin::{
-    PinError, PinState, SinglePinInput, SinglePinOutput,
-    single::{CallbackFn, SinglePinSetup, core::PinCore},
-};
+use crate::pin::{PinError, PinState, SinglePinCore, SinglePinOutput, single::core::PinCore};
 
-pub struct ContentionPin<O> {
-    core: PinCore<O>,
+pub struct ContentionPin {
+    core: PinCore,
     driving_in: bool,
     driving_out: bool,
 }
@@ -17,7 +14,7 @@ enum DriveDirection {
     Out,
 }
 
-impl<O> ContentionPin<O> {
+impl ContentionPin {
     fn other_drive_direction_from(&self, dir: DriveDirection) -> bool {
         match dir {
             DriveDirection::In => self.driving_out,
@@ -34,11 +31,12 @@ impl<O> ContentionPin<O> {
 
     fn signal(&mut self, state: PinState, drive_dir: DriveDirection) -> Result<(), PinError> {
         match state {
-            PinState::High => self.drive(true, drive_dir),
-            PinState::Low => self.drive(false, drive_dir),
+            PinState::High => self.drive(true, drive_dir)?,
+            PinState::Low => self.drive(false, drive_dir)?,
             PinState::TriState => self.tri_state(drive_dir),
-            PinState::Undefined => self.undefine(drive_dir),
-        }
+            PinState::Undefined => self.undefine(drive_dir)?,
+        };
+        Ok(())
     }
 
     fn drive(&mut self, next_state_b: bool, drive_dir: DriveDirection) -> Result<(), PinError> {
@@ -61,15 +59,14 @@ impl<O> ContentionPin<O> {
         }
 
         self.set_this_drive_direction(true, drive_dir);
-        self.core.set_signal(next_state)
+        self.core.set_signal(next_state);
+        Ok(())
     }
 
-    fn tri_state(&mut self, drive_dir: DriveDirection) -> Result<(), PinError> {
+    fn tri_state(&mut self, drive_dir: DriveDirection) {
         self.set_this_drive_direction(false, drive_dir);
         if !self.other_drive_direction_from(drive_dir) {
-            self.core.set_signal(PinState::TriState)
-        } else {
-            Ok(())
+            self.core.set_signal(PinState::TriState);
         }
     }
 
@@ -81,11 +78,12 @@ impl<O> ContentionPin<O> {
         }
 
         self.set_this_drive_direction(true, drive_dir);
-        self.core.set_signal(PinState::Undefined)
+        self.core.set_signal(PinState::Undefined);
+        Ok(())
     }
 }
 
-impl<O> SinglePinSetup<O> for ContentionPin<O> {
+impl SinglePinCore for ContentionPin {
     fn new(name: String) -> Self {
         Self {
             core: PinCore::new(name, PinState::Undefined),
@@ -96,17 +94,12 @@ impl<O> SinglePinSetup<O> for ContentionPin<O> {
 
     delegate! {
         to self.core {
-            fn assign_callback(&mut self, callback: Box<CallbackFn<O>>);
-        }
-    }
-}
-
-impl<O> SinglePinInput for ContentionPin<O> {
-    delegate! {
-        to self.core {
             fn state(&self) -> PinState;
+            fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
+            fn prev_state_as_bool(&self) -> Option<bool>;
             fn read(&self) -> Result<bool, PinError>;
+            fn read_prev(&self) -> Result<bool, PinError>;
         }
     }
 
@@ -118,7 +111,7 @@ impl<O> SinglePinInput for ContentionPin<O> {
         self.drive(state, DriveDirection::In)
     }
 
-    fn tri_state_in(&mut self) -> Result<(), PinError> {
+    fn tri_state_in(&mut self) {
         self.tri_state(DriveDirection::In)
     }
 
@@ -127,7 +120,7 @@ impl<O> SinglePinInput for ContentionPin<O> {
     }
 }
 
-impl<O> SinglePinOutput for ContentionPin<O> {
+impl SinglePinOutput for ContentionPin {
     fn signal_out(&mut self, state: PinState) -> Result<(), PinError> {
         self.signal(state, DriveDirection::Out)
     }
@@ -136,7 +129,7 @@ impl<O> SinglePinOutput for ContentionPin<O> {
         self.drive(state, DriveDirection::Out)
     }
 
-    fn tri_state_out(&mut self) -> Result<(), PinError> {
+    fn tri_state_out(&mut self) {
         self.tri_state(DriveDirection::Out)
     }
 
@@ -150,7 +143,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = ContentionPin<PinError>;
+    type PinType = ContentionPin;
 
     #[fixture]
     fn pin_default() -> PinType {
@@ -165,14 +158,14 @@ mod tests {
     #[fixture]
     fn pin_tri_state_out() -> PinType {
         let mut pin = ContentionPin::new(String::new());
-        pin.tri_state_out().unwrap();
+        pin.tri_state_out();
         pin
     }
 
     type EmptyRes = Result<(), PinError>;
     type Signal = fn(&mut PinType, state: PinState) -> EmptyRes;
     type Drive = fn(&mut PinType, state: bool) -> EmptyRes;
-    type TriState = fn(&mut PinType) -> EmptyRes;
+    type TriState = fn(&mut PinType);
     type Undefine = fn(&mut PinType) -> EmptyRes;
 
     #[rstest]
@@ -201,7 +194,7 @@ mod tests {
         #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(ContentionPin::tri_state_in, ContentionPin::tri_state_out)] func: TriState,
     ) {
-        func(&mut pin).unwrap();
+        func(&mut pin);
         assert_eq!(pin.state(), PinState::TriState);
     }
 
@@ -238,7 +231,7 @@ mod tests {
         pin.drive_out(state).unwrap();
         pin.drive_in(state).unwrap();
         assert_eq!(pin.read().unwrap(), state);
-        pin.tri_state_out().unwrap();
+        pin.tri_state_out();
         pin.drive_in(!state).unwrap();
         pin.drive_out(!state).unwrap();
         assert_eq!(pin.read().unwrap(), !state);

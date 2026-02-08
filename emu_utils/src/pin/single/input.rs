@@ -1,14 +1,12 @@
-use crate::pin::{
-    PinError, PinState, SinglePinInput,
-    single::{CallbackFn, SinglePinSetup, core::PinCore},
-};
 use delegate::delegate;
 
-pub struct InputPin<O> {
-    core: PinCore<O>,
+use crate::pin::{PinError, PinState, SinglePinCore, single::core::PinCore};
+
+pub struct InputPin {
+    core: PinCore,
 }
 
-impl<O> SinglePinSetup<O> for InputPin<O> {
+impl SinglePinCore for InputPin {
     fn new(name: String) -> Self {
         Self {
             core: PinCore::new(name, PinState::TriState),
@@ -17,34 +15,32 @@ impl<O> SinglePinSetup<O> for InputPin<O> {
 
     delegate! {
         to self.core {
-            fn assign_callback(&mut self, callback: Box<CallbackFn<O>>);
-        }
-    }
-}
-
-impl<O> SinglePinInput for InputPin<O> {
-    delegate! {
-        to self.core {
             fn state(&self) -> PinState;
+            fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
+            fn prev_state_as_bool(&self) -> Option<bool>;
             fn read(&self) -> Result<bool, PinError>;
+            fn read_prev(&self) -> Result<bool, PinError>;
         }
     }
 
     fn signal_in(&mut self, state: PinState) -> Result<(), PinError> {
-        self.core.set_signal(state)
+        self.core.set_signal(state);
+        Ok(())
     }
 
     fn drive_in(&mut self, state: bool) -> Result<(), PinError> {
-        self.core.set_signal(PinState::from_bool(state))
+        self.core.set_signal(PinState::from_bool(state));
+        Ok(())
     }
 
-    fn tri_state_in(&mut self) -> Result<(), PinError> {
-        self.core.set_signal(PinState::TriState)
+    fn tri_state_in(&mut self) {
+        self.core.set_signal(PinState::TriState);
     }
 
     fn undefine_in(&mut self) -> Result<(), PinError> {
-        self.core.set_signal(PinState::Undefined)
+        self.core.set_signal(PinState::Undefined);
+        Ok(())
     }
 }
 
@@ -53,7 +49,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = InputPin<PinError>;
+    type PinType = InputPin;
 
     #[fixture]
     fn pin() -> PinType {
@@ -83,7 +79,7 @@ mod tests {
 
     #[rstest]
     fn tri_state_in(mut pin: PinType) {
-        pin.tri_state_in().unwrap();
+        pin.tri_state_in();
         assert_eq!(pin.state(), PinState::TriState);
     }
 
