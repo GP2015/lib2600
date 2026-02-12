@@ -1,44 +1,64 @@
 use crate::{
     bit,
-    pin::{BusCore, BusOutput, PinError, PinState, SinglePinCore, SinglePinOutput},
+    pin::{
+        BusCore, BusInterface, BusOutput, PinError, PinState, SinglePinCore, SinglePinInterface,
+        SinglePinOutput,
+    },
 };
 
-pub struct StandardBus<T> {
+pub struct StandardBus<P> {
     name: String,
     size: usize,
-    pins: Vec<T>,
+    pins: Vec<P>,
 }
 
-impl<T: SinglePinCore> BusCore for StandardBus<T> {
-    fn new(name: String, size: usize) -> Self {
-        Self {
-            size,
-            pins: (0..size)
-                .map(|bit| T::new(format!("{}{}", name, bit)))
-                .collect(),
-            name,
+impl<P> StandardBus<P> {
+    fn read_with<F, E: From<PinError>>(&self, read_fn: F) -> Result<usize, E>
+    where
+        F: Fn(&P) -> Result<bool, E>,
+    {
+        let mut combined = 0;
+        for bit in (0..self.size).rev() {
+            let val = read_fn(&self.pins[bit])?;
+            combined <<= 1;
+            combined |= val as usize;
         }
+        Ok(combined)
     }
 
-    fn pin(&self, bit: usize) -> Result<&impl SinglePinCore, PinError> {
+    fn check_for_bit_out_of_range<E: From<PinError>>(&self, bit: usize) -> Result<(), E> {
         if bit >= self.size {
-            return Err(PinError::BitOutOfRange {
+            Err(E::from(PinError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
                 size: self.size,
-            });
+            }))
+        } else {
+            Ok(())
         }
+    }
+
+    fn check_if_drive_val_too_large<E: From<PinError>>(&self, val: usize) -> Result<(), E> {
+        if bit::usize_exceeds_bit_count(val, self.size) {
+            Err(E::from(PinError::DriveValueTooLarge {
+                name: self.name.clone(),
+                value: val,
+                size: self.size,
+            }))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl<P: SinglePinInterface<E>, E: From<PinError>> BusInterface<E> for StandardBus<P> {
+    fn pin(&self, bit: usize) -> Result<&impl SinglePinInterface<E>, E> {
+        self.check_for_bit_out_of_range(bit)?;
         Ok(&self.pins[bit])
     }
 
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinCore, PinError> {
-        if bit >= self.size {
-            return Err(PinError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size,
-            });
-        }
+    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinInterface<E>, E> {
+        self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
 
@@ -61,43 +81,23 @@ impl<T: SinglePinCore> BusCore for StandardBus<T> {
             .collect()
     }
 
-    fn read(&self) -> Result<usize, PinError> {
-        let mut combined = 0;
-        for bit in (0..self.size).rev() {
-            let val = self.pins[bit].read()?;
-            combined <<= 1;
-            combined |= val as usize;
-        }
-        Ok(combined)
+    fn read(&self) -> Result<usize, E> {
+        self.read_with(|pin| pin.read())
     }
 
-    fn read_prev(&self) -> Result<usize, PinError> {
-        let mut combined = 0;
-        for bit in (0..self.size).rev() {
-            let val = self.pins[bit].read_prev()?;
-            combined <<= 1;
-            combined |= val as usize;
-        }
-        Ok(combined)
+    fn read_prev(&self) -> Result<usize, E> {
+        self.read_with(|pin| pin.read_prev())
     }
 
-    fn drive_in(&mut self, val: usize) -> Result<(), PinError> {
-        if bit::usize_exceeds_bit_count(val, self.size) {
-            return Err(PinError::DriveValueTooLarge {
-                name: self.name.clone(),
-                value: val,
-                size: self.size,
-            });
-        }
-
+    fn drive_in(&mut self, val: usize) -> Result<(), E> {
+        self.check_if_drive_val_too_large(val)?;
         for bit in 0..self.size {
             self.pins[bit].drive_in(bit::get_bit_of_usize(val, bit))?;
         }
-
         Ok(())
     }
 
-    fn wrapping_drive_in(&mut self, val: usize) -> Result<(), PinError> {
+    fn wrapping_drive_in(&mut self, val: usize) -> Result<(), E> {
         self.drive_in(bit::get_low_bits_of_usize(val, self.size))
     }
 
@@ -105,7 +105,7 @@ impl<T: SinglePinCore> BusCore for StandardBus<T> {
         self.pins.iter_mut().for_each(|pin| pin.tri_state_in());
     }
 
-    fn undefine_in(&mut self) -> Result<(), PinError> {
+    fn undefine_in(&mut self) -> Result<(), E> {
         for bit in 0..self.size {
             self.pins[bit].undefine_in()?;
         }
@@ -113,42 +113,38 @@ impl<T: SinglePinCore> BusCore for StandardBus<T> {
     }
 }
 
-impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
-    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput, PinError> {
-        if bit >= self.size {
-            return Err(PinError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size,
-            });
+impl<P: SinglePinCore> BusCore for StandardBus<P> {
+    fn new(name: String, size: usize) -> Self {
+        Self {
+            size,
+            pins: (0..size)
+                .map(|bit| P::new(format!("{}{}", name, bit)))
+                .collect(),
+            name,
         }
+    }
+
+    fn post_tick_update(&mut self) {
+        self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
+    }
+}
+
+impl<P: SinglePinOutput<E>, E: From<PinError>> BusOutput<E> for StandardBus<P> {
+    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput<E>, E> {
+        self.check_for_bit_out_of_range(bit)?;
         Ok(&self.pins[bit])
     }
 
-    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput, PinError> {
-        if bit >= self.size {
-            return Err(PinError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size,
-            });
-        }
+    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E> {
+        self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
 
-    fn drive_out(&mut self, val: usize) -> Result<(), PinError> {
-        if bit::usize_exceeds_bit_count(val, self.size) {
-            return Err(PinError::DriveValueTooLarge {
-                name: self.name.clone(),
-                value: val,
-                size: self.size,
-            });
-        }
-
+    fn drive_out(&mut self, val: usize) -> Result<(), E> {
+        self.check_if_drive_val_too_large(val)?;
         for bit in 0..self.size {
             self.pins[bit].drive_out(bit::get_bit_of_usize(val, bit))?;
         }
-
         Ok(())
     }
 
@@ -158,7 +154,7 @@ impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
         }
     }
 
-    fn undefine_out(&mut self) -> Result<(), PinError> {
+    fn undefine_out(&mut self) -> Result<(), E> {
         for bit in 0..self.size {
             self.pins[bit].undefine_out()?;
         }
@@ -168,12 +164,12 @@ impl<T: SinglePinOutput> BusOutput for StandardBus<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::pin::single::mock_pin::MockPin;
+    use crate::pin::{PinError, single::mock_pin::MockPin};
 
     use super::*;
     use rstest::{fixture, rstest};
 
-    type BusType = StandardBus<MockPin>;
+    type BusType = StandardBus<MockPin<PinError>>;
 
     #[fixture]
     fn bus() -> BusType {
@@ -203,6 +199,7 @@ mod tests {
         }
 
         assert_eq!(bus.state(), states);
+        bus.post_tick_update();
         bus.drive_in(0x67).unwrap();
         assert_eq!(bus.prev_state(), states);
     }
@@ -223,10 +220,10 @@ mod tests {
         for (i, state) in states.iter().enumerate() {
             bus.pin_mut(i).unwrap().signal_in(*state).unwrap();
         }
-
         for (i, state) in bus.state_as_bool().iter().enumerate() {
             assert_eq!(*state, PinState::as_bool(&states[i]));
         }
+        bus.post_tick_update();
         bus.drive_in(0x67).unwrap();
         for (i, state) in bus.prev_state_as_bool().iter().enumerate() {
             assert_eq!(*state, PinState::as_bool(&states[i]));
@@ -237,6 +234,7 @@ mod tests {
     fn read(mut bus: BusType) {
         bus.drive_in(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
+        bus.post_tick_update();
         bus.drive_in(0x89).unwrap();
         assert_eq!(bus.read_prev().unwrap(), 0x67);
     }

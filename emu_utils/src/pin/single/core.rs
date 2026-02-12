@@ -1,18 +1,29 @@
 use crate::pin::{PinError, PinState};
+use std::marker::PhantomData;
 
-pub struct PinCore {
+pub struct PinCore<E> {
     name: String,
     state: PinState,
     prev_state: PinState,
+    err_type: PhantomData<E>,
 }
 
-impl PinCore {
+impl<E> PinCore<E> {
     pub fn new(name: String, initial_state: PinState) -> Self {
         Self {
             name,
             prev_state: PinState::TriState,
             state: initial_state,
+            err_type: PhantomData,
         }
+    }
+
+    pub fn set_signal(&mut self, state: PinState) {
+        self.state = state;
+    }
+
+    pub fn post_tick_update(&mut self) {
+        self.prev_state = self.state;
     }
 
     pub fn name(&self) -> String {
@@ -34,32 +45,27 @@ impl PinCore {
     pub fn prev_state_as_bool(&self) -> Option<bool> {
         PinState::as_bool(&self.prev_state)
     }
-
-    pub fn set_signal(&mut self, state: PinState) {
-        self.prev_state = self.state;
-        self.state = state;
-    }
 }
 
-impl PinCore {
-    fn read_given_state(&self, state: PinState) -> Result<bool, PinError> {
+impl<E: From<PinError>> PinCore<E> {
+    fn read_given_state(&self, state: PinState) -> Result<bool, E> {
         match state {
             PinState::High => Ok(true),
             PinState::Low => Ok(false),
-            PinState::TriState => Err(PinError::ReadTriStated {
+            PinState::TriState => Err(E::from(PinError::ReadTriStated {
                 name: self.name.clone(),
-            }),
-            PinState::Undefined => Err(PinError::ReadUndefined {
+            })),
+            PinState::Undefined => Err(E::from(PinError::ReadUndefined {
                 name: self.name.clone(),
-            }),
+            })),
         }
     }
 
-    pub fn read(&self) -> Result<bool, PinError> {
+    pub fn read(&self) -> Result<bool, E> {
         self.read_given_state(self.state)
     }
 
-    pub fn read_prev(&self) -> Result<bool, PinError> {
+    pub fn read_prev(&self) -> Result<bool, E> {
         self.read_given_state(self.prev_state)
     }
 }
@@ -69,11 +75,13 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = PinCore;
+    type PinType = PinCore<PinError>;
 
     #[fixture]
     fn pin() -> PinType {
-        PinCore::new(String::from("pin"), PinState::Undefined)
+        let mut pin = PinCore::new(String::from("pin"), PinState::Undefined);
+        pin.post_tick_update();
+        pin
     }
 
     #[rstest]
@@ -81,9 +89,23 @@ mod tests {
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
     ) {
-        let pin = PinCore::new(String::new(), state);
+        let pin = PinCore::<PinError>::new(String::new(), state);
         assert_eq!(pin.state(), state);
         assert_eq!(pin.prev_state(), PinState::TriState);
+    }
+
+    #[rstest]
+    fn post_tick_update(
+        mut pin: PinCore<PinError>,
+        #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
+        state: PinState,
+    ) {
+        pin.set_signal(state);
+        assert_eq!(pin.state(), state);
+        assert_eq!(pin.prev_state(), PinState::Undefined);
+        pin.post_tick_update();
+        assert_eq!(pin.state(), state);
+        assert_eq!(pin.prev_state(), state);
     }
 
     #[rstest]
@@ -100,6 +122,7 @@ mod tests {
         pin.set_signal(state);
         assert_eq!(pin.state(), state);
         assert_eq!(pin.prev_state(), PinState::Undefined);
+        pin.post_tick_update();
         pin.set_signal(state);
         assert_eq!(pin.prev_state(), state);
     }
@@ -113,6 +136,7 @@ mod tests {
         pin.set_signal(state);
         assert_eq!(pin.state_as_bool(), b);
         assert_eq!(pin.prev_state_as_bool(), None);
+        pin.post_tick_update();
         pin.set_signal(state);
         assert_eq!(pin.prev_state_as_bool(), b);
     }
@@ -120,6 +144,7 @@ mod tests {
     #[rstest]
     fn read_bool(mut pin: PinType, #[values(true, false)] state: bool) {
         pin.set_signal(PinState::from_bool(state));
+        pin.post_tick_update();
         pin.set_signal(PinState::from_bool(!state));
         assert_eq!(pin.read_prev().unwrap(), state);
         assert_eq!(pin.read().unwrap(), !state);
@@ -136,6 +161,7 @@ mod tests {
     ) {
         pin.set_signal(PinState::TriState);
         expect_tri_stated_err(pin.read());
+        pin.post_tick_update();
         pin.set_signal(state);
         expect_tri_stated_err(pin.read_prev());
     }
@@ -151,6 +177,7 @@ mod tests {
     ) {
         pin.set_signal(PinState::Undefined);
         expect_undefined_err(pin.read());
+        pin.post_tick_update();
         pin.set_signal(state);
         expect_undefined_err(pin.read_prev());
     }

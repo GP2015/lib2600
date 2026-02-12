@@ -1,35 +1,29 @@
 use delegate::delegate;
 
-use crate::pin::{PinError, PinState, SinglePinCore, single::core::PinCore};
+use crate::pin::{PinError, PinState, SinglePinCore, SinglePinInterface, single::core::PinCore};
 
-pub struct InputPin {
-    core: PinCore,
+pub struct InputPin<E> {
+    core: PinCore<E>,
 }
 
-impl SinglePinCore for InputPin {
-    fn new(name: String) -> Self {
-        Self {
-            core: PinCore::new(name, PinState::TriState),
-        }
-    }
-
+impl<E: From<PinError>> SinglePinInterface<E> for InputPin<E> {
     delegate! {
         to self.core {
             fn state(&self) -> PinState;
             fn prev_state(&self) -> PinState;
             fn state_as_bool(&self) -> Option<bool>;
             fn prev_state_as_bool(&self) -> Option<bool>;
-            fn read(&self) -> Result<bool, PinError>;
-            fn read_prev(&self) -> Result<bool, PinError>;
+            fn read(&self) -> Result<bool, E>;
+            fn read_prev(&self) -> Result<bool, E>;
         }
     }
 
-    fn signal_in(&mut self, state: PinState) -> Result<(), PinError> {
+    fn signal_in(&mut self, state: PinState) -> Result<(), E> {
         self.core.set_signal(state);
         Ok(())
     }
 
-    fn drive_in(&mut self, state: bool) -> Result<(), PinError> {
+    fn drive_in(&mut self, state: bool) -> Result<(), E> {
         self.core.set_signal(PinState::from_bool(state));
         Ok(())
     }
@@ -38,9 +32,23 @@ impl SinglePinCore for InputPin {
         self.core.set_signal(PinState::TriState);
     }
 
-    fn undefine_in(&mut self) -> Result<(), PinError> {
+    fn undefine_in(&mut self) -> Result<(), E> {
         self.core.set_signal(PinState::Undefined);
         Ok(())
+    }
+}
+
+impl<E> SinglePinCore for InputPin<E> {
+    fn new(name: String) -> Self {
+        Self {
+            core: PinCore::new(name, PinState::TriState),
+        }
+    }
+
+    delegate! {
+        to self.core {
+            fn post_tick_update(&mut self);
+        }
     }
 }
 
@@ -49,7 +57,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = InputPin;
+    type PinType = InputPin<PinError>;
 
     #[fixture]
     fn pin() -> PinType {

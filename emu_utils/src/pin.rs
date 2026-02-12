@@ -3,8 +3,11 @@ mod single;
 mod state;
 
 pub use crate::pin::{
-    bus::{BusCore, BusOutput, standard::StandardBus},
-    single::{SinglePinCore, SinglePinOutput, contention::ContentionPin, input::InputPin},
+    bus::{BusCore, BusInterface, BusOutput, standard::StandardBus},
+    single::{
+        SinglePinCore, SinglePinInterface, SinglePinOutput, contention::ContentionPin,
+        input::InputPin,
+    },
     state::PinState,
 };
 use thiserror::Error;

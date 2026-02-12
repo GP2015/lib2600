@@ -1,9 +1,11 @@
 use delegate::delegate;
 
-use crate::pin::{PinError, PinState, SinglePinCore, SinglePinOutput, single::core::PinCore};
+use crate::pin::{
+    PinError, PinState, SinglePinCore, SinglePinInterface, SinglePinOutput, single::core::PinCore,
+};
 
-pub struct ContentionPin {
-    core: PinCore,
+pub struct ContentionPin<E> {
+    core: PinCore<E>,
     driving_in: bool,
     driving_out: bool,
 }
@@ -14,7 +16,7 @@ enum DriveDirection {
     Out,
 }
 
-impl ContentionPin {
+impl<E: From<PinError>> ContentionPin<E> {
     fn other_drive_direction_from(&self, dir: DriveDirection) -> bool {
         match dir {
             DriveDirection::In => self.driving_out,
@@ -29,7 +31,7 @@ impl ContentionPin {
         }
     }
 
-    fn signal(&mut self, state: PinState, drive_dir: DriveDirection) -> Result<(), PinError> {
+    fn signal(&mut self, state: PinState, drive_dir: DriveDirection) -> Result<(), E> {
         match state {
             PinState::High => self.drive(true, drive_dir)?,
             PinState::Low => self.drive(false, drive_dir)?,
@@ -39,22 +41,22 @@ impl ContentionPin {
         Ok(())
     }
 
-    fn drive(&mut self, next_state_b: bool, drive_dir: DriveDirection) -> Result<(), PinError> {
+    fn drive(&mut self, next_state_b: bool, drive_dir: DriveDirection) -> Result<(), E> {
         let next_state = PinState::from_bool(next_state_b);
 
         if self.other_drive_direction_from(drive_dir) {
             if matches!(self.core.state(), PinState::Undefined) {
-                return Err(PinError::PotentialShortCircuit {
+                return Err(E::from(PinError::PotentialShortCircuit {
                     name: self.core.name(),
-                });
+                }));
             };
 
             if self.core.state() != next_state {
-                return Err(PinError::ShortCircuit {
+                return Err(E::from(PinError::ShortCircuit {
                     name: self.core.name(),
                     current_state: self.core.state(),
                     next_state,
-                });
+                }));
             }
         }
 
@@ -70,11 +72,11 @@ impl ContentionPin {
         }
     }
 
-    fn undefine(&mut self, drive_dir: DriveDirection) -> Result<(), PinError> {
+    fn undefine(&mut self, drive_dir: DriveDirection) -> Result<(), E> {
         if self.other_drive_direction_from(drive_dir) {
-            return Err(PinError::PotentialShortCircuit {
+            return Err(E::from(PinError::PotentialShortCircuit {
                 name: self.core.name(),
-            });
+            }));
         }
 
         self.set_this_drive_direction(true, drive_dir);
@@ -83,7 +85,36 @@ impl ContentionPin {
     }
 }
 
-impl SinglePinCore for ContentionPin {
+impl<E: From<PinError>> SinglePinInterface<E> for ContentionPin<E> {
+    delegate! {
+        to self.core {
+            fn state(&self) -> PinState;
+            fn prev_state(&self) -> PinState;
+            fn state_as_bool(&self) -> Option<bool>;
+            fn prev_state_as_bool(&self) -> Option<bool>;
+            fn read(&self) -> Result<bool, E>;
+            fn read_prev(&self) -> Result<bool, E>;
+        }
+    }
+
+    fn signal_in(&mut self, state: PinState) -> Result<(), E> {
+        self.signal(state, DriveDirection::In)
+    }
+
+    fn drive_in(&mut self, state: bool) -> Result<(), E> {
+        self.drive(state, DriveDirection::In)
+    }
+
+    fn tri_state_in(&mut self) {
+        self.tri_state(DriveDirection::In)
+    }
+
+    fn undefine_in(&mut self) -> Result<(), E> {
+        self.undefine(DriveDirection::In)
+    }
+}
+
+impl<E> SinglePinCore for ContentionPin<E> {
     fn new(name: String) -> Self {
         Self {
             core: PinCore::new(name, PinState::Undefined),
@@ -94,38 +125,17 @@ impl SinglePinCore for ContentionPin {
 
     delegate! {
         to self.core {
-            fn state(&self) -> PinState;
-            fn prev_state(&self) -> PinState;
-            fn state_as_bool(&self) -> Option<bool>;
-            fn prev_state_as_bool(&self) -> Option<bool>;
-            fn read(&self) -> Result<bool, PinError>;
-            fn read_prev(&self) -> Result<bool, PinError>;
+            fn post_tick_update(&mut self);
         }
-    }
-
-    fn signal_in(&mut self, state: PinState) -> Result<(), PinError> {
-        self.signal(state, DriveDirection::In)
-    }
-
-    fn drive_in(&mut self, state: bool) -> Result<(), PinError> {
-        self.drive(state, DriveDirection::In)
-    }
-
-    fn tri_state_in(&mut self) {
-        self.tri_state(DriveDirection::In)
-    }
-
-    fn undefine_in(&mut self) -> Result<(), PinError> {
-        self.undefine(DriveDirection::In)
     }
 }
 
-impl SinglePinOutput for ContentionPin {
-    fn signal_out(&mut self, state: PinState) -> Result<(), PinError> {
+impl<E: From<PinError>> SinglePinOutput<E> for ContentionPin<E> {
+    fn signal_out(&mut self, state: PinState) -> Result<(), E> {
         self.signal(state, DriveDirection::Out)
     }
 
-    fn drive_out(&mut self, state: bool) -> Result<(), PinError> {
+    fn drive_out(&mut self, state: bool) -> Result<(), E> {
         self.drive(state, DriveDirection::Out)
     }
 
@@ -133,7 +143,7 @@ impl SinglePinOutput for ContentionPin {
         self.tri_state(DriveDirection::Out)
     }
 
-    fn undefine_out(&mut self) -> Result<(), PinError> {
+    fn undefine_out(&mut self) -> Result<(), E> {
         self.undefine(DriveDirection::Out)
     }
 }
@@ -143,7 +153,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = ContentionPin;
+    type PinType = ContentionPin<PinError>;
 
     #[fixture]
     fn pin_default() -> PinType {
