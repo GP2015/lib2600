@@ -1,4 +1,4 @@
-use emu_utils::pin::{BusSetup, CallbackFn, ContentionPin, InputPin, SinglePinSetup, StandardBus};
+use emu_utils::pin::{BusCore, ContentionPin, InputPin, SinglePinCore, StandardBus};
 
 use crate::RiotError;
 
@@ -22,11 +22,8 @@ pub struct Pins {
 }
 
 impl Pins {
-    pub(crate) fn new(
-        res_callback: Box<CallbackFn<RiotError>>,
-        phi2_callback: Box<CallbackFn<RiotError>>,
-    ) -> Self {
-        let mut pins = Self {
+    pub(crate) fn new() -> Self {
+        Self {
             a: AddressBusType::new(String::from("A"), 7),
             db: DataBusType::new(String::from("DB"), 8),
             pa: DataBusType::new(String::from("PA"), 8),
@@ -38,11 +35,6 @@ impl Pins {
             rw: InputPinType::new(String::from("R/W")),
             rs: InputPinType::new(String::from("/RS")),
             irq: OutputPinType::new(String::from("/IRQ")),
-        };
-
-        pins.res.assign_callback(res_callback);
-        pins.phi2.assign_callback(phi2_callback);
-
-        pins
+        }
     }
 }

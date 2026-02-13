@@ -1,4 +1,4 @@
-use mos6532::{Riot, SinglePin};
+use mos6532::{Riot, SinglePinInterface};
 use rstest::fixture;
 
 #[allow(dead_code)]

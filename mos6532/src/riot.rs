@@ -1,8 +1,8 @@
 use crate::{
-    Bus, RiotError, SinglePin,
+    RiotError,
     data::{pins::Pins, ram::Ram, registers::Registers},
 };
-use emu_utils::pin::{BusOutput, SinglePinOutput};
+use emu_utils::pin::{BusInterface, BusOutput, SinglePinInterface, SinglePinOutput};
 use paste::paste;
 
 macro_rules! create_pin_input {
@@ -22,11 +22,7 @@ macro_rules! create_pin_input {
 macro_rules! create_pin_output {
     ($pin:ident, $obj:ident) => {
         paste! {
-            pub(crate) fn [<$pin _out>](&self) -> &impl $obj<RiotError> {
-                &self.pin.$pin
-            }
-
-            pub(crate) fn [<$pin _out_mut>](&mut self) -> &mut impl $obj<RiotError> {
+            pub(crate) fn [<$pin _out>](&mut self) -> &mut impl $obj<RiotError> {
                 &mut self.pin.$pin
             }
         }
@@ -48,29 +44,27 @@ impl Default for Riot {
 impl Riot {
     pub fn new() -> Self {
         Self {
-            pin: Pins::new(Box::new(Riot::callback_res), Box::new(Riot::callback_phi2)),
+            pin: Pins::new(),
             reg: Registers::new(),
             ram: Ram::new(),
         }
     }
 
     pub fn release_db(&mut self) {
-        self.db_out_mut()
-            .tri_state_out()
-            .expect("tri-stating the data bus shouldn't error");
+        self.db_out().tri_state_out();
     }
 
-    create_pin_input!(a, Bus);
-    create_pin_input!(db, Bus);
-    create_pin_input!(pa, Bus);
-    create_pin_input!(pb, Bus);
-    create_pin_input!(res, SinglePin);
-    create_pin_input!(phi2, SinglePin);
-    create_pin_input!(cs1, SinglePin);
-    create_pin_input!(cs2, SinglePin);
-    create_pin_input!(rw, SinglePin);
-    create_pin_input!(rs, SinglePin);
-    create_pin_input!(irq, SinglePin);
+    create_pin_input!(a, BusInterface);
+    create_pin_input!(db, BusInterface);
+    create_pin_input!(pa, BusInterface);
+    create_pin_input!(pb, BusInterface);
+    create_pin_input!(res, SinglePinInterface);
+    create_pin_input!(phi2, SinglePinInterface);
+    create_pin_input!(cs1, SinglePinInterface);
+    create_pin_input!(cs2, SinglePinInterface);
+    create_pin_input!(rw, SinglePinInterface);
+    create_pin_input!(rs, SinglePinInterface);
+    create_pin_input!(irq, SinglePinInterface);
 
     create_pin_output!(db, BusOutput);
     create_pin_output!(pa, BusOutput);

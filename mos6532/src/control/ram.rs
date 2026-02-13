@@ -1,5 +1,5 @@
 use crate::{Riot, RiotError};
-use emu_utils::pin::{Bus, BusOutput};
+use emu_utils::pin::{BusInterface, BusOutput};
 
 impl Riot {
     pub(super) fn write_ram(&mut self) -> Result<(), RiotError> {
@@ -12,7 +12,7 @@ impl Riot {
     pub(super) fn read_ram(&mut self) -> Result<(), RiotError> {
         let addr = self.a().read()?;
         let byte = self.ram.byte(addr).read()?;
-        self.db_out_mut().drive_out(byte)?;
+        self.db_out().drive_out(byte)?;
         Ok(())
     }
 }

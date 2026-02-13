@@ -1,5 +1,5 @@
 mod common;
-use mos6532::{Bus, Riot, SinglePin};
+use mos6532::{BusInterface, Riot, SinglePinInterface};
 use rstest::rstest;
 
 #[rstest]

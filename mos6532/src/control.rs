@@ -6,7 +6,7 @@ mod reset;
 mod timer;
 
 use crate::{Riot, RiotError};
-use emu_utils::pin::{Bus, PinState, SinglePin};
+use emu_utils::pin::{BusInterface, PinState, SinglePinInterface};
 
 #[derive(PartialEq, Debug)]
 enum Instruction {
@@ -43,32 +43,24 @@ enum Instruction {
 }
 
 impl Riot {
-    pub(crate) fn callback_res(
-        &mut self,
-        prev_state: PinState,
-        state: PinState,
-    ) -> Result<(), RiotError> {
-        match (prev_state, state) {
-            (_, PinState::TriState) => Err(RiotError::non_standard("tristated PHI2 pin")),
-            (_, PinState::Undefined) => Err(RiotError::non_standard("undefined PHI2 pin")),
-            (PinState::Low, PinState::High) => self.on_rising_phi2_edge(),
-            (PinState::High, PinState::Low) => self.on_falling_phi2_edge(),
-            _ => Ok(()),
-        }
-    }
+    pub fn tick(&mut self) -> Result<(), RiotError> {
+        match (self.res().prev_state(), self.res().state()) {
+            (_, PinState::TriState) => return Err(RiotError::non_standard("tristated RES pin")),
+            (_, PinState::Undefined) => return Err(RiotError::non_standard("undefined RES pin")),
+            (PinState::Low, PinState::High) => self.on_rising_phi2_edge()?,
+            (PinState::High, PinState::Low) => self.on_falling_phi2_edge()?,
+            _ => (),
+        };
 
-    pub(crate) fn callback_phi2(
-        &mut self,
-        prev_state: PinState,
-        state: PinState,
-    ) -> Result<(), RiotError> {
-        match (prev_state, state) {
-            (_, PinState::TriState) => Err(RiotError::non_standard("tristated PHI2 pin")),
-            (_, PinState::Undefined) => Err(RiotError::non_standard("undefined PHI2 pin")),
-            (PinState::Low, PinState::High) => self.on_rising_phi2_edge(),
-            (PinState::High, PinState::Low) => self.on_falling_phi2_edge(),
-            _ => Ok(()),
-        }
+        match (self.phi2().prev_state(), self.phi2().state()) {
+            (_, PinState::TriState) => return Err(RiotError::non_standard("tristated PHI2 pin")),
+            (_, PinState::Undefined) => return Err(RiotError::non_standard("undefined PHI2 pin")),
+            (PinState::Low, PinState::High) => self.on_rising_phi2_edge()?,
+            (PinState::High, PinState::Low) => self.on_falling_phi2_edge()?,
+            _ => (),
+        };
+
+        Ok(())
     }
 
     fn on_rising_phi2_edge(&mut self) -> Result<(), RiotError> {
@@ -183,6 +175,7 @@ impl Riot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use emu_utils::pin::{BusInterface, SinglePinInterface};
     use rstest::{fixture, rstest};
 
     #[fixture]

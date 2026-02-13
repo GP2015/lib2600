@@ -5,4 +5,4 @@ mod helpers;
 mod riot;
 
 pub use crate::{error::RiotError, riot::Riot};
-pub use emu_utils::pin::{Bus, PinState, SinglePin};
+pub use emu_utils::pin::{BusInterface, PinState, SinglePinInterface};

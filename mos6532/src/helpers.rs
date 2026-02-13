@@ -1,4 +1,6 @@
-use crate::{Bus, Riot, RiotError, SinglePin};
+use emu_utils::pin::{BusInterface, SinglePinInterface};
+
+use crate::{Riot, RiotError};
 
 impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {

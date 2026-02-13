@@ -1,5 +1,5 @@
 mod common;
-use mos6532::{Bus, Riot, RiotError, SinglePin};
+use mos6532::{BusInterface, Riot, RiotError, SinglePinInterface};
 use rstest::rstest;
 
 const ATYPE: bool = false;
