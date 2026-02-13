@@ -1,57 +1,56 @@
-use strum_macros::Display;
+use crate::pin::PinSignal;
 
-#[derive(Clone, Copy, Debug, Display, PartialEq)]
-pub enum PinState {
-    #[strum(to_string = "high")]
-    High,
-
-    #[strum(to_string = "low")]
-    Low,
-
-    #[strum(to_string = "tri-stated")]
-    TriState,
-
-    #[strum(to_string = "undefined")]
-    Undefined,
+#[derive(Clone, Copy, Debug)]
+pub struct PinState {
+    high: bool,
+    low: bool,
+    tri_state: bool,
 }
 
 impl PinState {
-    pub fn from_bool(b: bool) -> Self {
-        if b { PinState::High } else { PinState::Low }
-    }
-
-    pub fn as_bool(&self) -> Option<bool> {
-        match self {
-            PinState::High => Some(true),
-            PinState::Low => Some(false),
-            _ => None,
+    pub fn new(high: bool, low: bool, tri_state: bool) -> Self {
+        Self {
+            high,
+            low,
+            tri_state,
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rstest::rstest;
-
-    #[rstest]
-    #[case(false, PinState::Low)]
-    #[case(true, PinState::High)]
-    fn from_bool(#[case] b: bool, #[case] state: PinState) {
-        assert_eq!(PinState::from_bool(b), state);
+    pub fn set(&mut self, high: bool, low: bool, tri_state: bool) {
+        (self.high, self.low, self.tri_state) = (high, low, tri_state);
     }
 
-    #[rstest]
-    #[case(PinState::Low, false)]
-    #[case(PinState::High, true)]
-    fn as_bool_success(#[case] state: PinState, #[case] b: bool) {
-        assert_eq!(state.as_bool().unwrap(), b);
+    pub fn set_high(&mut self, enable: bool) {
+        self.high = enable;
     }
 
-    #[rstest]
-    #[case(PinState::TriState)]
-    #[case(PinState::Undefined)]
-    fn as_bool_fail(#[case] state: PinState) {
-        assert!(state.as_bool().is_none());
+    pub fn set_low(&mut self, enable: bool) {
+        self.low = enable;
+    }
+
+    pub fn set_tri_state(&mut self, enable: bool) {
+        self.tri_state = enable;
+    }
+
+    pub fn iter_enabled(&self) -> impl Iterator<Item = PinSignal> {
+        [
+            (self.high, PinSignal::High),
+            (self.low, PinSignal::Low),
+            (self.tri_state, PinSignal::TriState),
+        ]
+        .into_iter()
+        .filter_map(|(enabled, signal)| enabled.then_some(signal))
+    }
+
+    pub fn high(&self) -> bool {
+        self.high
+    }
+
+    pub fn low(&self) -> bool {
+        self.low
+    }
+
+    pub fn tri_state(&self) -> bool {
+        self.tri_state
     }
 }

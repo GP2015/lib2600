@@ -173,7 +173,7 @@ mod tests {
     }
 
     type EmptyRes = Result<(), PinError>;
-    type Signal = fn(&mut PinType, state: PinState) -> EmptyRes;
+    type PinSignal = fn(&mut PinType, state: PinState) -> EmptyRes;
     type Drive = fn(&mut PinType, state: bool) -> EmptyRes;
     type TriState = fn(&mut PinType);
     type Undefine = fn(&mut PinType) -> EmptyRes;
@@ -183,7 +183,7 @@ mod tests {
         #[from(pin_tri_state_out)] mut pin: PinType,
         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
         state: PinState,
-        #[values(ContentionPin::signal_in, ContentionPin::signal_out)] func: Signal,
+        #[values(ContentionPin::signal_in, ContentionPin::signal_out)] func: PinSignal,
     ) {
         func(&mut pin, state).unwrap();
         assert_eq!(pin.state(), state);

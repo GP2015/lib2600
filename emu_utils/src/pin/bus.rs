@@ -23,8 +23,7 @@ pub trait BusCore {
 }
 
 pub trait BusOutput<E> {
-    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput<E>, E>;
-    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E>;
+    fn pin_out(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E>;
     fn drive_out(&mut self, val: usize) -> Result<(), E>;
     fn tri_state_out(&mut self);
     fn undefine_out(&mut self) -> Result<(), E>;

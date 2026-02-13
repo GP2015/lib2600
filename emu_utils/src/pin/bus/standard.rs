@@ -130,12 +130,7 @@ impl<P: SinglePinCore> BusCore for StandardBus<P> {
 }
 
 impl<P: SinglePinOutput<E>, E: From<PinError>> BusOutput<E> for StandardBus<P> {
-    fn pin_out(&self, bit: usize) -> Result<&impl SinglePinOutput<E>, E> {
-        self.check_for_bit_out_of_range(bit)?;
-        Ok(&self.pins[bit])
-    }
-
-    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E> {
+    fn pin_out(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
