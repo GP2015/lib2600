@@ -24,6 +24,17 @@ impl PinSignal {
             _ => None,
         }
     }
+
+    pub fn contend_together(first: Self, second: Self) -> Option<Self> {
+        match (first, second) {
+            (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
+            (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
+            (any, PinSignal::TriState) => Some(any),
+            (PinSignal::TriState, any) => Some(any),
+            (PinSignal::High, PinSignal::Low) => None,
+            (PinSignal::Low, PinSignal::High) => None,
+        }
+    }
 }
 
 #[cfg(test)]

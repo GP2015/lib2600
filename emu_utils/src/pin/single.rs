@@ -1,18 +1,21 @@
 pub mod contention;
-pub mod core;
 pub mod input;
 
 #[cfg(test)]
 pub mod mock_pin;
 
-use crate::pin::{PinSignal, state::PinState};
+use crate::pin::PinSignal;
 
 pub trait SinglePinInterface<E> {
-    fn state(&self) -> PinState;
-    fn prev_state(&self) -> PinState;
-    fn add_signal_in(&mut self, state: PinSignal) -> Result<(), E>;
-    fn add_drive_in(&mut self, state: bool) -> Result<(), E>;
-    fn add_tri_state_in(&mut self);
+    fn name(&self) -> String;
+    fn possible_signals(&self) -> Vec<PinSignal>;
+    fn prev_possible_signals(&self) -> Vec<PinSignal>;
+    fn collapsed(&self) -> Option<PinSignal>;
+    fn prev_collapsed(&self) -> Option<PinSignal>;
+    fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), E>;
+    fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), E>;
+    fn set_tri_state_in(&mut self, possible: bool);
+    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), E>;
 }
 
 pub trait SinglePinCore {
@@ -21,7 +24,8 @@ pub trait SinglePinCore {
 }
 
 pub trait SinglePinOutput<E> {
-    fn add_signal_out(&mut self, state: PinSignal) -> Result<(), E>;
-    fn add_drive_out(&mut self, state: bool) -> Result<(), E>;
-    fn add_tri_state_out(&mut self);
+    fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), E>;
+    fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), E>;
+    fn set_tri_state_out(&mut self, possible: bool);
+    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), E>;
 }
