@@ -75,6 +75,13 @@ impl PossibleSignals {
     }
 
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
+        let first_all_enabled = first.all_enabled();
+        let second_all_enabled = second.all_enabled();
+
+        if first_all_enabled.is_empty() || second_all_enabled.is_empty() {
+            return None;
+        }
+
         let mut result = Self::from(false, false, false);
 
         for first_signal in first.all_enabled() {
@@ -107,15 +114,34 @@ mod tests {
 
     #[rstest]
     fn set_signal(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] tri_state: bool,
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] enable: bool,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::TriState)] signal: PinSignal,
     ) {
-        let mut signals = PossibleSignals::from(high, low, tri_state);
-        signals.set_signal(PinSignal::High, true);
-        signals.set_signal(PinSignal::Low, false);
-        signals.set_signal(PinSignal::TriState, true);
-        assert_eq!(signals, PossibleSignals::from(true, false, true));
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.set_signal(signal, enable);
+        let result: bool = match signal {
+            PinSignal::High => signals.high,
+            PinSignal::Low => signals.low,
+            PinSignal::TriState => signals.tri_state,
+        };
+        assert_eq!(result, enable);
+    }
+
+    #[rstest]
+    fn set_bool_signal(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] bool_signal: bool,
+        #[values(true, false)] enable: bool,
+    ) {
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.set_bool_signal(bool_signal, enable);
+        let result = if bool_signal {
+            signals.high
+        } else {
+            signals.low
+        };
+        assert_eq!(result, enable);
     }
 
     #[rstest]
@@ -131,9 +157,70 @@ mod tests {
     }
 
     #[rstest]
-    fn all_enabled() {
-        let signals = PossibleSignals::from(true, false, true).all_enabled();
-        assert_eq!(signals, vec![PinSignal::High, PinSignal::TriState]);
+    fn with_signal(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] enable: bool,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::TriState)] signal: PinSignal,
+    ) {
+        let signals = PossibleSignals::from(initial, initial, initial).with_signal(signal, enable);
+        let result = match signal {
+            PinSignal::High => signals.high,
+            PinSignal::Low => signals.low,
+            PinSignal::TriState => signals.tri_state,
+        };
+        assert_eq!(result, enable);
+    }
+
+    #[rstest]
+    fn with_bool_signal(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] bool_signal: bool,
+        #[values(true, false)] enable: bool,
+    ) {
+        let signals =
+            PossibleSignals::from(initial, initial, initial).with_bool_signal(bool_signal, enable);
+        let result = if bool_signal {
+            signals.high
+        } else {
+            signals.low
+        };
+        assert_eq!(result, enable);
+    }
+
+    #[rstest]
+    fn with_tri_state(#[values(true, false)] initial: bool, #[values(true, false)] enable: bool) {
+        let signals = PossibleSignals::from(initial, initial, initial).with_tri_state(enable);
+        assert_eq!(signals.tri_state, enable);
+    }
+
+    #[rstest]
+    fn with_all(
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        #[values(true, false)] tri_state: bool,
+        #[values(true, false)] enable: bool,
+    ) {
+        let signals = PossibleSignals::from(high, low, tri_state).with_all(enable);
+        assert_eq!(signals, PossibleSignals::from(enable, enable, enable));
+    }
+
+    #[rstest]
+    #[case(false, false, false, vec![])]
+    #[case(false, false, true, vec![PinSignal::TriState])]
+    #[case(false, true, false, vec![PinSignal::Low])]
+    #[case(false, true, true, vec![PinSignal::Low, PinSignal::TriState])]
+    #[case(true, false, false, vec![PinSignal::High])]
+    #[case(true, false, true, vec![PinSignal::High, PinSignal::TriState])]
+    #[case(true, true, false, vec![PinSignal::High, PinSignal::Low])]
+    #[case(true, true, true, vec![PinSignal::High, PinSignal::Low, PinSignal::TriState])]
+    fn all_enabled(
+        #[case] high: bool,
+        #[case] low: bool,
+        #[case] tri_state: bool,
+        #[case] res_vec: Vec<PinSignal>,
+    ) {
+        let signals = PossibleSignals::from(high, low, tri_state).all_enabled();
+        assert_eq!(signals, res_vec);
     }
 
     #[rstest]
@@ -159,5 +246,73 @@ mod tests {
     fn collapsed_failure(#[case] high: bool, #[case] low: bool, #[case] tri_state: bool) {
         let signals = PossibleSignals::from(high, low, tri_state);
         assert!(signals.collapsed().is_none());
+    }
+
+    #[rstest]
+    fn contend_failure_empty(
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        #[values(true, false)] tri_state: bool,
+    ) {
+        let non_empty = PossibleSignals::from(high, low, tri_state);
+        let empty = PossibleSignals::from(false, false, false);
+        assert!(PossibleSignals::contend_together(non_empty, empty).is_none());
+        assert!(PossibleSignals::contend_together(empty, non_empty).is_none());
+    }
+
+    #[rstest]
+    #[case(false, false, true)]
+    #[case(false, true, false)]
+    #[case(false, true, true)]
+    #[case(true, false, false)]
+    #[case(true, false, true)]
+    #[case(true, true, false)]
+    #[case(true, true, true)]
+    fn contend_success_tristate_only(
+        #[case] first_high: bool,
+        #[case] first_low: bool,
+        #[case] first_tri_state: bool,
+    ) {
+        let first = PossibleSignals::from(first_high, first_low, first_tri_state);
+        let second = PossibleSignals::from(false, false, true);
+        assert_eq!(
+            PossibleSignals::contend_together(first, second).unwrap(),
+            PossibleSignals::from(first_high, first_low, first_tri_state)
+        );
+    }
+
+    #[rstest]
+    fn contend_success_contention(
+        #[values(true, false)] bool_state: bool,
+        #[values(true, false)] first_tri_state: bool,
+        #[values(true, false)] second_tri_state: bool,
+    ) {
+        let first = PossibleSignals::from(bool_state, !bool_state, first_tri_state);
+        let second = PossibleSignals::from(bool_state, !bool_state, second_tri_state);
+        assert_eq!(
+            PossibleSignals::contend_together(first, second).unwrap(),
+            PossibleSignals::from(bool_state, !bool_state, first_tri_state & second_tri_state)
+        );
+    }
+
+    #[rstest]
+    #[case(false, true, true, false)]
+    #[case(false, true, true, true)]
+    #[case(true, false, false, true)]
+    #[case(true, false, true, true)]
+    #[case(true, true, false, true)]
+    #[case(true, true, true, false)]
+    #[case(true, true, true, true)]
+    fn contend_failure_contention(
+        #[case] first_high: bool,
+        #[case] first_low: bool,
+        #[case] second_high: bool,
+        #[case] second_low: bool,
+        #[values(true, false)] first_tri_state: bool,
+        #[values(true, false)] second_tri_state: bool,
+    ) {
+        let first = PossibleSignals::from(first_high, first_low, first_tri_state);
+        let second = PossibleSignals::from(second_high, second_low, second_tri_state);
+        assert!(PossibleSignals::contend_together(first, second).is_none());
     }
 }
