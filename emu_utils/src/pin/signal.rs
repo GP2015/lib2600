@@ -27,12 +27,12 @@ impl PinSignal {
 
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
         match (first, second) {
-            (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
             (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
+            (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
             (any, PinSignal::TriState) => Some(any),
             (PinSignal::TriState, any) => Some(any),
-            (PinSignal::High, PinSignal::Low) => None,
             (PinSignal::Low, PinSignal::High) => None,
+            (PinSignal::High, PinSignal::Low) => None,
         }
     }
 }
@@ -57,7 +57,31 @@ mod tests {
     }
 
     #[rstest]
-    fn as_bool_fail() {
+    fn as_bool_failure() {
         assert!(PinSignal::TriState.as_bool().is_none());
+    }
+
+    #[rstest]
+    #[case(PinSignal::Low, PinSignal::Low, PinSignal::Low)]
+    #[case(PinSignal::Low, PinSignal::TriState, PinSignal::Low)]
+    #[case(PinSignal::High, PinSignal::High, PinSignal::High)]
+    #[case(PinSignal::High, PinSignal::TriState, PinSignal::High)]
+    #[case(PinSignal::TriState, PinSignal::Low, PinSignal::Low)]
+    #[case(PinSignal::TriState, PinSignal::High, PinSignal::High)]
+    #[case(PinSignal::TriState, PinSignal::TriState, PinSignal::TriState)]
+    fn contend_together_success(
+        #[case] first: PinSignal,
+        #[case] second: PinSignal,
+        #[case] result: PinSignal,
+    ) {
+        let o: PinSignal = PinSignal::contend_together(first, second).unwrap();
+        assert_eq!(o, result);
+    }
+
+    #[rstest]
+    #[case(PinSignal::Low, PinSignal::High)]
+    #[case(PinSignal::High, PinSignal::Low)]
+    fn contend_together_failure(#[case] first: PinSignal, #[case] second: PinSignal) {
+        assert!(PinSignal::contend_together(first, second).is_none());
     }
 }
