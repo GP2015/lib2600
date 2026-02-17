@@ -2,14 +2,17 @@ use crate::pin::{
     PinError, PinSignal, SinglePinCore, SinglePinInterface, SinglePinOutput,
     possible::PossibleSignals,
 };
+use delegate::delegate;
 use std::{fmt::Debug, marker::PhantomData};
 
 pub struct ContentionPin<E> {
     name: String,
-    contended_signals: PossibleSignals,
     signals_in: PossibleSignals,
     signals_out: PossibleSignals,
-    prev_signals: PossibleSignals,
+    contended_signals: PossibleSignals,
+    prev_signals_in: PossibleSignals,
+    prev_signals_out: PossibleSignals,
+    prev_contended_signals: PossibleSignals,
     err_type: PhantomData<E>,
 }
 
@@ -30,24 +33,18 @@ impl<E: From<PinError>> ContentionPin<E> {
             return Err(self.short_circuit_err());
         };
 
-        self.contended_signals = contended_signals;
         self.signals_in = signals_in;
         self.signals_out = signals_out;
+        self.contended_signals = contended_signals;
         Ok(())
     }
 
-    fn update_in<F>(&mut self, f: F) -> Result<(), E>
-    where
-        F: FnOnce(PossibleSignals) -> PossibleSignals,
-    {
-        self.handle_contention(f(self.signals_in), self.signals_out)
+    fn update_in(&mut self, signals_in: PossibleSignals) -> Result<(), E> {
+        self.handle_contention(signals_in, self.signals_out)
     }
 
-    fn update_out<F>(&mut self, f: F) -> Result<(), E>
-    where
-        F: FnOnce(PossibleSignals) -> PossibleSignals,
-    {
-        self.handle_contention(self.signals_in, f(self.signals_out))
+    fn update_out(&mut self, signals_out: PossibleSignals) -> Result<(), E> {
+        self.handle_contention(self.signals_in, signals_out)
     }
 }
 
@@ -62,71 +59,87 @@ impl<E> SinglePinCore for ContentionPin<E> {
             signals_in,
             signals_out,
             contended_signals,
-            prev_signals: PossibleSignals::from(false, false, true),
+            prev_signals_in: PossibleSignals::from(false, false, true),
+            prev_signals_out: PossibleSignals::from(false, false, true),
+            prev_contended_signals: PossibleSignals::from(false, false, true),
             err_type: PhantomData,
         }
     }
 
     fn post_tick_update(&mut self) {
-        self.prev_signals = self.contended_signals;
+        self.prev_signals_in = self.signals_in;
+        self.prev_signals_out = self.signals_out;
+        self.prev_contended_signals = self.contended_signals;
         self.signals_in.set_all(false);
         self.signals_out.set_all(false);
+        self.contended_signals.set_all(false);
     }
 }
 
 impl<E: From<PinError> + Debug> SinglePinInterface<E> for ContentionPin<E> {
-    fn name(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> &str {
+        self.name.as_str()
     }
 
-    fn possible_signals(&self) -> Vec<PinSignal> {
-        self.contended_signals.all_enabled()
-    }
+    delegate! {
+        to self.contended_signals{
+            #[call(all_enabled)]
+            fn possible_signals(&self) -> Vec<PinSignal>;
 
-    fn prev_possible_signals(&self) -> Vec<PinSignal> {
-        self.prev_signals.all_enabled()
-    }
+            fn collapsed(&self) -> Option<PinSignal>;
+        }
 
-    fn collapsed(&self) -> Option<PinSignal> {
-        self.contended_signals.collapsed()
-    }
+        to self.prev_contended_signals{
+            #[call(all_enabled)]
+            fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
-    fn prev_collapsed(&self) -> Option<PinSignal> {
-        self.prev_signals.collapsed()
+            #[call(collapsed)]
+            fn prev_collapsed(&self) -> Option<PinSignal>;
+        }
     }
 
     fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), E> {
-        self.update_in(|s| s.with_signal(signal, possible))
+        self.update_in(self.signals_in.with_signal(signal, possible))
     }
 
     fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), E> {
-        self.update_in(|s| s.with_bool_signal(bool_signal, possible))
+        self.update_in(self.signals_in.with_bool_signal(bool_signal, possible))
     }
 
     fn set_tri_state_in(&mut self, possible: bool) {
-        self.update_in(|s| s.with_tri_state(possible)).unwrap();
+        self.update_in(self.signals_in.with_tri_state(possible))
+            .unwrap();
     }
 
     fn set_all_signals_in(&mut self, possible: bool) -> Result<(), E> {
-        self.update_in(|s| s.with_all(possible))
+        self.update_in(self.signals_in.with_all(possible))
+    }
+
+    fn set_possible_in_to_prev(&mut self) -> Result<(), E> {
+        self.update_in(self.prev_signals_in)
     }
 }
 
 impl<E: From<PinError> + Debug> SinglePinOutput<E> for ContentionPin<E> {
     fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), E> {
-        self.update_out(|s| s.with_signal(signal, possible))
+        self.update_out(self.signals_out.with_signal(signal, possible))
     }
 
     fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), E> {
-        self.update_out(|s| s.with_bool_signal(bool_signal, possible))
+        self.update_out(self.signals_out.with_bool_signal(bool_signal, possible))
     }
 
     fn set_tri_state_out(&mut self, possible: bool) {
-        self.update_out(|s| s.with_tri_state(possible)).unwrap();
+        self.update_out(self.signals_out.with_tri_state(possible))
+            .unwrap();
     }
 
     fn set_all_signals_out(&mut self, possible: bool) -> Result<(), E> {
-        self.update_out(|s| s.with_all(possible))
+        self.update_out(self.signals_out.with_all(possible))
+    }
+
+    fn set_possible_out_to_prev(&mut self) -> Result<(), E> {
+        self.update_out(self.prev_signals_out)
     }
 }
 

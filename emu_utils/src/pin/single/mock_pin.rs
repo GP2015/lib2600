@@ -29,27 +29,26 @@ impl<E> SinglePinCore for MockPin<E> {
 }
 
 impl<E: From<PinError>> SinglePinInterface<E> for MockPin<E> {
-    fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn possible_signals(&self) -> Vec<PinSignal> {
-        self.signals.all_enabled()
-    }
-
-    fn prev_possible_signals(&self) -> Vec<PinSignal> {
-        self.prev_signals.all_enabled()
-    }
-
-    fn collapsed(&self) -> Option<PinSignal> {
-        self.signals.collapsed()
-    }
-
-    fn prev_collapsed(&self) -> Option<PinSignal> {
-        self.prev_signals.collapsed()
+    fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     delegate! {
+        to self.signals{
+            #[call(all_enabled)]
+            fn possible_signals(&self) -> Vec<PinSignal>;
+
+            fn collapsed(&self) -> Option<PinSignal>;
+        }
+
+        to self.prev_signals{
+            #[call(all_enabled)]
+            fn prev_possible_signals(&self) -> Vec<PinSignal>;
+
+            #[call(collapsed)]
+            fn prev_collapsed(&self) -> Option<PinSignal>;
+        }
+
         #[expr($; Ok(()))]
         to self.signals{
             #[call(set_signal)]
@@ -65,6 +64,11 @@ impl<E: From<PinError>> SinglePinInterface<E> for MockPin<E> {
 
     fn set_tri_state_in(&mut self, possible: bool) {
         self.signals.tri_state = possible;
+    }
+
+    fn set_possible_in_to_prev(&mut self) -> Result<(), E> {
+        self.signals = self.prev_signals;
+        Ok(())
     }
 }
 
@@ -85,5 +89,10 @@ impl<E: From<PinError>> SinglePinOutput<E> for MockPin<E> {
 
     fn set_tri_state_out(&mut self, possible: bool) {
         self.signals.tri_state = possible;
+    }
+
+    fn set_possible_out_to_prev(&mut self) -> Result<(), E> {
+        self.signals = self.prev_signals;
+        Ok(())
     }
 }

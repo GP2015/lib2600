@@ -50,8 +50,8 @@ impl<P> StandardBus<P> {
 }
 
 impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for StandardBus<P> {
-    fn name(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     fn pin(&self, bit: usize) -> Result<&impl SinglePinInterface<E>, E> {
@@ -64,12 +64,12 @@ impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for St
         Ok(&mut self.pins[bit])
     }
 
-    fn read_collapsed(&self) -> Option<usize> {
+    fn read(&self) -> Option<usize> {
         let collapsed = self.pins.iter().map(|pin| pin.collapsed()).collect();
         self.collapsed_as_usize(collapsed)
     }
 
-    fn read_prev_collapsed(&self) -> Option<usize> {
+    fn read_prev(&self) -> Option<usize> {
         let collapsed = self.pins.iter().map(|pin| pin.prev_collapsed()).collect();
         self.collapsed_as_usize(collapsed)
     }
@@ -96,6 +96,13 @@ impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for St
         self.pins
             .iter_mut()
             .for_each(|pin| pin.set_all_signals_in(false).unwrap());
+    }
+
+    fn set_all_possible_in_to_prev(&mut self) -> Result<(), E> {
+        for bit in 0..self.size {
+            self.pins[bit].set_possible_in_to_prev()?;
+        }
+        Ok(())
     }
 }
 
@@ -139,6 +146,13 @@ impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for Standard
         self.pins
             .iter_mut()
             .for_each(|pin| pin.set_all_signals_out(false).unwrap());
+    }
+
+    fn set_all_possible_out_to_prev(&mut self) -> Result<(), E> {
+        for bit in 0..self.size {
+            self.pins[bit].set_possible_out_to_prev()?;
+        }
+        Ok(())
     }
 }
 
