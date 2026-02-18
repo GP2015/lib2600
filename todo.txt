@@ -1,8 +1,8 @@
 -- RIOT --
-Add in unit tests for new emu_utils methods.
+Don't allow pins with no possible value.
+Handle iter unit tests in Pins.
 Add in error name checking.
 Stop errored method calls from changing the chip at all.
 Should the reset sequence be dependant on the clock?
-Do you need PA7 defined on reset or can you do some undefined stuff? Review logic.
 Fix up ValReg.
 Reduce pessimism.

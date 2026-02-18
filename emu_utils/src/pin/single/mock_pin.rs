@@ -35,6 +35,9 @@ impl<E: From<PinError>> SinglePinInterface<E> for MockPin<E> {
 
     delegate! {
         to self.signals{
+            #[call(iter_all_enabled)]
+            fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
@@ -42,6 +45,9 @@ impl<E: From<PinError>> SinglePinInterface<E> for MockPin<E> {
         }
 
         to self.prev_signals{
+            #[call(iter_all_enabled)]
+            fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 

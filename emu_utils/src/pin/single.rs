@@ -7,6 +7,8 @@ use crate::pin::{PinError, PinSignal};
 
 pub trait SinglePinInterface<E: From<PinError>> {
     fn name(&self) -> &str;
+    fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+    fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
     fn possible_signals(&self) -> Vec<PinSignal>;
     fn prev_possible_signals(&self) -> Vec<PinSignal>;
     fn collapsed(&self) -> Option<PinSignal>;

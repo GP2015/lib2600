@@ -58,7 +58,7 @@ impl PossibleSignals {
         self
     }
 
-    pub fn all_enabled(&self) -> Vec<PinSignal> {
+    pub fn iter_all_enabled(&self) -> impl Iterator<Item = PinSignal> {
         [
             (self.high, PinSignal::High),
             (self.low, PinSignal::Low),
@@ -66,7 +66,10 @@ impl PossibleSignals {
         ]
         .into_iter()
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
-        .collect()
+    }
+
+    pub fn all_enabled(&self) -> Vec<PinSignal> {
+        self.iter_all_enabled().collect()
     }
 
     pub fn collapsed(&self) -> Option<PinSignal> {
@@ -84,9 +87,9 @@ impl PossibleSignals {
 
         let mut result = Self::from(false, false, false);
 
-        for first_signal in first.all_enabled() {
-            for second_signal in second.all_enabled() {
-                let signal = PinSignal::contend_together(first_signal, second_signal)?;
+        for first_signal in &first_all_enabled {
+            for second_signal in &second_all_enabled {
+                let signal = PinSignal::contend_together(*first_signal, *second_signal)?;
                 result.set_signal(signal, true);
             }
         }

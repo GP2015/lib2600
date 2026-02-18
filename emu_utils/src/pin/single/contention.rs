@@ -83,6 +83,9 @@ impl<E: From<PinError> + Debug> SinglePinInterface<E> for ContentionPin<E> {
 
     delegate! {
         to self.contended_signals{
+            #[call(iter_all_enabled)]
+            fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
@@ -90,6 +93,9 @@ impl<E: From<PinError> + Debug> SinglePinInterface<E> for ContentionPin<E> {
         }
 
         to self.prev_contended_signals{
+            #[call(iter_all_enabled)]
+            fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
