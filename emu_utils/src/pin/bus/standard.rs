@@ -49,6 +49,22 @@ impl<P> StandardBus<P> {
     }
 }
 
+impl<P: SinglePinCore> BusCore for StandardBus<P> {
+    fn new(name: String, size: usize) -> Self {
+        Self {
+            size,
+            pins: (0..size)
+                .map(|bit| P::new(format!("{}{}", name, bit)))
+                .collect(),
+            name,
+        }
+    }
+
+    fn post_tick_update(&mut self) {
+        self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
+    }
+}
+
 impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for StandardBus<P> {
     fn name(&self) -> &str {
         self.name.as_str()
@@ -85,41 +101,6 @@ impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for St
     fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), E> {
         self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size))
     }
-
-    fn add_possible_tri_state_in(&mut self) {
-        self.pins
-            .iter_mut()
-            .for_each(|pin| pin.set_tri_state_in(true));
-    }
-
-    fn remove_all_possible_in(&mut self) {
-        self.pins
-            .iter_mut()
-            .for_each(|pin| pin.set_all_signals_in(false).unwrap());
-    }
-
-    fn set_all_possible_in_to_prev(&mut self) -> Result<(), E> {
-        for bit in 0..self.size {
-            self.pins[bit].set_possible_in_to_prev()?;
-        }
-        Ok(())
-    }
-}
-
-impl<P: SinglePinCore> BusCore for StandardBus<P> {
-    fn new(name: String, size: usize) -> Self {
-        Self {
-            size,
-            pins: (0..size)
-                .map(|bit| P::new(format!("{}{}", name, bit)))
-                .collect(),
-            name,
-        }
-    }
-
-    fn post_tick_update(&mut self) {
-        self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
-    }
 }
 
 impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for StandardBus<P> {
@@ -153,6 +134,18 @@ impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for Standard
             self.pins[bit].set_possible_out_to_prev()?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pin::InputPin;
+
+    type BusType = StandardBus<InputPin<PinError>>;
+
+    fn test() {
+        let mut bus = BusType::new(String::from("hi"), 8);
     }
 }
 

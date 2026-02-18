@@ -10,9 +10,6 @@ pub trait BusInterface<E: From<PinError>> {
     fn read_prev(&self) -> Option<usize>;
     fn add_possible_drive_in(&mut self, val: usize) -> Result<(), E>;
     fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), E>;
-    fn add_possible_tri_state_in(&mut self);
-    fn remove_all_possible_in(&mut self);
-    fn set_all_possible_in_to_prev(&mut self) -> Result<(), E>;
 }
 
 pub trait BusCore {
