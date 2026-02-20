@@ -4,7 +4,10 @@ use std::marker::PhantomData;
 
 use delegate::delegate;
 
-use crate::pin::{PinError, SinglePinCore, SinglePinMut, SinglePinRef};
+use crate::pin::{
+    PinError, SinglePinCore, SinglePinInterface,
+    pin_ref::{Immutable, Mutable, ObjRef, RefType},
+};
 
 pub trait BusCore<P> {
     fn new(name: String, size: usize) -> Self;
@@ -26,32 +29,50 @@ pub trait BusOutput<P> {
     fn set_all_possible_out_to_prev(&mut self) -> Result<(), PinError>;
 }
 
-pub struct BusRef<'a, B, E, P> {
-    inner: &'a B,
+pub struct BusInterface<'a, B, E, M, P> {
+    inner: ObjRef<'a, B>,
     err_type: PhantomData<E>,
+    ref_type: PhantomData<M>,
     pin_type: PhantomData<P>,
 }
 
-impl<'a, B, E, P> BusRef<'a, B, E, P>
-where
-    B: BusCore<P>,
-    E: From<PinError>,
-    P: SinglePinCore,
-{
-    pub fn from(bus: &'a B) -> Self {
+impl<'a, B, E, P> BusInterface<'a, B, E, Immutable, P> {
+    pub fn from_ref(bus: &'a B) -> Self {
         Self {
-            inner: bus,
+            inner: ObjRef::Immutable(bus),
             err_type: PhantomData,
+            ref_type: PhantomData,
             pin_type: PhantomData,
         }
     }
+}
 
-    pub fn pin(&self, bit: usize) -> Result<SinglePinRef<'_, E, P>, E> {
-        Ok(SinglePinRef::from(self.inner.pin(bit)?))
+impl<'a, B, E, P> BusInterface<'a, B, E, Mutable, P> {
+    pub fn from_mut(bus: &'a mut B) -> Self {
+        Self {
+            inner: ObjRef::Mutable(bus),
+            err_type: PhantomData,
+            ref_type: PhantomData,
+            pin_type: PhantomData,
+        }
+    }
+}
+
+impl<'a, B, E, M, P> BusInterface<'a, B, E, M, P>
+where
+    B: BusCore<P>,
+    E: From<PinError>,
+    M: RefType,
+    P: SinglePinCore,
+{
+    pub fn pin(&self, bit: usize) -> Result<SinglePinInterface<'_, E, Immutable, P>, E> {
+        let pin = self.inner.as_ref().pin(bit)?;
+        let iface = SinglePinInterface::from_ref(pin);
+        Ok(iface)
     }
 
     delegate! {
-        to self.inner{
+        to self.inner.as_ref(){
             pub fn name(&self) -> &str;
             pub fn read(&self) -> Option<usize>;
             pub fn read_prev(&self) -> Option<usize>;
@@ -59,48 +80,21 @@ where
     }
 }
 
-pub struct BusMut<'a, B, E, P>
+impl<'a, B, E, P> BusInterface<'a, B, E, Mutable, P>
 where
     B: BusCore<P>,
     E: From<PinError>,
     P: SinglePinCore,
 {
-    inner: &'a mut B,
-    err_type: PhantomData<E>,
-    pin_type: PhantomData<P>,
-}
-
-impl<'a, B, E, P> BusMut<'a, B, E, P>
-where
-    B: BusCore<P>,
-    E: From<PinError>,
-    P: SinglePinCore,
-{
-    pub fn from(bus: &'a mut B) -> Self {
-        Self {
-            inner: bus,
-            err_type: PhantomData,
-            pin_type: PhantomData,
-        }
-    }
-
-    pub fn pin(&self, bit: usize) -> Result<SinglePinRef<'_, E, P>, E> {
-        Ok(SinglePinRef::from(self.inner.pin(bit)?))
-    }
-
-    pub fn pin_mut(&mut self, bit: usize) -> Result<SinglePinMut<'_, E, P>, E> {
-        Ok(SinglePinMut::from(self.inner.pin_mut(bit)?))
+    pub fn pin_mut(&mut self, bit: usize) -> Result<SinglePinInterface<'_, E, Mutable, P>, E> {
+        let pin = self.inner.as_mut().unwrap().pin_mut(bit)?;
+        let iface = SinglePinInterface::from_mut(pin);
+        Ok(iface)
     }
 
     delegate! {
-        to self.inner{
-            pub fn name(&self) -> &str;
-            pub fn read(&self) -> Option<usize>;
-            pub fn read_prev(&self) -> Option<usize>;
-        }
-
         #[expr($.map_err(E::from))]
-        to self.inner{
+        to self.inner.as_mut().unwrap(){
             pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), E>;
             pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), E>;
         }

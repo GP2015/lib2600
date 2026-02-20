@@ -5,7 +5,10 @@ pub mod mock_pin;
 
 use delegate::delegate;
 
-use crate::pin::{PinError, PinSignal};
+use crate::pin::{
+    PinError, PinSignal,
+    pin_ref::{Immutable, Mutable, ObjRef, RefType},
+};
 use std::marker::PhantomData;
 
 pub trait SinglePinCore {
@@ -33,62 +36,26 @@ pub trait SinglePinOutput {
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError>;
 }
 
-trait RefType {}
-struct Immutable;
-struct Mutable;
-impl RefType for Immutable {}
-impl RefType for Mutable {}
-
-enum SinglePinRef<'a, P> {
-    Immutable(&'a P),
-    Mutable(&'a mut P),
-}
-
-impl<'a, P> SinglePinRef<'a, P> {
-    fn as_ref(&'a self) -> &'a P {
-        match self {
-            SinglePinRef::Immutable(pin) => pin,
-            SinglePinRef::Mutable(pin) => pin,
-        }
-    }
-
-    fn as_mut(&'a mut self) -> Option<&'a mut P> {
-        if let SinglePinRef::Mutable(pin) = self {
-            Some(pin)
-        } else {
-            None
-        }
-    }
-}
-
 pub struct SinglePinInterface<'a, E, M, P> {
-    inner: SinglePinRef<'a, P>,
+    inner: ObjRef<'a, P>,
     err_type: PhantomData<E>,
     ref_type: PhantomData<M>,
 }
 
-impl<'a, E, P> SinglePinInterface<'a, E, Immutable, P>
-where
-    E: From<PinError>,
-    P: SinglePinCore,
-{
+impl<'a, E, P> SinglePinInterface<'a, E, Immutable, P> {
     pub fn from_ref(pin: &'a P) -> Self {
         Self {
-            inner: SinglePinRef::Immutable(pin),
+            inner: ObjRef::Immutable(pin),
             err_type: PhantomData,
             ref_type: PhantomData,
         }
     }
 }
 
-impl<'a, E, P> SinglePinInterface<'a, E, Mutable, P>
-where
-    E: From<PinError>,
-    P: SinglePinCore,
-{
+impl<'a, E, P> SinglePinInterface<'a, E, Mutable, P> {
     pub fn from_mut(pin: &'a mut P) -> Self {
         Self {
-            inner: SinglePinRef::Mutable(pin),
+            inner: ObjRef::Mutable(pin),
             err_type: PhantomData,
             ref_type: PhantomData,
         }
@@ -97,7 +64,6 @@ where
 
 impl<'a, E, M, P> SinglePinInterface<'a, E, M, P>
 where
-    E: From<PinError>,
     P: SinglePinCore,
     M: RefType,
 {
