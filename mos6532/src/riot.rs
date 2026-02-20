@@ -2,18 +2,32 @@ use crate::{
     RiotError,
     data::{pins::Pins, ram::Ram, registers::Registers},
 };
-use emu_utils::pin::{BusInterface, BusOutput, SinglePinInterface, SinglePinOutput};
+use emu_utils::pin::{BusOutput, SinglePinOutput};
 use paste::paste;
 
 macro_rules! create_pin_input {
-    ($name:ident, $obj:ident) => {
-        pub fn $name(&self) -> &impl $obj<RiotError> {
-            &self.pin.$name
+    ($fn_name:ident) => {
+        pub fn $fn_name(&self) -> &BusRef {
+            &self.pin.$fn_name
         }
 
         paste! {
-            pub fn [<$name _mut>](&mut self) -> &mut impl $obj<RiotError> {
-                &mut self.pin.$name
+            pub fn [<$fn_name _mut>](&mut self) -> &mut impl $struct_name<RiotError> {
+                &mut self.pin.$fn_name
+            }
+        }
+    };
+}
+
+macro_rules! create_pin_input {
+    ($fn_name:ident, $struct_name:ident) => {
+        pub fn $fn_name(&self) -> &impl $struct_name<RiotError> {
+            &self.pin.$fn_name
+        }
+
+        paste! {
+            pub fn [<$fn_name _mut>](&mut self) -> &mut impl $struct_name<RiotError> {
+                &mut self.pin.$fn_name
             }
         }
     };

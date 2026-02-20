@@ -1,11 +1,9 @@
 use emu_utils::pin::{BusCore, ContentionPin, InputPin, SinglePinCore, StandardBus};
 
-use crate::RiotError;
-
-type InputPinType = InputPin<RiotError>;
-type OutputPinType = ContentionPin<RiotError>;
-type AddressBusType = StandardBus<InputPin<RiotError>>;
-type DataBusType = StandardBus<ContentionPin<RiotError>>;
+type InputPinType = InputPin;
+type OutputPinType = ContentionPin;
+type AddressBusType = StandardBus<InputPin>;
+type DataBusType = StandardBus<ContentionPin>;
 
 pub struct Pins {
     pub a: AddressBusType,

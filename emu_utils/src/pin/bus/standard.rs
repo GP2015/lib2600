@@ -1,11 +1,7 @@
 use crate::{
     bit,
-    pin::{
-        BusCore, BusInterface, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinInterface,
-        SinglePinOutput,
-    },
+    pin::{BusCore, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
 };
-use std::fmt::Debug;
 
 pub struct StandardBus<P> {
     name: String,
@@ -14,25 +10,25 @@ pub struct StandardBus<P> {
 }
 
 impl<P> StandardBus<P> {
-    fn check_for_bit_out_of_range<E: From<PinError>>(&self, bit: usize) -> Result<(), E> {
+    fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), PinError> {
         if bit >= self.size {
-            Err(E::from(PinError::BitOutOfRange {
+            Err(PinError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
                 size: self.size,
-            }))
+            })
         } else {
             Ok(())
         }
     }
 
-    fn check_if_drive_val_too_large<E: From<PinError>>(&self, val: usize) -> Result<(), E> {
+    fn check_if_drive_val_too_large(&self, val: usize) -> Result<(), PinError> {
         if bit::usize_exceeds_bit_count(val, self.size) {
-            Err(E::from(PinError::DriveValueTooLarge {
+            Err(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
                 value: val,
                 size: self.size,
-            }))
+            })
         } else {
             Ok(())
         }
@@ -49,7 +45,7 @@ impl<P> StandardBus<P> {
     }
 }
 
-impl<P: SinglePinCore> BusCore for StandardBus<P> {
+impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
     fn new(name: String, size: usize) -> Self {
         Self {
             size,
@@ -63,19 +59,17 @@ impl<P: SinglePinCore> BusCore for StandardBus<P> {
     fn post_tick_update(&mut self) {
         self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
     }
-}
 
-impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for StandardBus<P> {
     fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    fn pin(&self, bit: usize) -> Result<&impl SinglePinInterface<E>, E> {
+    fn pin(&self, bit: usize) -> Result<&P, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&self.pins[bit])
     }
 
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl SinglePinInterface<E>, E> {
+    fn pin_mut(&mut self, bit: usize) -> Result<&mut P, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
@@ -90,7 +84,7 @@ impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for St
         self.collapsed_as_usize(collapsed)
     }
 
-    fn add_possible_drive_in(&mut self, val: usize) -> Result<(), E> {
+    fn add_possible_drive_in(&mut self, val: usize) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
         for bit in 0..self.size {
             self.pins[bit].set_drive_in(bit::get_bit_of_usize(val, bit), true)?;
@@ -98,18 +92,18 @@ impl<P: SinglePinInterface<E>, E: From<PinError> + Debug> BusInterface<E> for St
         Ok(())
     }
 
-    fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), E> {
+    fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), PinError> {
         self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size))
     }
 }
 
-impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for StandardBus<P> {
-    fn pin_out(&mut self, bit: usize) -> Result<&mut impl SinglePinOutput<E>, E> {
+impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
+    fn pin_out(&mut self, bit: usize) -> Result<&mut P, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
 
-    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), E> {
+    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
         for bit in 0..self.size {
             self.pins[bit].set_drive_out(bit::get_bit_of_usize(val, bit), true)?;
@@ -129,7 +123,7 @@ impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for Standard
             .for_each(|pin| pin.set_all_signals_out(false).unwrap());
     }
 
-    fn set_all_possible_out_to_prev(&mut self) -> Result<(), E> {
+    fn set_all_possible_out_to_prev(&mut self) -> Result<(), PinError> {
         for bit in 0..self.size {
             self.pins[bit].set_possible_out_to_prev()?;
         }
@@ -137,17 +131,17 @@ impl<P: SinglePinOutput<E>, E: From<PinError> + Debug> BusOutput<E> for Standard
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::pin::InputPin;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::pin::InputPin;
 
-    type BusType = StandardBus<InputPin<PinError>>;
+//     type BusType = StandardBus<InputPin>;
 
-    fn test() {
-        let mut bus = BusType::new(String::from("hi"), 8);
-    }
-}
+//     fn test() {
+//         let mut bus = BusType::new(String::from("hi"), 8);
+//     }
+// }
 
 // #[cfg(test)]
 // mod tests {

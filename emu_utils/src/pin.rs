@@ -5,7 +5,7 @@ mod signal;
 mod single;
 
 pub use crate::pin::{
-    bus::{BusCore, BusInterface, BusOutput, standard::StandardBus},
+    bus::{BusCore, BusMut, BusOutput, BusRef, standard::StandardBus},
     error::PinError,
     signal::PinSignal,
     single::{

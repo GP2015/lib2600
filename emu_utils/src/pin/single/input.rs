@@ -1,23 +1,18 @@
-use crate::pin::{
-    PinError, PinSignal, SinglePinCore, SinglePinInterface, possible::PossibleSignals,
-};
+use crate::pin::{PinError, PinSignal, SinglePinCore, possible::PossibleSignals};
 use delegate::delegate;
-use std::marker::PhantomData;
 
-pub struct InputPin<E> {
+pub struct InputPin {
     name: String,
     signals: PossibleSignals,
     prev_signals: PossibleSignals,
-    err_type: PhantomData<E>,
 }
 
-impl<E> SinglePinCore for InputPin<E> {
+impl SinglePinCore for InputPin {
     fn new(name: String) -> Self {
         Self {
             name,
             signals: PossibleSignals::from(false, false, false),
             prev_signals: PossibleSignals::from(false, false, true),
-            err_type: PhantomData,
         }
     }
 
@@ -25,9 +20,7 @@ impl<E> SinglePinCore for InputPin<E> {
         self.prev_signals = self.signals;
         self.signals.set_all(false);
     }
-}
 
-impl<E: From<PinError>> SinglePinInterface<E> for InputPin<E> {
     fn name(&self) -> &str {
         self.name.as_str()
     }
@@ -57,13 +50,13 @@ impl<E: From<PinError>> SinglePinInterface<E> for InputPin<E> {
         #[expr($; Ok(()))]
         to self.signals{
             #[call(set_signal)]
-            fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), E>;
+            fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
 
             #[call(set_bool_signal)]
-            fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), E>;
+            fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError>;
 
             #[call(set_all)]
-            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), E>;
+            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
         }
     }
 
@@ -71,7 +64,7 @@ impl<E: From<PinError>> SinglePinInterface<E> for InputPin<E> {
         self.signals.tri_state = possible;
     }
 
-    fn set_possible_in_to_prev(&mut self) -> Result<(), E> {
+    fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
         self.signals = self.prev_signals;
         Ok(())
     }
@@ -82,7 +75,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = InputPin<PinError>;
+    type PinType = InputPin;
     const PIN_NAME: &str = "pin";
 
     #[fixture]
