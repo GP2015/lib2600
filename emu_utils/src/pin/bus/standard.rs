@@ -82,6 +82,13 @@ impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
         Ok(&mut self.pins[bit])
     }
 
+    fn for_each_pin_mut<F>(&mut self, f: F)
+    where
+        F: FnMut(&mut P),
+    {
+        self.pins.iter_mut().for_each(f);
+    }
+
     fn read(&self) -> Option<usize> {
         let collapsed = self.pins.iter().map(|pin| pin.collapsed()).collect();
         self.collapsed_as_usize(collapsed)

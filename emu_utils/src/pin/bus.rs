@@ -18,6 +18,10 @@ pub trait BusCore<P> {
     where
         Self: Sized;
 
+    fn for_each_pin_mut<F>(&mut self, f: F)
+    where
+        F: FnMut(&mut P);
+
     fn name(&self) -> &str;
     fn pin(&self, bit: usize) -> Result<&P, PinError>;
     fn pin_mut(&mut self, bit: usize) -> Result<&mut P, PinError>;
