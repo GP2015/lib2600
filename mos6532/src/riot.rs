@@ -1,47 +1,5 @@
-use crate::{
-    RiotError,
-    data::{pins::Pins, ram::Ram, registers::Registers},
-};
-use emu_utils::pin::{BusOutput, SinglePinOutput};
-use paste::paste;
-
-macro_rules! create_pin_input {
-    ($fn_name:ident) => {
-        pub fn $fn_name(&self) -> &BusRef {
-            &self.pin.$fn_name
-        }
-
-        paste! {
-            pub fn [<$fn_name _mut>](&mut self) -> &mut impl $struct_name<RiotError> {
-                &mut self.pin.$fn_name
-            }
-        }
-    };
-}
-
-macro_rules! create_pin_input {
-    ($fn_name:ident, $struct_name:ident) => {
-        pub fn $fn_name(&self) -> &impl $struct_name<RiotError> {
-            &self.pin.$fn_name
-        }
-
-        paste! {
-            pub fn [<$fn_name _mut>](&mut self) -> &mut impl $struct_name<RiotError> {
-                &mut self.pin.$fn_name
-            }
-        }
-    };
-}
-
-macro_rules! create_pin_output {
-    ($pin:ident, $obj:ident) => {
-        paste! {
-            pub(crate) fn [<$pin _out>](&mut self) -> &mut impl $obj<RiotError> {
-                &mut self.pin.$pin
-            }
-        }
-    };
-}
+use crate::data::{pins::Pins, ram::Ram, registers::Registers};
+use emu_utils::pin::{BusCore, SinglePinOutput};
 
 pub struct Riot {
     pub(crate) pin: Pins,
@@ -65,23 +23,7 @@ impl Riot {
     }
 
     pub fn release_db(&mut self) {
-        self.db_out().tri_state_out();
+        self.db_out()
+            .for_each_pin_mut(|pin| pin.set_tri_state_out(true));
     }
-
-    create_pin_input!(a, BusInterface);
-    create_pin_input!(db, BusInterface);
-    create_pin_input!(pa, BusInterface);
-    create_pin_input!(pb, BusInterface);
-    create_pin_input!(res, SinglePinInterface);
-    create_pin_input!(phi2, SinglePinInterface);
-    create_pin_input!(cs1, SinglePinInterface);
-    create_pin_input!(cs2, SinglePinInterface);
-    create_pin_input!(rw, SinglePinInterface);
-    create_pin_input!(rs, SinglePinInterface);
-    create_pin_input!(irq, SinglePinInterface);
-
-    create_pin_output!(db, BusOutput);
-    create_pin_output!(pa, BusOutput);
-    create_pin_output!(pb, BusOutput);
-    create_pin_output!(irq, SinglePinOutput);
 }
