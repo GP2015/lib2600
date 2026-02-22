@@ -4,14 +4,20 @@ use std::marker::PhantomData;
 
 use delegate::delegate;
 
-use crate::pin::{
-    PinError, SinglePinCore, SinglePinInterface,
-    pin_ref::{Immutable, Mutable, ObjRef, RefType},
-};
+use crate::pin::{PinError, SinglePinCore, SinglePinInterface, obj_ref::ObjRef};
 
 pub trait BusCore<P> {
     fn new(name: String, size: usize) -> Self;
     fn post_tick_update(&mut self);
+
+    fn interface<E>(&self) -> BusInterface<'_, Self, E, P, false>
+    where
+        Self: Sized;
+
+    fn interface_mut<E>(&mut self) -> BusInterface<'_, Self, E, P, true>
+    where
+        Self: Sized;
+
     fn name(&self) -> &str;
     fn pin(&self, bit: usize) -> Result<&P, PinError>;
     fn pin_mut(&mut self, bit: usize) -> Result<&mut P, PinError>;
@@ -29,43 +35,39 @@ pub trait BusOutput<P> {
     fn set_all_possible_out_to_prev(&mut self) -> Result<(), PinError>;
 }
 
-pub struct BusInterface<'a, B, E, M, P> {
+pub struct BusInterface<'a, B, E, P, const M: bool> {
     inner: ObjRef<'a, B>,
     err_type: PhantomData<E>,
-    ref_type: PhantomData<M>,
     pin_type: PhantomData<P>,
 }
 
-impl<'a, B, E, P> BusInterface<'a, B, E, Immutable, P> {
+impl<'a, B, E, P> BusInterface<'a, B, E, P, false> {
     pub fn from_ref(bus: &'a B) -> Self {
         Self {
             inner: ObjRef::Immutable(bus),
             err_type: PhantomData,
-            ref_type: PhantomData,
             pin_type: PhantomData,
         }
     }
 }
 
-impl<'a, B, E, P> BusInterface<'a, B, E, Mutable, P> {
+impl<'a, B, E, P> BusInterface<'a, B, E, P, true> {
     pub fn from_mut(bus: &'a mut B) -> Self {
         Self {
             inner: ObjRef::Mutable(bus),
             err_type: PhantomData,
-            ref_type: PhantomData,
             pin_type: PhantomData,
         }
     }
 }
 
-impl<'a, B, E, M, P> BusInterface<'a, B, E, M, P>
+impl<'a, B, E, P, const M: bool> BusInterface<'a, B, E, P, M>
 where
     B: BusCore<P>,
     E: From<PinError>,
-    M: RefType,
     P: SinglePinCore,
 {
-    pub fn pin(&self, bit: usize) -> Result<SinglePinInterface<'_, E, Immutable, P>, E> {
+    pub fn pin(&self, bit: usize) -> Result<SinglePinInterface<'_, E, P, false>, E> {
         let pin = self.inner.as_ref().pin(bit)?;
         let iface = SinglePinInterface::from_ref(pin);
         Ok(iface)
@@ -80,13 +82,13 @@ where
     }
 }
 
-impl<'a, B, E, P> BusInterface<'a, B, E, Mutable, P>
+impl<'a, B, E, P> BusInterface<'a, B, E, P, true>
 where
     B: BusCore<P>,
     E: From<PinError>,
     P: SinglePinCore,
 {
-    pub fn pin_mut(&mut self, bit: usize) -> Result<SinglePinInterface<'_, E, Mutable, P>, E> {
+    pub fn pin_mut(&mut self, bit: usize) -> Result<SinglePinInterface<'_, E, P, true>, E> {
         let pin = self.inner.as_mut().unwrap().pin_mut(bit)?;
         let iface = SinglePinInterface::from_mut(pin);
         Ok(iface)

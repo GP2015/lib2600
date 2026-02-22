@@ -1,6 +1,6 @@
 mod bus;
 mod error;
-mod pin_ref;
+mod obj_ref;
 mod possible;
 mod signal;
 mod single;

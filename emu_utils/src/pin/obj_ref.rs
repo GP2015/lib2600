@@ -1,9 +1,3 @@
-pub trait RefType {}
-pub struct Immutable;
-pub struct Mutable;
-impl RefType for Immutable {}
-impl RefType for Mutable {}
-
 pub enum ObjRef<'a, O> {
     Immutable(&'a O),
     Mutable(&'a mut O),

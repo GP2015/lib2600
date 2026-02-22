@@ -1,4 +1,7 @@
-use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
+use crate::pin::{
+    PinError, PinSignal, SinglePinCore, SinglePinInterface, SinglePinOutput,
+    possible::PossibleSignals,
+};
 use delegate::delegate;
 
 pub struct MockPin {
@@ -19,6 +22,14 @@ impl SinglePinCore for MockPin {
     fn post_tick_update(&mut self) {
         self.prev_signals = self.signals;
         self.signals.set_all(false);
+    }
+
+    fn interface<E>(&self) -> SinglePinInterface<'_, E, Self, false> {
+        SinglePinInterface::from_ref(self)
+    }
+
+    fn interface_mut<E>(&mut self) -> SinglePinInterface<'_, E, Self, true> {
+        SinglePinInterface::from_mut(self)
     }
 
     fn name(&self) -> &str {

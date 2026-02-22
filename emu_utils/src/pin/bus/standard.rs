@@ -1,6 +1,6 @@
 use crate::{
     bit,
-    pin::{BusCore, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
+    pin::{BusCore, BusInterface, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
 };
 
 pub struct StandardBus<P> {
@@ -58,6 +58,14 @@ impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
 
     fn post_tick_update(&mut self) {
         self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
+    }
+
+    fn interface<E>(&self) -> BusInterface<'_, Self, E, P, false> {
+        BusInterface::from_ref(self)
+    }
+
+    fn interface_mut<E>(&mut self) -> BusInterface<'_, Self, E, P, true> {
+        BusInterface::from_mut(self)
     }
 
     fn name(&self) -> &str {

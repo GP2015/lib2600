@@ -1,4 +1,7 @@
-use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
+use crate::pin::{
+    PinError, PinSignal, SinglePinCore, SinglePinInterface, SinglePinOutput,
+    possible::PossibleSignals,
+};
 use delegate::delegate;
 
 pub struct ContentionPin {
@@ -67,6 +70,14 @@ impl SinglePinCore for ContentionPin {
         self.signals_in.set_all(false);
         self.signals_out.set_all(false);
         self.contended_signals.set_all(false);
+    }
+
+    fn interface<E>(&self) -> SinglePinInterface<'_, E, Self, false> {
+        SinglePinInterface::from_ref(self)
+    }
+
+    fn interface_mut<E>(&mut self) -> SinglePinInterface<'_, E, Self, true> {
+        SinglePinInterface::from_mut(self)
     }
 
     fn name(&self) -> &str {
