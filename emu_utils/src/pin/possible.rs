@@ -24,14 +24,6 @@ impl PossibleSignals {
         };
     }
 
-    pub fn set_bool_signal(&mut self, bool_signal: bool, enable: bool) {
-        if bool_signal {
-            self.high = enable;
-        } else {
-            self.low = enable;
-        }
-    }
-
     pub fn set_all(&mut self, enable: bool) {
         self.high = enable;
         self.low = enable;
@@ -40,21 +32,6 @@ impl PossibleSignals {
 
     pub fn with_signal(mut self, signal: PinSignal, enable: bool) -> Self {
         self.set_signal(signal, enable);
-        self
-    }
-
-    pub fn with_bool_signal(mut self, bool_signal: bool, enable: bool) -> Self {
-        self.set_bool_signal(bool_signal, enable);
-        self
-    }
-
-    pub fn with_tri_state(mut self, enable: bool) -> Self {
-        self.tri_state = enable;
-        self
-    }
-
-    pub fn with_all(mut self, enable: bool) -> Self {
-        self.set_all(enable);
         self
     }
 
@@ -132,34 +109,6 @@ mod tests {
     }
 
     #[rstest]
-    fn set_bool_signal(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] bool_signal: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
-        signals.set_bool_signal(bool_signal, enable);
-        let result = if bool_signal {
-            signals.high
-        } else {
-            signals.low
-        };
-        assert_eq!(result, enable);
-    }
-
-    #[rstest]
-    fn set_all(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] tri_state: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let mut signals = PossibleSignals::from(high, low, tri_state);
-        signals.set_all(enable);
-        assert_eq!(signals, PossibleSignals::from(enable, enable, enable));
-    }
-
-    #[rstest]
     fn with_signal(
         #[values(true, false)] initial: bool,
         #[values(true, false)] enable: bool,
@@ -172,39 +121,6 @@ mod tests {
             PinSignal::TriState => signals.tri_state,
         };
         assert_eq!(result, enable);
-    }
-
-    #[rstest]
-    fn with_bool_signal(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] bool_signal: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let signals =
-            PossibleSignals::from(initial, initial, initial).with_bool_signal(bool_signal, enable);
-        let result = if bool_signal {
-            signals.high
-        } else {
-            signals.low
-        };
-        assert_eq!(result, enable);
-    }
-
-    #[rstest]
-    fn with_tri_state(#[values(true, false)] initial: bool, #[values(true, false)] enable: bool) {
-        let signals = PossibleSignals::from(initial, initial, initial).with_tri_state(enable);
-        assert_eq!(signals.tri_state, enable);
-    }
-
-    #[rstest]
-    fn with_all(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] tri_state: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let signals = PossibleSignals::from(high, low, tri_state).with_all(enable);
-        assert_eq!(signals, PossibleSignals::from(enable, enable, enable));
     }
 
     #[rstest]

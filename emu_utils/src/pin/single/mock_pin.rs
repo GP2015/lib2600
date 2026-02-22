@@ -62,12 +62,6 @@ impl SinglePinCore for MockPin {
         to self.signals{
             #[call(set_signal)]
             fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
-
-            #[call(set_bool_signal)]
-            fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError>;
-
-            #[call(set_all)]
-            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
         }
     }
 
@@ -87,12 +81,6 @@ impl SinglePinOutput for MockPin {
         to self.signals{
             #[call(set_signal)]
             fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
-
-            #[call(set_bool_signal)]
-            fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError>;
-
-            #[call(set_all)]
-            fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError>;
         }
     }
 

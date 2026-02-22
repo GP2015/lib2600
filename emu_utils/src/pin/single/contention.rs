@@ -111,19 +111,6 @@ impl SinglePinCore for ContentionPin {
         self.update_in(self.signals_in.with_signal(signal, possible))
     }
 
-    fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError> {
-        self.update_in(self.signals_in.with_bool_signal(bool_signal, possible))
-    }
-
-    fn set_tri_state_in(&mut self, possible: bool) {
-        self.update_in(self.signals_in.with_tri_state(possible))
-            .unwrap();
-    }
-
-    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError> {
-        self.update_in(self.signals_in.with_all(possible))
-    }
-
     fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
         self.update_in(self.prev_signals_in)
     }
@@ -132,19 +119,6 @@ impl SinglePinCore for ContentionPin {
 impl SinglePinOutput for ContentionPin {
     fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError> {
         self.update_out(self.signals_out.with_signal(signal, possible))
-    }
-
-    fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError> {
-        self.update_out(self.signals_out.with_bool_signal(bool_signal, possible))
-    }
-
-    fn set_tri_state_out(&mut self, possible: bool) {
-        self.update_out(self.signals_out.with_tri_state(possible))
-            .unwrap();
-    }
-
-    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError> {
-        self.update_out(self.signals_out.with_all(possible))
     }
 
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {
