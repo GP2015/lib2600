@@ -125,159 +125,96 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
         }
         Ok(())
     }
-
-    fn add_possible_high_z_out(&mut self) {
-        self.pins
-            .iter_mut()
-            .for_each(|pin| pin.set_high_z_out(true));
-    }
-
-    fn remove_all_possible_out(&mut self) {
-        self.pins
-            .iter_mut()
-            .for_each(|pin| pin.set_all_signals_out(false).unwrap());
-    }
-
-    fn set_all_possible_out_to_prev(&mut self) -> Result<(), PinError> {
-        for bit in 0..self.size {
-            self.pins[bit].set_possible_out_to_prev()?;
-        }
-        Ok(())
-    }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::pin::InputPin;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pin::{PinError, single::mock_pin::MockPin};
+    use rstest::{fixture, rstest};
 
-//     type BusType = StandardBus<InputPin>;
+    type BusType = StandardBus<MockPin>;
+    const BUS_NAME: &str = "bus";
 
-//     fn test() {
-//         let mut bus = BusType::new(String::from("hi"), 8);
-//     }
-// }
+    type DriveFn = fn(&mut BusType, usize) -> Result<(), PinError>;
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::pin::{PinError, single::mock_pin::MockPin};
+    #[fixture]
+    fn bus() -> BusType {
+        StandardBus::new(String::from(BUS_NAME), 8)
+    }
 
-//     use super::*;
-//     use rstest::{fixture, rstest};
+    #[rstest]
+    fn name(bus: BusType) {
+        assert_eq!(bus.name(), BUS_NAME);
+    }
 
-//     type BusType = StandardBus<MockPin<PinError>>;
+    #[rstest]
+    fn pin_out_of_range(mut bus: BusType) {
+        assert!(matches!(
+            bus.pin(8).err().unwrap(),
+            PinError::BitOutOfRange { .. }
+        ));
+        assert!(matches!(
+            bus.pin_mut(9).err().unwrap(),
+            PinError::BitOutOfRange { .. }
+        ));
+    }
 
-//     #[fixture]
-//     fn bus() -> BusType {
-//         StandardBus::new(String::new(), 8)
-//     }
+    #[rstest]
+    fn read_success(mut bus: BusType) {
+        bus.add_possible_drive_in(0x67).unwrap();
+        assert_eq!(bus.read().unwrap(), 0x67);
+        bus.post_tick_update();
+        bus.add_possible_drive_in(0x89).unwrap();
+        assert_eq!(bus.read_prev().unwrap(), 0x67);
+    }
 
-//     type EmptyRes = Result<(), PinError>;
-//     type DriveValue = fn(&mut BusType, val: usize) -> EmptyRes;
-//     type HighZ = fn(&mut BusType);
-//     type Undefine = fn(&mut BusType) -> EmptyRes;
+    #[rstest]
+    fn read_fail(mut bus: BusType) {
+        bus.add_possible_drive_in(0x67).unwrap();
+        bus.pin_mut(6).unwrap().set_all_signals_in(false).unwrap();
+        assert!(bus.read().is_none());
+    }
 
-//     #[rstest]
-//     fn state(mut bus: BusType) {
-//         let states = [
-//             PinState::Undefined,
-//             PinState::Undefined,
-//             PinState::High,
-//             PinState::Low,
-//             PinState::HighZ,
-//             PinState::Undefined,
-//             PinState::Undefined,
-//             PinState::Undefined,
-//         ];
+    #[rstest]
+    fn drive_in(
+        mut bus: BusType,
+        #[values(
+            StandardBus::add_possible_drive_in,
+            StandardBus::add_possible_drive_out
+        )]
+        func: DriveFn,
+    ) {
+        func(&mut bus, 0x67).unwrap();
+        assert_eq!(bus.read().unwrap(), 0x67);
+    }
 
-//         for (i, state) in states.iter().enumerate() {
-//             bus.pin_mut(i).unwrap().signal_in(*state).unwrap();
-//         }
+    #[rstest]
+    fn drive_in_too_large(
+        mut bus: BusType,
+        #[values(
+            StandardBus::add_possible_drive_in,
+            StandardBus::add_possible_drive_out
+        )]
+        func: DriveFn,
+    ) {
+        assert!(matches!(
+            func(&mut bus, 0x167).err().unwrap(),
+            PinError::DriveValueTooLarge { .. }
+        ))
+    }
 
-//         assert_eq!(bus.state(), states);
-//         bus.post_tick_update();
-//         bus.drive_in(0x67).unwrap();
-//         assert_eq!(bus.prev_state(), states);
-//     }
+    #[rstest]
+    #[case(0x67, 0x67)]
+    #[case(0x167, 0x67)]
+    fn wrapping_drive_in(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
+        bus.add_possible_drive_in_wrapping(ival).unwrap();
+        assert_eq!(bus.read().unwrap(), oval);
+    }
 
-//     #[rstest]
-//     fn state_as_bool(mut bus: BusType) {
-//         let states = [
-//             PinState::Undefined,
-//             PinState::Undefined,
-//             PinState::High,
-//             PinState::Low,
-//             PinState::HighZ,
-//             PinState::Undefined,
-//             PinState::Undefined,
-//             PinState::Undefined,
-//         ];
-
-//         for (i, state) in states.iter().enumerate() {
-//             bus.pin_mut(i).unwrap().signal_in(*state).unwrap();
-//         }
-//         for (i, state) in bus.state_as_bool().iter().enumerate() {
-//             assert_eq!(*state, PinState::as_bool(&states[i]));
-//         }
-//         bus.post_tick_update();
-//         bus.drive_in(0x67).unwrap();
-//         for (i, state) in bus.prev_state_as_bool().iter().enumerate() {
-//             assert_eq!(*state, PinState::as_bool(&states[i]));
-//         }
-//     }
-
-//     #[rstest]
-//     fn read(mut bus: BusType) {
-//         bus.drive_in(0x67).unwrap();
-//         assert_eq!(bus.read().unwrap(), 0x67);
-//         bus.post_tick_update();
-//         bus.drive_in(0x89).unwrap();
-//         assert_eq!(bus.read_prev().unwrap(), 0x67);
-//     }
-
-//     #[rstest]
-//     fn drive(
-//         mut bus: BusType,
-//         #[values(StandardBus::drive_in, StandardBus::drive_out)] func: DriveValue,
-//     ) {
-//         func(&mut bus, 0x67).unwrap();
-//         assert_eq!(bus.read().unwrap(), 0x67);
-//     }
-
-//     #[rstest]
-//     fn drive_too_large(
-//         mut bus: BusType,
-//         #[values(StandardBus::drive_in, StandardBus::drive_out)] func: DriveValue,
-//     ) {
-//         assert!(matches!(
-//             func(&mut bus, 0x167).err().unwrap(),
-//             PinError::DriveValueTooLarge { .. }
-//         ))
-//     }
-
-//     #[rstest]
-//     #[case(0x67, 0x67)]
-//     #[case(0x167, 0x67)]
-//     fn wrapping_drive_in(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
-//         bus.wrapping_drive_in(ival).unwrap();
-//         assert_eq!(bus.read().unwrap(), oval);
-//     }
-
-//     #[rstest]
-//     fn high_z(
-//         mut bus: BusType,
-//         #[values(StandardBus::high_z_in, StandardBus::high_z_out)] func: HighZ,
-//     ) {
-//         func(&mut bus);
-//         assert_eq!(bus.state(), vec![PinState::HighZ; 8]);
-//     }
-
-//     #[rstest]
-//     fn undefine(
-//         mut bus: BusType,
-//         #[values(StandardBus::undefine_in, StandardBus::undefine_out)] func: Undefine,
-//     ) {
-//         func(&mut bus).unwrap();
-//         assert_eq!(bus.state(), vec![PinState::Undefined; 8]);
-//     }
-// }
+    #[rstest]
+    fn for_each_pin(mut bus: BusType) {
+        bus.for_each_pin_mut(|pin| pin.add_drive_in(false).unwrap());
+        assert_eq!(bus.read().unwrap(), 0);
+    }
+}

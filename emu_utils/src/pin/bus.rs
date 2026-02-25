@@ -34,9 +34,6 @@ pub trait BusCore<P> {
 pub trait BusOutput<P> {
     fn pin_out(&mut self, bit: usize) -> Result<&mut P, PinError>;
     fn add_possible_drive_out(&mut self, val: usize) -> Result<(), PinError>;
-    fn add_possible_high_z_out(&mut self);
-    fn remove_all_possible_out(&mut self);
-    fn set_all_possible_out_to_prev(&mut self) -> Result<(), PinError>;
 }
 
 pub struct BusInterface<'a, B, E, P, const M: bool> {

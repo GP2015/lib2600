@@ -14,8 +14,8 @@ impl SinglePinCore for MockPin {
     fn new(name: String) -> Self {
         Self {
             name,
-            signals: PossibleSignals::from(false, false, true),
-            prev_signals: PossibleSignals::from(false, false, false),
+            signals: PossibleSignals::from(false, false, false),
+            prev_signals: PossibleSignals::from(false, false, true),
         }
     }
 
