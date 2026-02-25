@@ -3,9 +3,8 @@ pub mod input;
 #[cfg(test)]
 pub mod mock_pin;
 
-use delegate::delegate;
-
 use crate::pin::{PinError, PinSignal, obj_ref::ObjRef};
+use delegate::delegate;
 use std::marker::PhantomData;
 
 pub trait SinglePinCore {
@@ -25,24 +24,20 @@ pub trait SinglePinCore {
     fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
     fn possible_signals(&self) -> Vec<PinSignal>;
     fn prev_possible_signals(&self) -> Vec<PinSignal>;
+    fn possible_reads(&self) -> Vec<bool>;
+    fn prev_possible_reads(&self) -> Vec<bool>;
     fn collapsed(&self) -> Option<PinSignal>;
     fn prev_collapsed(&self) -> Option<PinSignal>;
     fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
+    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
     fn set_possible_in_to_prev(&mut self) -> Result<(), PinError>;
 
     fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError> {
         self.set_signal_in(PinSignal::from_bool(bool_signal), possible)
     }
 
-    fn set_tri_state_in(&mut self, possible: bool) {
-        self.set_signal_in(PinSignal::TriState, possible).unwrap();
-    }
-
-    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError> {
-        for signal in [PinSignal::High, PinSignal::Low, PinSignal::TriState] {
-            self.set_signal_in(signal, possible)?;
-        }
-        Ok(())
+    fn set_high_z_in(&mut self, possible: bool) {
+        self.set_signal_in(PinSignal::HighZ, possible).unwrap();
     }
 
     fn add_signal_in(&mut self, signal: PinSignal) -> Result<(), PinError> {
@@ -53,8 +48,8 @@ pub trait SinglePinCore {
         self.set_drive_in(bool_signal, true)
     }
 
-    fn add_tri_state_in(&mut self) {
-        self.set_tri_state_in(true);
+    fn add_high_z_in(&mut self) {
+        self.set_high_z_in(true);
     }
 
     fn add_all_signals_in(&mut self) -> Result<(), PinError> {
@@ -64,21 +59,15 @@ pub trait SinglePinCore {
 
 pub trait SinglePinOutput {
     fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
+    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError>;
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError>;
 
     fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), PinError> {
         self.set_signal_out(PinSignal::from_bool(bool_signal), possible)
     }
 
-    fn set_tri_state_out(&mut self, possible: bool) {
-        self.set_signal_out(PinSignal::TriState, possible).unwrap();
-    }
-
-    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError> {
-        for signal in [PinSignal::High, PinSignal::Low, PinSignal::TriState] {
-            self.set_signal_out(signal, possible)?;
-        }
-        Ok(())
+    fn set_high_z_out(&mut self, possible: bool) {
+        self.set_signal_out(PinSignal::HighZ, possible).unwrap();
     }
 
     fn add_signal_out(&mut self, signal: PinSignal) -> Result<(), PinError> {
@@ -89,8 +78,8 @@ pub trait SinglePinOutput {
         self.set_drive_out(bool_signal, true)
     }
 
-    fn add_tri_state_out(&mut self) {
-        self.set_tri_state_out(true);
+    fn add_high_z_out(&mut self) {
+        self.set_high_z_out(true);
     }
 
     fn add_all_signals_out(&mut self) -> Result<(), PinError> {
@@ -157,8 +146,8 @@ where
         }
 
         to self.inner.as_mut().unwrap(){
-            pub fn set_tri_state_in(&mut self, possible: bool);
-            pub fn add_tri_state_in(&mut self);
+            pub fn set_high_z_in(&mut self, possible: bool);
+            pub fn add_high_z_in(&mut self);
         }
     }
 }

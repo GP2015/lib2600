@@ -8,8 +8,8 @@ pub enum PinSignal {
     #[strum(to_string = "low")]
     Low,
 
-    #[strum(to_string = "tri-signal")]
-    TriState,
+    #[strum(to_string = "high-impedance")]
+    HighZ,
 }
 
 impl PinSignal {
@@ -29,8 +29,8 @@ impl PinSignal {
         match (first, second) {
             (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
             (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
-            (any, PinSignal::TriState) => Some(any),
-            (PinSignal::TriState, any) => Some(any),
+            (any, PinSignal::HighZ) => Some(any),
+            (PinSignal::HighZ, any) => Some(any),
             (PinSignal::Low, PinSignal::High) => None,
             (PinSignal::High, PinSignal::Low) => None,
         }
@@ -58,17 +58,17 @@ mod tests {
 
     #[rstest]
     fn as_bool_failure() {
-        assert!(PinSignal::TriState.as_bool().is_none());
+        assert!(PinSignal::HighZ.as_bool().is_none());
     }
 
     #[rstest]
     #[case(PinSignal::Low, PinSignal::Low, PinSignal::Low)]
-    #[case(PinSignal::Low, PinSignal::TriState, PinSignal::Low)]
+    #[case(PinSignal::Low, PinSignal::HighZ, PinSignal::Low)]
     #[case(PinSignal::High, PinSignal::High, PinSignal::High)]
-    #[case(PinSignal::High, PinSignal::TriState, PinSignal::High)]
-    #[case(PinSignal::TriState, PinSignal::Low, PinSignal::Low)]
-    #[case(PinSignal::TriState, PinSignal::High, PinSignal::High)]
-    #[case(PinSignal::TriState, PinSignal::TriState, PinSignal::TriState)]
+    #[case(PinSignal::High, PinSignal::HighZ, PinSignal::High)]
+    #[case(PinSignal::HighZ, PinSignal::Low, PinSignal::Low)]
+    #[case(PinSignal::HighZ, PinSignal::High, PinSignal::High)]
+    #[case(PinSignal::HighZ, PinSignal::HighZ, PinSignal::HighZ)]
     fn contend_together_success(
         #[case] first: PinSignal,
         #[case] second: PinSignal,

@@ -43,6 +43,9 @@ impl SinglePinCore for InputPin {
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn possible_reads(&self) -> Vec<bool>;
+
             fn collapsed(&self) -> Option<PinSignal>;
         }
 
@@ -53,6 +56,9 @@ impl SinglePinCore for InputPin {
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn prev_possible_reads(&self) -> Vec<bool>;
+
             #[call(collapsed)]
             fn prev_collapsed(&self) -> Option<PinSignal>;
         }
@@ -61,11 +67,10 @@ impl SinglePinCore for InputPin {
         to self.signals{
             #[call(set_signal)]
             fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
-        }
-    }
 
-    fn set_tri_state_in(&mut self, possible: bool) {
-        self.signals.tri_state = possible;
+            #[call(set_all)]
+            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
+        }
     }
 
     fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
@@ -94,14 +99,14 @@ mod tests {
 
     #[rstest]
     fn initial_state(pin: PinType) {
-        assert_eq!(pin.prev_collapsed().unwrap(), PinSignal::TriState);
+        assert_eq!(pin.prev_collapsed().unwrap(), PinSignal::HighZ);
         assert!(pin.possible_signals().is_empty());
     }
 
     #[rstest]
     fn post_tick_update(
         mut pin: PinType,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::TriState)] signal: PinSignal,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
         pin.set_signal_in(signal, true).unwrap();
         pin.post_tick_update();
@@ -123,7 +128,7 @@ mod tests {
     #[rstest]
     fn collapsed(
         mut pin: PinType,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::TriState)] signal: PinSignal,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
         pin.set_signal_in(signal, true).unwrap();
         assert_eq!(pin.collapsed().unwrap(), signal);
@@ -132,32 +137,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(true, PinSignal::High)]
-    #[case(false, PinSignal::Low)]
-    fn set_drive_in(mut pin: PinType, #[case] bool_signal: bool, #[case] signal: PinSignal) {
-        pin.set_drive_in(bool_signal, true).unwrap();
-        assert_eq!(pin.collapsed().unwrap(), signal);
-    }
-
-    #[rstest]
-    fn set_tristate_in(mut pin: PinType) {
-        pin.set_tri_state_in(true);
-        assert_eq!(pin.collapsed().unwrap(), PinSignal::TriState);
-    }
-
-    #[rstest]
-    fn set_all_signals_in(mut pin: PinType) {
-        pin.set_all_signals_in(true).unwrap();
-        assert_eq!(
-            pin.possible_signals(),
-            vec![PinSignal::High, PinSignal::Low, PinSignal::TriState]
-        );
-    }
-
-    #[rstest]
     fn set_possible_in_to_prev(
         mut pin: PinType,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::TriState)] signal: PinSignal,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
         pin.set_signal_in(signal, true).unwrap();
         pin.post_tick_update();

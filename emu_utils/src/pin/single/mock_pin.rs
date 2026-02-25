@@ -44,6 +44,9 @@ impl SinglePinCore for MockPin {
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn possible_reads(&self) -> Vec<bool>;
+
             fn collapsed(&self) -> Option<PinSignal>;
         }
 
@@ -54,6 +57,9 @@ impl SinglePinCore for MockPin {
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn prev_possible_reads(&self) -> Vec<bool>;
+
             #[call(collapsed)]
             fn prev_collapsed(&self) -> Option<PinSignal>;
         }
@@ -62,11 +68,10 @@ impl SinglePinCore for MockPin {
         to self.signals{
             #[call(set_signal)]
             fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
-        }
-    }
 
-    fn set_tri_state_in(&mut self, possible: bool) {
-        self.signals.tri_state = possible;
+            #[call(set_all)]
+            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
+        }
     }
 
     fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
@@ -81,11 +86,10 @@ impl SinglePinOutput for MockPin {
         to self.signals{
             #[call(set_signal)]
             fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
-        }
-    }
 
-    fn set_tri_state_out(&mut self, possible: bool) {
-        self.signals.tri_state = possible;
+            #[call(set_all)]
+            fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError>;
+        }
     }
 
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {

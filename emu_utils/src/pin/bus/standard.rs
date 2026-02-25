@@ -126,10 +126,10 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
         Ok(())
     }
 
-    fn add_possible_tri_state_out(&mut self) {
+    fn add_possible_high_z_out(&mut self) {
         self.pins
             .iter_mut()
-            .for_each(|pin| pin.set_tri_state_out(true));
+            .for_each(|pin| pin.set_high_z_out(true));
     }
 
     fn remove_all_possible_out(&mut self) {
@@ -174,7 +174,7 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 
 //     type EmptyRes = Result<(), PinError>;
 //     type DriveValue = fn(&mut BusType, val: usize) -> EmptyRes;
-//     type TriState = fn(&mut BusType);
+//     type HighZ = fn(&mut BusType);
 //     type Undefine = fn(&mut BusType) -> EmptyRes;
 
 //     #[rstest]
@@ -184,7 +184,7 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 //             PinState::Undefined,
 //             PinState::High,
 //             PinState::Low,
-//             PinState::TriState,
+//             PinState::HighZ,
 //             PinState::Undefined,
 //             PinState::Undefined,
 //             PinState::Undefined,
@@ -207,7 +207,7 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 //             PinState::Undefined,
 //             PinState::High,
 //             PinState::Low,
-//             PinState::TriState,
+//             PinState::HighZ,
 //             PinState::Undefined,
 //             PinState::Undefined,
 //             PinState::Undefined,
@@ -264,12 +264,12 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 //     }
 
 //     #[rstest]
-//     fn tri_state(
+//     fn high_z(
 //         mut bus: BusType,
-//         #[values(StandardBus::tri_state_in, StandardBus::tri_state_out)] func: TriState,
+//         #[values(StandardBus::high_z_in, StandardBus::high_z_out)] func: HighZ,
 //     ) {
 //         func(&mut bus);
-//         assert_eq!(bus.state(), vec![PinState::TriState; 8]);
+//         assert_eq!(bus.state(), vec![PinState::HighZ; 8]);
 //     }
 
 //     #[rstest]
