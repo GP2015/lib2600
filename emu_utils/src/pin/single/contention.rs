@@ -52,14 +52,19 @@ impl SinglePinCore for ContentionPin {
         let signals_out = PossibleSignals::from(true, true, true);
         let contended_signals = PossibleSignals::contend_together(signals_in, signals_out).unwrap();
 
+        let prev_signals_in = PossibleSignals::from(false, false, true);
+        let prev_signals_out = PossibleSignals::from(false, false, true);
+        let prev_contended_signals =
+            PossibleSignals::contend_together(prev_signals_in, prev_signals_out).unwrap();
+
         Self {
             name,
             signals_in,
             signals_out,
             contended_signals,
-            prev_signals_in: PossibleSignals::from(false, false, true),
-            prev_signals_out: PossibleSignals::from(false, false, true),
-            prev_contended_signals: PossibleSignals::from(false, false, true),
+            prev_signals_in,
+            prev_signals_out,
+            prev_contended_signals,
         }
     }
 
@@ -92,6 +97,9 @@ impl SinglePinCore for ContentionPin {
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn possible_reads(&self) -> Vec<bool>;
+
             fn collapsed(&self) -> Option<PinSignal>;
         }
 
@@ -102,6 +110,9 @@ impl SinglePinCore for ContentionPin {
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
+            #[call(all_possible_reads)]
+            fn prev_possible_reads(&self) -> Vec<bool>;
+
             #[call(collapsed)]
             fn prev_collapsed(&self) -> Option<PinSignal>;
         }
@@ -109,6 +120,10 @@ impl SinglePinCore for ContentionPin {
 
     fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError> {
         self.update_in(self.signals_in.with_signal(signal, possible))
+    }
+
+    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError> {
+        self.update_in(self.signals_in.with_all(possible))
     }
 
     fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
@@ -121,157 +136,93 @@ impl SinglePinOutput for ContentionPin {
         self.update_out(self.signals_out.with_signal(signal, possible))
     }
 
+    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError> {
+        self.update_in(self.signals_out.with_all(possible))
+    }
+
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {
         self.update_out(self.prev_signals_out)
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use rstest::{fixture, rstest};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::{fixture, rstest};
 
-//     type PinType = ContentionPin;
+    type PinType = ContentionPin;
+    const PIN_NAME: &str = "pin";
 
-//     #[fixture]
-//     fn pin_default() -> PinType {
-//         ContentionPin::new(String::new())
-//     }
+    #[fixture]
+    fn pin_default() -> PinType {
+        ContentionPin::new(String::from(PIN_NAME))
+    }
 
-//     #[rstest]
-//     fn initial_state(#[from(pin_default)] pin: PinType) {
-//         assert_eq!(pin.state(), PinState::Undefined);
-//     }
+    #[fixture]
+    fn pin_none_out() -> PinType {
+        let mut pin = ContentionPin::new(String::from(PIN_NAME));
+        pin.set_all_signals_out(false).unwrap();
+        pin
+    }
 
-//     #[fixture]
-//     fn pin_tri_state_out() -> PinType {
-//         let mut pin = ContentionPin::new(String::new());
-//         pin.tri_state_out();
-//         pin
-//     }
+    #[fixture]
+    fn pin_high_z_out() -> PinType {
+        let mut pin = ContentionPin::new(String::new());
+        pin.set_all_signals_out(false).unwrap();
+        pin.add_high_z_out();
+        pin
+    }
 
-//     type EmptyRes = Result<(), PinError>;
-//     type PinSignal = fn(&mut PinType, state: PinState) -> EmptyRes;
-//     type Drive = fn(&mut PinType, state: bool) -> EmptyRes;
-//     type TriState = fn(&mut PinType);
-//     type Undefine = fn(&mut PinType) -> EmptyRes;
+    #[rstest]
+    fn name(#[from(pin_default)] pin: PinType) {
+        assert_eq!(pin.name(), PIN_NAME);
+    }
 
-//     #[rstest]
-//     fn signal(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[values(PinState::High, PinState::Low, PinState::TriState, PinState::Undefined)]
-//         state: PinState,
-//         #[values(ContentionPin::signal_in, ContentionPin::signal_out)] func: PinSignal,
-//     ) {
-//         func(&mut pin, state).unwrap();
-//         assert_eq!(pin.state(), state);
-//     }
+    #[rstest]
+    fn initial_state(#[from(pin_default)] pin: PinType) {
+        assert_eq!(pin.prev_collapsed().unwrap(), PinSignal::HighZ);
+        assert!(pin.possible_signals().is_empty());
+    }
 
-//     #[rstest]
-//     fn drive(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[values(true, false)] b: bool,
-//         #[values(ContentionPin::drive_in, ContentionPin::drive_out)] func: Drive,
-//     ) {
-//         func(&mut pin, b).unwrap();
-//         assert_eq!(pin.state(), PinState::from_bool(b));
-//     }
+    #[rstest]
+    fn post_tick_update(
+        #[from(pin_none_out)] mut pin: PinType,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+    ) {
+        pin.set_signal_in(signal, true).unwrap();
+        pin.set_signal_out(signal, true).unwrap();
+        pin.post_tick_update();
+        assert_eq!(pin.prev_collapsed().unwrap(), signal);
+        assert!(pin.possible_signals().is_empty());
+    }
 
-//     #[rstest]
-//     fn tri_state(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[values(ContentionPin::tri_state_in, ContentionPin::tri_state_out)] func: TriState,
-//     ) {
-//         func(&mut pin);
-//         assert_eq!(pin.state(), PinState::TriState);
-//     }
+    #[rstest]
+    #[case(vec![PinSignal::High, PinSignal::Low])]
+    fn possible_signals(#[from(pin_high_z_out)] mut pin: PinType, #[case] signals: Vec<PinSignal>) {
+        for signal in &signals {
+            pin.set_signal_in(*signal, true).unwrap();
+        }
+        assert_eq!(pin.possible_signals(), signals);
+        pin.post_tick_update();
+        assert_eq!(pin.prev_possible_signals(), signals);
+    }
 
-//     #[rstest]
-//     fn undefine(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[values(ContentionPin::undefine_in, ContentionPin::undefine_out)] func: Undefine,
-//     ) {
-//         func(&mut pin).unwrap();
-//         assert_eq!(pin.state(), PinState::Undefined);
-//     }
-
-//     #[rstest]
-//     #[case(PinState::TriState, PinState::TriState, PinState::TriState)]
-//     #[case(PinState::High, PinState::TriState, PinState::High)]
-//     #[case(PinState::Low, PinState::TriState, PinState::Low)]
-//     #[case(PinState::TriState, PinState::High, PinState::High)]
-//     #[case(PinState::TriState, PinState::Low, PinState::Low)]
-//     #[case(PinState::High, PinState::High, PinState::High)]
-//     #[case(PinState::Low, PinState::Low, PinState::Low)]
-//     fn safe_two_way_driving(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[case] istate: PinState,
-//         #[case] ostate: PinState,
-//         #[case] state: PinState,
-//     ) {
-//         pin.signal_in(istate).unwrap();
-//         pin.signal_out(ostate).unwrap();
-//         assert_eq!(pin.state(), state);
-//     }
-
-//     #[rstest]
-//     fn contention_swap(#[from(pin_default)] mut pin: PinType, #[values(true, false)] state: bool) {
-//         pin.drive_out(state).unwrap();
-//         pin.drive_in(state).unwrap();
-//         assert_eq!(pin.read().unwrap(), state);
-//         pin.tri_state_out();
-//         pin.drive_in(!state).unwrap();
-//         pin.drive_out(!state).unwrap();
-//         assert_eq!(pin.read().unwrap(), !state);
-//     }
-
-//     #[rstest]
-//     fn short_circuit(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[values(true, false)] state: bool,
-//         #[values(true, false)] dir: bool,
-//     ) {
-//         if dir {
-//             pin.drive_in(state).unwrap();
-//         } else {
-//             pin.drive_out(state).unwrap();
-//         }
-
-//         assert!(matches!(
-//             if dir {
-//                 pin.drive_out(!state).err().unwrap()
-//             } else {
-//                 pin.drive_in(!state).err().unwrap()
-//             },
-//             PinError::ShortCircuit { .. }
-//         ));
-//     }
-
-//     #[rstest]
-//     #[case(PinState::High, PinState::Undefined)]
-//     #[case(PinState::Low, PinState::Undefined)]
-//     #[case(PinState::Undefined, PinState::High)]
-//     #[case(PinState::Undefined, PinState::Low)]
-//     #[case(PinState::Undefined, PinState::Undefined)]
-//     fn potential_short_circuit(
-//         #[from(pin_tri_state_out)] mut pin: PinType,
-//         #[case] istate: PinState,
-//         #[case] ostate: PinState,
-//         #[values(true, false)] dir: bool,
-//     ) {
-//         if dir {
-//             pin.signal_in(istate).unwrap();
-//         } else {
-//             pin.signal_out(istate).unwrap();
-//         }
-
-//         assert!(matches!(
-//             if dir {
-//                 pin.signal_out(ostate).err().unwrap()
-//             } else {
-//                 pin.signal_in(ostate).err().unwrap()
-//             },
-//             PinError::PotentialShortCircuit { .. }
-//         ));
-//     }
-// }
+    #[rstest]
+    #[case(PinSignal::HighZ, PinSignal::HighZ, PinSignal::HighZ)]
+    #[case(PinSignal::High, PinSignal::HighZ, PinSignal::High)]
+    #[case(PinSignal::Low, PinSignal::HighZ, PinSignal::Low)]
+    #[case(PinSignal::HighZ, PinSignal::High, PinSignal::High)]
+    #[case(PinSignal::HighZ, PinSignal::Low, PinSignal::Low)]
+    #[case(PinSignal::High, PinSignal::High, PinSignal::High)]
+    #[case(PinSignal::Low, PinSignal::Low, PinSignal::Low)]
+    fn safe_two_way_driving(
+        #[from(pin_none_out)] mut pin: PinType,
+        #[case] istate: PinSignal,
+        #[case] ostate: PinSignal,
+        #[case] state: PinSignal,
+    ) {
+        pin.add_signal_in(istate).unwrap();
+        pin.add_signal_out(ostate).unwrap();
+        assert_eq!(pin.collapsed().unwrap(), state);
+    }
+}
