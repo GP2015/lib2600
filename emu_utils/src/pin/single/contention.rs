@@ -137,7 +137,7 @@ impl SinglePinOutput for ContentionPin {
     }
 
     fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError> {
-        self.update_in(self.signals_out.with_all(possible))
+        self.update_out(self.signals_out.with_all(possible))
     }
 
     fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {
@@ -189,18 +189,24 @@ mod tests {
         #[from(pin_none_out)] mut pin: PinType,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        pin.set_signal_in(signal, true).unwrap();
-        pin.set_signal_out(signal, true).unwrap();
+        pin.add_signal_in(signal).unwrap();
+        pin.add_signal_out(signal).unwrap();
         pin.post_tick_update();
         assert_eq!(pin.prev_collapsed().unwrap(), signal);
         assert!(pin.possible_signals().is_empty());
     }
 
     #[rstest]
-    #[case(vec![PinSignal::High, PinSignal::Low])]
+    #[case(vec![PinSignal::High])]
     fn possible_signals(#[from(pin_high_z_out)] mut pin: PinType, #[case] signals: Vec<PinSignal>) {
+        assert!(!pin.signals_in.high);
+        assert!(!pin.signals_in.low);
+        assert!(!pin.signals_in.high_z);
+        assert!(!pin.signals_out.high);
+        assert!(!pin.signals_out.low);
+        assert!(pin.signals_out.high_z);
         for signal in &signals {
-            pin.set_signal_in(*signal, true).unwrap();
+            pin.add_signal_in(*signal).unwrap();
         }
         assert_eq!(pin.possible_signals(), signals);
         pin.post_tick_update();
