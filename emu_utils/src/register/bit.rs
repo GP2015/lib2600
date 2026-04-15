@@ -1,4 +1,4 @@
-use crate::register::states::PossibleBitStates;
+use crate::{pin::SinglePinCore, register::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone)]
@@ -43,6 +43,24 @@ impl BitRegister {
             pub fn set_all(&mut self, possible: bool);
             pub fn add(&mut self, signal: bool);
             pub fn add_all(&mut self);
+        }
+    }
+
+    pub fn input_from_pin<'a, P>(&mut self, pin: &P, only_possible: bool)
+    where
+        P: SinglePinCore<'a>,
+    {
+        if only_possible {
+            self.states.high = pin.could_read_high();
+            self.states.low = pin.could_read_low();
+        } else {
+            if pin.could_read_high() {
+                self.states.high = true;
+            }
+
+            if pin.could_read_low() {
+                self.states.low = true;
+            }
         }
     }
 }

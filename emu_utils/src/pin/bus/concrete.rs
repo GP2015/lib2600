@@ -150,11 +150,6 @@ impl<'a, P> BusOutput<'a, P> for StandardBus<P>
 where
     P: 'a + SinglePinCore<'a> + SinglePinOutput<'a>,
 {
-    fn pin_out(&mut self, bit: usize) -> Result<&mut P, P::ErrType> {
-        self.check_for_bit_out_of_range(bit)?;
-        Ok(&mut self.pins[bit])
-    }
-
     fn add_drive_out(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.check_if_drive_val_too_large(val)?;
         for (bit, pin) in self.pins.iter_mut().enumerate() {

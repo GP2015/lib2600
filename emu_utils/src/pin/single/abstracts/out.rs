@@ -1,4 +1,7 @@
-use crate::pin::{PinSignal, SinglePinCore};
+use crate::{
+    pin::{PinSignal, SinglePinCore},
+    register::BitRegister,
+};
 
 pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
     fn set_high_out(&mut self, possible: bool) -> Result<(), Self::ErrType>;
@@ -51,5 +54,25 @@ pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
 
     fn add_all_out(&mut self) -> Result<(), Self::ErrType> {
         self.set_all_out(true)
+    }
+
+    fn output_from_reg(
+        &mut self,
+        reg: &BitRegister,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType> {
+        if only_possible {
+            self.set_high_out(reg.high_possible())?;
+            self.set_low_out(reg.low_possible())?;
+        } else {
+            if reg.high_possible() {
+                self.add_high_out()?;
+            }
+
+            if reg.low_possible() {
+                self.add_low_out()?;
+            }
+        }
+        Ok(())
     }
 }

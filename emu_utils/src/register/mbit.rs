@@ -2,6 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     bit,
+    pin::{BusCore, SinglePinCore},
     register::{BitRegister, RegisterError},
 };
 
@@ -113,6 +114,16 @@ impl MBitRegister {
 
     pub fn add_wrapping(&mut self, val: usize) -> Result<(), RegisterError> {
         self.add(bit::get_low_bits_of_usize(val, self.size()))
+    }
+
+    pub fn input_from_bus<'a, B, P>(&mut self, bus: &'a B, only_possible: bool)
+    where
+        B: BusCore<'a, P>,
+        P: 'a + SinglePinCore<'a>,
+    {
+        for (reg, pin) in self.iter_mut().zip(bus.iter()) {
+            reg.input_from_pin(pin, only_possible);
+        }
     }
 }
 
