@@ -7,7 +7,7 @@ pub struct InputPin {
     prev_signals: PossibleSignals,
 }
 
-impl SinglePinCore for InputPin {
+impl SinglePinCore<'_> for InputPin {
     fn new(name: String) -> Self {
         Self {
             name,

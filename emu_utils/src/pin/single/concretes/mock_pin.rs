@@ -7,7 +7,7 @@ pub struct MockPin {
     prev_signals: PossibleSignals,
 }
 
-impl SinglePinCore for MockPin {
+impl SinglePinCore<'_> for MockPin {
     fn new(name: String) -> Self {
         Self {
             name,

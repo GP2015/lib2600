@@ -6,13 +6,13 @@ mod single;
 
 pub use crate::pin::{
     bus::{
-        interfaces::{core::BusCore, out::BusOutput},
-        standard::StandardBus,
+        abstracts::{core::BusCore, out::BusOutput},
+        concrete::StandardBus,
     },
     error::PinError,
     signal::PinSignal,
     single::{
-        concretions::{contention::ContentionPin, input::InputPin},
-        interfaces::{core::SinglePinCore, out::SinglePinOutput},
+        abstracts::{core::SinglePinCore, out::SinglePinOutput},
+        concretes::{contention::ContentionPin, input::InputPin},
     },
 };

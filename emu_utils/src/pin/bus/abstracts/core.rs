@@ -1,8 +1,29 @@
-use crate::pin::PinError;
+use crate::pin::{
+    PinError, SinglePinCore,
+    bus::interfaces::{busmut::BusMut, busref::BusRef},
+};
 
-pub trait BusCore<P> {
+pub trait BusCore<'a, P> {
     fn new(name: String, size: usize) -> Self;
     fn post_tick_update(&mut self);
+
+    fn interface<E>(&'a self) -> BusRef<'a, Self, P, E>
+    where
+        Self: Sized,
+        P: SinglePinCore<'a>,
+        E: From<PinError>,
+    {
+        BusRef::from(self)
+    }
+
+    fn interface_mut<E>(&'a mut self) -> BusMut<'a, Self, P, E>
+    where
+        Self: Sized,
+        P: SinglePinCore<'a>,
+        E: From<PinError>,
+    {
+        BusMut::from(self)
+    }
 
     fn for_each_pin_mut<F>(&mut self, f: F)
     where

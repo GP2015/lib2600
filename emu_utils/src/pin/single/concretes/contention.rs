@@ -43,7 +43,7 @@ impl ContentionPin {
     }
 }
 
-impl SinglePinCore for ContentionPin {
+impl SinglePinCore<'_> for ContentionPin {
     fn new(name: String) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);

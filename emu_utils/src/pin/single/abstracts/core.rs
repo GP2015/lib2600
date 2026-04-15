@@ -1,8 +1,26 @@
-use crate::pin::{PinError, PinSignal};
+use crate::pin::{
+    PinError, PinSignal,
+    single::interfaces::{pinmut::SinglePinMut, pinref::SinglePinRef},
+};
 
-pub trait SinglePinCore {
+pub trait SinglePinCore<'a> {
     fn new(name: String) -> Self;
     fn post_tick_update(&mut self);
+
+    fn interface(&'a self) -> SinglePinRef<'a, Self>
+    where
+        Self: Sized,
+    {
+        SinglePinRef::from(self)
+    }
+
+    fn interface_mut<E>(&'a mut self) -> SinglePinMut<'a, Self, E>
+    where
+        Self: Sized,
+        E: From<PinError>,
+    {
+        SinglePinMut::from(self)
+    }
 
     fn name(&self) -> &str;
     fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;

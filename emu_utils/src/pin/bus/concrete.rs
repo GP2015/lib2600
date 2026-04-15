@@ -8,7 +8,10 @@ pub struct StandardBus<P> {
     pins: Box<[P]>,
 }
 
-impl<P: SinglePinCore> StandardBus<P> {
+impl<'a, P> StandardBus<P>
+where
+    P: SinglePinCore<'a>,
+{
     fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), PinError> {
         if bit >= self.size() {
             Err(PinError::BitOutOfRange {
@@ -44,7 +47,10 @@ impl<P: SinglePinCore> StandardBus<P> {
     }
 }
 
-impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
+impl<'a, P> BusCore<'a, P> for StandardBus<P>
+where
+    P: SinglePinCore<'a>,
+{
     fn new(name: String, size: usize) -> Self {
         Self {
             pins: (0..size)
@@ -114,7 +120,10 @@ impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
     }
 }
 
-impl<P: SinglePinCore + SinglePinOutput> BusOutput<P> for StandardBus<P> {
+impl<'a, P> BusOutput<P> for StandardBus<P>
+where
+    P: SinglePinCore<'a> + SinglePinOutput,
+{
     fn pin_out(&mut self, bit: usize) -> Result<&mut P, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
@@ -132,7 +141,7 @@ impl<P: SinglePinCore + SinglePinOutput> BusOutput<P> for StandardBus<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pin::{PinError, single::concretions::mock_pin::MockPin};
+    use crate::pin::{PinError, single::concretes::mock_pin::MockPin};
     use rstest::{fixture, rstest};
 
     type BusType = StandardBus<MockPin>;
