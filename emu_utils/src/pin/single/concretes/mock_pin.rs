@@ -1,18 +1,29 @@
 use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
 use delegate::delegate;
+use std::marker::PhantomData;
 
-pub struct MockPin {
+pub struct MockPin<E>
+where
+    E: From<PinError>,
+{
     name: String,
     signals: PossibleSignals,
     prev_signals: PossibleSignals,
+    err_type: PhantomData<E>,
 }
 
-impl SinglePinCore<'_> for MockPin {
+impl<E> SinglePinCore<'_> for MockPin<E>
+where
+    E: From<PinError>,
+{
+    type ErrType = E;
+
     fn new(name: String) -> Self {
         Self {
             name,
             signals: PossibleSignals::from(false, false, false),
             prev_signals: PossibleSignals::from(false, false, true),
+            err_type: PhantomData,
         }
     }
 
@@ -56,32 +67,35 @@ impl SinglePinCore<'_> for MockPin {
         #[expr($; Ok(()))]
         to self.signals{
             #[call(set_signal)]
-            fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
+            fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
 
             #[call(set_all)]
-            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError>;
+            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), Self::ErrType>;
         }
     }
 
-    fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
+    fn set_possible_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
         self.signals = self.prev_signals;
         Ok(())
     }
 }
 
-impl SinglePinOutput for MockPin {
+impl<E> SinglePinOutput<'_> for MockPin<E>
+where
+    E: From<PinError>,
+{
     delegate! {
         #[expr($; Ok(()))]
         to self.signals{
             #[call(set_signal)]
-            fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError>;
+            fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
 
             #[call(set_all)]
-            fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError>;
+            fn set_all_signals_out(&mut self, possible: bool) -> Result<(), Self::ErrType>;
         }
     }
 
-    fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {
+    fn set_possible_out_to_prev(&mut self) -> Result<(), Self::ErrType> {
         self.signals = self.prev_signals;
         Ok(())
     }

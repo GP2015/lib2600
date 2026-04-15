@@ -1,7 +1,8 @@
 use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
 use delegate::delegate;
+use std::marker::PhantomData;
 
-pub struct ContentionPin {
+pub struct ContentionPin<E> {
     name: String,
     signals_in: PossibleSignals,
     signals_out: PossibleSignals,
@@ -9,9 +10,13 @@ pub struct ContentionPin {
     prev_signals_in: PossibleSignals,
     prev_signals_out: PossibleSignals,
     prev_contended_signals: PossibleSignals,
+    err_type: PhantomData<E>,
 }
 
-impl ContentionPin {
+impl<E> ContentionPin<E>
+where
+    E: From<PinError>,
+{
     fn short_circuit_err(&self) -> PinError {
         PinError::ShortCircuit {
             name: self.name.clone(),
@@ -43,7 +48,12 @@ impl ContentionPin {
     }
 }
 
-impl SinglePinCore<'_> for ContentionPin {
+impl<E> SinglePinCore<'_> for ContentionPin<E>
+where
+    E: From<PinError>,
+{
+    type ErrType = E;
+
     fn new(name: String) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);
@@ -64,6 +74,7 @@ impl SinglePinCore<'_> for ContentionPin {
             prev_signals_in,
             prev_signals_out,
             prev_contended_signals,
+            err_type: PhantomData,
         }
     }
 
@@ -109,30 +120,37 @@ impl SinglePinCore<'_> for ContentionPin {
         }
     }
 
-    fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError> {
+    fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType> {
         self.update_in(self.signals_in.with_signal(signal, possible))
+            .map_err(Into::into)
     }
 
-    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), PinError> {
+    fn set_all_signals_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
         self.update_in(self.signals_in.with_all(possible))
+            .map_err(Into::into)
     }
 
-    fn set_possible_in_to_prev(&mut self) -> Result<(), PinError> {
-        self.update_in(self.prev_signals_in)
+    fn set_possible_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
+        self.update_in(self.prev_signals_in).map_err(Into::into)
     }
 }
 
-impl SinglePinOutput for ContentionPin {
-    fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), PinError> {
+impl<E> SinglePinOutput<'_> for ContentionPin<E>
+where
+    E: From<PinError>,
+{
+    fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType> {
         self.update_out(self.signals_out.with_signal(signal, possible))
+            .map_err(Into::into)
     }
 
-    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), PinError> {
+    fn set_all_signals_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
         self.update_out(self.signals_out.with_all(possible))
+            .map_err(Into::into)
     }
 
-    fn set_possible_out_to_prev(&mut self) -> Result<(), PinError> {
-        self.update_out(self.prev_signals_out)
+    fn set_possible_out_to_prev(&mut self) -> Result<(), Self::ErrType> {
+        self.update_out(self.prev_signals_out).map_err(Into::into)
     }
 }
 
@@ -141,7 +159,7 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = ContentionPin;
+    type PinType = ContentionPin<PinError>;
     const PIN_NAME: &str = "pin";
 
     #[fixture]

@@ -1,29 +1,25 @@
-use crate::pin::{BusCore, PinError, SinglePinCore};
+use crate::pin::{BusCore, SinglePinCore};
 use delegate::delegate;
 use std::marker::PhantomData;
 
-pub struct BusMut<'a, B, P, E>
+pub struct BusMut<'a, B, P>
 where
     B: BusCore<'a, P>,
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     inner: &'a mut B,
     pin_type: PhantomData<P>,
-    err_type: PhantomData<E>,
 }
 
-impl<'a, B, P, E> BusMut<'a, B, P, E>
+impl<'a, B, P> BusMut<'a, B, P>
 where
     B: BusCore<'a, P>,
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     pub(crate) fn from(bus: &'a mut B) -> Self {
         Self {
             inner: bus,
             pin_type: PhantomData,
-            err_type: PhantomData,
         }
     }
 
@@ -44,10 +40,10 @@ where
 
         #[expr($.map_err(Into::into))]
         to self.inner{
-            pub fn pin(&self, bit: usize) -> Result<&P, E>;
-            pub fn pin_mut(&mut self, bit: usize) -> Result<&mut P, E>;
-            pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), E>;
-            pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), E>;
+            pub fn pin(&self, bit: usize) -> Result<&P, P::ErrType>;
+            pub fn pin_mut(&mut self, bit: usize) -> Result<&mut P, P::ErrType>;
+            pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
+            pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
         }
     }
 }

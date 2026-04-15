@@ -1,26 +1,19 @@
-use crate::pin::{PinError, PinSignal, SinglePinCore};
+use crate::pin::{PinSignal, SinglePinCore};
 use delegate::delegate;
-use std::marker::PhantomData;
 
-pub struct SinglePinMut<'a, P, E>
+pub struct SinglePinMut<'a, P>
 where
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     inner: &'a mut P,
-    err_type: PhantomData<E>,
 }
 
-impl<'a, P, E> SinglePinMut<'a, P, E>
+impl<'a, P> SinglePinMut<'a, P>
 where
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     pub(crate) fn from(pin: &'a mut P) -> Self {
-        Self {
-            inner: pin,
-            err_type: PhantomData,
-        }
+        Self { inner: pin }
     }
 
     delegate! {
@@ -45,13 +38,13 @@ where
 
         #[expr($.map_err((Into::into)))]
         to self.inner{
-            pub fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), E>;
-            pub fn set_all_signals_in(&mut self, possible: bool) -> Result<(), E>;
-            pub fn set_possible_in_to_prev(&mut self) -> Result<(), E>;
-            pub fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), E>;
-            pub fn add_signal_in(&mut self, signal: PinSignal) -> Result<(), E>;
-            pub fn add_drive_in(&mut self, bool_signal: bool) -> Result<(), E>;
-            pub fn add_all_signals_in(&mut self) -> Result<(), E>;
+            pub fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), P::ErrType>;
+            pub fn set_all_signals_in(&mut self, possible: bool) -> Result<(), P::ErrType>;
+            pub fn set_possible_in_to_prev(&mut self) -> Result<(), P::ErrType>;
+            pub fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), P::ErrType>;
+            pub fn add_signal_in(&mut self, signal: PinSignal) -> Result<(), P::ErrType>;
+            pub fn add_drive_in(&mut self, bool_signal: bool) -> Result<(), P::ErrType>;
+            pub fn add_all_signals_in(&mut self) -> Result<(), P::ErrType>;
         }
     }
 }

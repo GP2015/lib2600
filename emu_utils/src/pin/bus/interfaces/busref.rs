@@ -1,28 +1,24 @@
-use crate::pin::{BusCore, PinError, SinglePinCore};
+use crate::pin::{BusCore, SinglePinCore};
 use delegate::delegate;
 use std::marker::PhantomData;
 
-pub struct BusRef<'a, B, P, E>
+pub struct BusRef<'a, B, P>
 where
     B: BusCore<'a, P>,
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     inner: &'a B,
     pin_type: PhantomData<P>,
-    err_type: PhantomData<E>,
 }
 
-impl<'a, B, P, E> BusRef<'a, B, P, E>
+impl<'a, B, P> BusRef<'a, B, P>
 where
     B: BusCore<'a, P>,
     P: SinglePinCore<'a>,
-    E: From<PinError>,
 {
     pub(crate) fn from(bus: &'a B) -> Self {
         Self {
             inner: bus,
-            err_type: PhantomData,
             pin_type: PhantomData,
         }
     }
@@ -38,7 +34,7 @@ where
 
         #[expr($.map_err(Into::into))]
         to self.inner{
-            pub fn pin(&self, bit: usize) -> Result<&P, E>;
+            pub fn pin(&self, bit: usize) -> Result<&P, P::ErrType>;
         }
     }
 }

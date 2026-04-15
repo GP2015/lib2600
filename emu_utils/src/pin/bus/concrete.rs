@@ -72,12 +72,12 @@ where
         self.pins.len()
     }
 
-    fn pin(&self, bit: usize) -> Result<&P, PinError> {
+    fn pin(&self, bit: usize) -> Result<&P, P::ErrType> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&self.pins[bit])
     }
 
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut P, PinError> {
+    fn pin_mut(&mut self, bit: usize) -> Result<&mut P, P::ErrType> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
@@ -107,7 +107,7 @@ where
         Self::collapsed_as_usize(&collapsed)
     }
 
-    fn add_possible_drive_in(&mut self, val: usize) -> Result<(), PinError> {
+    fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.check_if_drive_val_too_large(val)?;
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_in(bit::get_bit_of_usize(val, bit))?;
@@ -115,21 +115,21 @@ where
         Ok(())
     }
 
-    fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), PinError> {
+    fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size()))
     }
 }
 
-impl<'a, P> BusOutput<P> for StandardBus<P>
+impl<'a, P> BusOutput<'a, P> for StandardBus<P>
 where
-    P: SinglePinCore<'a> + SinglePinOutput,
+    P: SinglePinCore<'a> + SinglePinOutput<'a>,
 {
-    fn pin_out(&mut self, bit: usize) -> Result<&mut P, PinError> {
+    fn pin_out(&mut self, bit: usize) -> Result<&mut P, P::ErrType> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
 
-    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), PinError> {
+    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.check_if_drive_val_too_large(val)?;
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_out(bit::get_bit_of_usize(val, bit))?;
@@ -144,7 +144,7 @@ mod tests {
     use crate::pin::{PinError, single::concretes::mock_pin::MockPin};
     use rstest::{fixture, rstest};
 
-    type BusType = StandardBus<MockPin>;
+    type BusType = StandardBus<MockPin<PinError>>;
     const BUS_NAME: &str = "bus";
 
     type DriveFn = fn(&mut BusType, usize) -> Result<(), PinError>;
