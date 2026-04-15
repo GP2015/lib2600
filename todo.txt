@@ -4,5 +4,4 @@ Handle iter unit tests in Pins.
 Add in error name checking.
 Stop errored method calls from changing the chip at all.
 Should the reset sequence be dependant on the clock?
-Fix up ValReg.
 Reduce pessimism.
