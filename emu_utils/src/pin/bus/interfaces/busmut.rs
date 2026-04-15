@@ -57,8 +57,8 @@ where
 
         #[expr($.map_err(Into::into))]
         to self.inner {
-            pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
-            pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
+            pub fn add_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
+            pub fn add_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
         }
     }
 }

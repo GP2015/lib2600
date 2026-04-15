@@ -133,7 +133,7 @@ where
             .map(|bools| Self::bools_as_usize(&bools))
     }
 
-    fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType> {
+    fn add_drive_in(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.check_if_drive_val_too_large(val)?;
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_in(bit::get_bit_of_usize(val, bit))?;
@@ -141,8 +141,8 @@ where
         Ok(())
     }
 
-    fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType> {
-        self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size()))
+    fn add_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType> {
+        self.add_drive_in(bit::get_low_bits_of_usize(val, self.size()))
     }
 }
 
@@ -155,12 +155,16 @@ where
         Ok(&mut self.pins[bit])
     }
 
-    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), P::ErrType> {
+    fn add_drive_out(&mut self, val: usize) -> Result<(), P::ErrType> {
         self.check_if_drive_val_too_large(val)?;
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_out(bit::get_bit_of_usize(val, bit))?;
         }
         Ok(())
+    }
+
+    fn add_drive_out_wrapping(&mut self, val: usize) -> Result<(), P::ErrType> {
+        self.add_drive_out(bit::get_low_bits_of_usize(val, self.size()))
     }
 }
 
@@ -199,16 +203,16 @@ mod tests {
 
     #[rstest]
     fn read_success(mut bus: BusType) {
-        bus.add_possible_drive_in(0x67).unwrap();
+        bus.add_drive_in(0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
         bus.post_tick_update();
-        bus.add_possible_drive_in(0x89).unwrap();
+        bus.add_drive_in(0x89).unwrap();
         assert_eq!(bus.read_prev().unwrap(), 0x67);
     }
 
     #[rstest]
     fn read_fail(mut bus: BusType) {
-        bus.add_possible_drive_in(0x67).unwrap();
+        bus.add_drive_in(0x67).unwrap();
         bus.pin_mut(6).unwrap().set_all_signals_in(false).unwrap();
         assert!(bus.read().is_none());
     }
@@ -216,11 +220,7 @@ mod tests {
     #[rstest]
     fn drive_in(
         mut bus: BusType,
-        #[values(
-            StandardBus::add_possible_drive_in,
-            StandardBus::add_possible_drive_out
-        )]
-        func: DriveFn,
+        #[values(StandardBus::add_drive_in, StandardBus::add_drive_out)] func: DriveFn,
     ) {
         func(&mut bus, 0x67).unwrap();
         assert_eq!(bus.read().unwrap(), 0x67);
@@ -229,11 +229,7 @@ mod tests {
     #[rstest]
     fn drive_in_too_large(
         mut bus: BusType,
-        #[values(
-            StandardBus::add_possible_drive_in,
-            StandardBus::add_possible_drive_out
-        )]
-        func: DriveFn,
+        #[values(StandardBus::add_drive_in, StandardBus::add_drive_out)] func: DriveFn,
     ) {
         assert!(matches!(
             func(&mut bus, 0x167).err().unwrap(),
@@ -245,7 +241,7 @@ mod tests {
     #[case(0x67, 0x67)]
     #[case(0x167, 0x67)]
     fn wrapping_drive_in(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
-        bus.add_possible_drive_in_wrapping(ival).unwrap();
+        bus.add_drive_in_wrapping(ival).unwrap();
         assert_eq!(bus.read().unwrap(), oval);
     }
 }

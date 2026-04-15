@@ -34,7 +34,7 @@ pub trait SinglePinCore<'a> {
     fn prev_collapsed(&self) -> Option<PinSignal>;
     fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
     fn set_all_signals_in(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_possible_in_to_prev(&mut self) -> Result<(), Self::ErrType>;
+    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType>;
 
     fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), Self::ErrType> {
         self.set_signal_in(PinSignal::from_bool(bool_signal), possible)

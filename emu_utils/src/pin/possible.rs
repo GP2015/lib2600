@@ -50,7 +50,7 @@ impl PossibleSignals {
         self.iter_all_enabled().collect()
     }
 
-    pub fn all_possible_reads(self) -> Vec<bool> {
+    pub fn possible_reads(self) -> Vec<bool> {
         match (self.high, self.low, self.high_z) {
             (false, false, false) => Vec::new(),
             (false, true, false) => vec![false],

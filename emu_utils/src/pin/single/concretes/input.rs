@@ -44,7 +44,7 @@ where
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
-            #[call(all_possible_reads)]
+            #[call(possible_reads)]
             fn possible_reads(&self) -> Vec<bool>;
 
             fn collapsed(&self) -> Option<PinSignal>;
@@ -57,7 +57,7 @@ where
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
-            #[call(all_possible_reads)]
+            #[call(possible_reads)]
             fn prev_possible_reads(&self) -> Vec<bool>;
 
             #[call(collapsed)]
@@ -74,7 +74,7 @@ where
         }
     }
 
-    fn set_possible_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
+    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
         self.signals = self.prev_signals;
         Ok(())
     }
@@ -138,13 +138,13 @@ mod tests {
     }
 
     #[rstest]
-    fn set_possible_in_to_prev(
+    fn set_in_to_prev(
         mut pin: PinType,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
         pin.set_signal_in(signal, true).unwrap();
         pin.post_tick_update();
-        pin.set_possible_in_to_prev().unwrap();
+        pin.set_in_to_prev().unwrap();
         assert_eq!(pin.collapsed().unwrap(), signal);
     }
 }

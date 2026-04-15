@@ -3,7 +3,7 @@ use crate::pin::{PinSignal, SinglePinCore};
 pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
     fn set_signal_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
     fn set_all_signals_out(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_possible_out_to_prev(&mut self) -> Result<(), Self::ErrType>;
+    fn set_out_to_prev(&mut self) -> Result<(), Self::ErrType>;
 
     fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), Self::ErrType> {
         self.set_signal_out(PinSignal::from_bool(bool_signal), possible)

@@ -99,7 +99,7 @@ where
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
-            #[call(all_possible_reads)]
+            #[call(possible_reads)]
             fn possible_reads(&self) -> Vec<bool>;
 
             fn collapsed(&self) -> Option<PinSignal>;
@@ -112,7 +112,7 @@ where
             #[call(all_enabled)]
             fn prev_possible_signals(&self) -> Vec<PinSignal>;
 
-            #[call(all_possible_reads)]
+            #[call(possible_reads)]
             fn prev_possible_reads(&self) -> Vec<bool>;
 
             #[call(collapsed)]
@@ -130,7 +130,7 @@ where
             .map_err(Into::into)
     }
 
-    fn set_possible_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
+    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
         self.update_in(self.prev_signals_in).map_err(Into::into)
     }
 }
@@ -149,7 +149,7 @@ where
             .map_err(Into::into)
     }
 
-    fn set_possible_out_to_prev(&mut self) -> Result<(), Self::ErrType> {
+    fn set_out_to_prev(&mut self) -> Result<(), Self::ErrType> {
         self.update_out(self.prev_signals_out).map_err(Into::into)
     }
 }

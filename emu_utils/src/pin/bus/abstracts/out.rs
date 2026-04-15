@@ -5,5 +5,6 @@ where
     P: 'a + SinglePinCore<'a>,
 {
     fn pin_out(&mut self, bit: usize) -> Result<&mut P, P::ErrType>;
-    fn add_possible_drive_out(&mut self, val: usize) -> Result<(), P::ErrType>;
+    fn add_drive_out(&mut self, val: usize) -> Result<(), P::ErrType>;
+    fn add_drive_out_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
 }

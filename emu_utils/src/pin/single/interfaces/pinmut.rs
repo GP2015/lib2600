@@ -38,10 +38,10 @@ where
 
         #[expr($.map_err((Into::into)))]
         to self.inner {
+            pub fn set_in_to_prev(&mut self) -> Result<(), P::ErrType>;
             pub fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), P::ErrType>;
-            pub fn set_all_signals_in(&mut self, possible: bool) -> Result<(), P::ErrType>;
-            pub fn set_possible_in_to_prev(&mut self) -> Result<(), P::ErrType>;
             pub fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), P::ErrType>;
+            pub fn set_all_signals_in(&mut self, possible: bool) -> Result<(), P::ErrType>;
             pub fn add_signal_in(&mut self, signal: PinSignal) -> Result<(), P::ErrType>;
             pub fn add_drive_in(&mut self, bool_signal: bool) -> Result<(), P::ErrType>;
             pub fn add_all_signals_in(&mut self) -> Result<(), P::ErrType>;
