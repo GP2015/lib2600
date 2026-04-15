@@ -1,37 +1,39 @@
-use crate::register::RegisterError;
+use crate::register::bitstates::PossibleBitStates;
+use delegate::delegate;
 
 #[derive(Clone)]
 pub struct BitRegister {
     name: String,
-    state: Option<bool>,
+    states: PossibleBitStates,
 }
 
 impl BitRegister {
     #[must_use]
     pub fn new(name: String) -> Self {
-        Self { name, state: None }
-    }
-
-    #[must_use]
-    pub fn state(&self) -> Option<bool> {
-        self.state
-    }
-
-    pub fn read(&self) -> Result<bool, RegisterError> {
-        match self.state {
-            Some(state) => Ok(state),
-            None => Err(RegisterError::ReadUndefined {
-                name: self.name.clone(),
-            }),
+        Self {
+            name,
+            states: PossibleBitStates::from(true, true),
         }
     }
 
-    pub fn write(&mut self, state: bool) {
-        self.state = Some(state);
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
-    pub fn undefine(&mut self) {
-        self.state = None;
+    delegate! {
+        #[must_use]
+        to self.states {
+            pub fn possible_reads(&self) -> Vec<bool>;
+            pub fn collapsed(&self) -> Option<bool>;
+        }
+
+        to self.states {
+            pub fn set(&mut self, signal: bool, possible: bool);
+            pub fn set_all(&mut self, possible: bool);
+            pub fn add(&mut self, signal: bool);
+            pub fn add_all(&mut self);
+        }
     }
 }
 
@@ -40,33 +42,20 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
+    const REG_NAME: &str = "reg";
+
     #[fixture]
     fn reg() -> BitRegister {
         BitRegister::new(String::new())
     }
 
     #[rstest]
-    fn write_read(mut reg: BitRegister, #[values(false, true)] state: bool) {
-        reg.write(state);
-        assert_eq!(reg.read().unwrap(), state);
+    fn name(reg: BitRegister) {
+        assert_eq!(reg.name(), REG_NAME);
     }
 
     #[rstest]
     fn read_initial(reg: BitRegister) {
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            RegisterError::ReadUndefined { .. }
-        ));
-    }
-
-    #[rstest]
-    fn undefine(mut reg: BitRegister) {
-        reg.write(true);
-        reg.undefine();
-
-        assert!(matches!(
-            reg.read().err().unwrap(),
-            RegisterError::ReadUndefined { .. }
-        ));
+        assert_eq!(reg.possible_reads(), Vec::new());
     }
 }

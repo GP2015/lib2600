@@ -2,12 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RegisterError {
-    #[error("cannot access {name} register as it is uninitialised")]
-    ReadUndefined { name: String },
-
-    #[error("cannot access bit {bit} of {name} register as it is uninitialised")]
-    ReadUndefinedBit { name: String, bit: usize },
-
     #[error("register {name} does not have a bit {bit}")]
     BitOutOfRange {
         name: String,

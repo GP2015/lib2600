@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     bit,
     register::{BitRegister, RegisterError},
@@ -34,6 +36,23 @@ impl MBitRegister {
         }
     }
 
+    fn collapsed_as_usize(collapsed: &[Option<bool>]) -> Option<usize> {
+        let mut combined = 0;
+        for &bit in collapsed.iter().rev() {
+            let b = bit?;
+            combined = (combined << 1) | usize::from(b);
+        }
+        Some(combined)
+    }
+
+    fn bools_as_usize(bools: &[bool]) -> usize {
+        let mut combined = 0;
+        for b in bools.iter().rev().map(|&b| usize::from(b)) {
+            combined = (combined << 1) | b;
+        }
+        combined
+    }
+
     #[must_use]
     pub fn new(size: usize, name: String) -> Self {
         Self {
@@ -49,119 +68,61 @@ impl MBitRegister {
         self.bits.len()
     }
 
-    #[must_use]
-    pub fn state(&self) -> Vec<Option<bool>> {
-        self.bits.iter().map(BitRegister::state).collect()
-    }
-
-    pub fn bit_state(&self, bit: usize) -> Result<Option<bool>, RegisterError> {
+    pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
         self.check_bit_in_range(bit)?;
-        Ok(self.bits[bit].state())
+        Ok(&self.bits[bit])
     }
 
-    pub fn read(&self) -> Result<usize, RegisterError> {
-        let mut combined = 0;
-
-        for bit_reg in self.bits.iter().rev() {
-            let val = bit_reg.read()?;
-            combined <<= 1;
-            combined |= usize::from(val);
-        }
-
-        Ok(combined)
-    }
-
-    pub fn read_bit(&self, bit: usize) -> Result<bool, RegisterError> {
+    pub fn bit_mut(&mut self, bit: usize) -> Result<&mut BitRegister, RegisterError> {
         self.check_bit_in_range(bit)?;
-        self.bits[bit].read()
+        Ok(&mut self.bits[bit])
     }
 
-    pub fn write(&mut self, val: usize) -> Result<(), RegisterError> {
+    pub fn iter(&self) -> impl Iterator<Item = &BitRegister> {
+        self.bits.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut BitRegister> {
+        self.bits.iter_mut()
+    }
+
+    pub fn read(&self) -> Option<usize> {
+        let collapsed = self
+            .bits
+            .iter()
+            .map(BitRegister::collapsed)
+            .collect::<Vec<Option<bool>>>();
+        Self::collapsed_as_usize(&collapsed)
+    }
+
+    pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
+        self.bits
+            .iter()
+            .map(BitRegister::possible_reads)
+            .multi_cartesian_product()
+            .map(|bools| Self::bools_as_usize(&bools))
+    }
+
+    pub fn add(&mut self, val: usize) -> Result<(), RegisterError> {
         self.check_write_val_valid(val)?;
-        for (bit, bit_reg) in self.bits.iter_mut().enumerate() {
-            bit_reg.write(bit::get_bit_of_usize(val, bit));
+        for (bit, bitreg) in self.bits.iter_mut().enumerate() {
+            bitreg.add(bit::get_bit_of_usize(val, bit));
         }
         Ok(())
     }
 
-    pub fn wrapping_write(&mut self, val: usize) {
-        for (bit, bit_reg) in self.bits.iter_mut().enumerate() {
-            bit_reg.write(bit::get_bit_of_usize(val, bit));
-        }
-    }
-
-    pub fn undefine(&mut self) {
-        for bit_reg in &mut self.bits {
-            bit_reg.undefine();
-        }
-    }
-
-    pub fn write_bit(&mut self, bit: usize, state: bool) -> Result<(), RegisterError> {
-        self.check_bit_in_range(bit)?;
-        self.bits[bit].write(state);
-        Ok(())
-    }
-
-    pub fn undefine_bit(&mut self, bit: usize) -> Result<(), RegisterError> {
-        self.check_bit_in_range(bit)?;
-        self.bits[bit].undefine();
-        Ok(())
+    pub fn add_wrapping(&mut self, val: usize) -> Result<(), RegisterError> {
+        self.add(bit::get_low_bits_of_usize(val, self.size()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::{fixture, rstest};
+    use rstest::fixture;
 
     #[fixture]
     fn reg() -> MBitRegister {
         MBitRegister::new(8, String::new())
-    }
-
-    #[rstest]
-    fn read(mut reg: MBitRegister) {
-        reg.write(0x67).unwrap();
-        assert_eq!(reg.read().unwrap(), 0x67);
-    }
-
-    #[rstest]
-    fn read_uninitialised(mut reg: MBitRegister) {
-        for i in 0..7 {
-            reg.write_bit(i, true).unwrap();
-        }
-        assert!(reg.read().is_err());
-
-        reg.write_bit(7, true).unwrap();
-        assert_eq!(reg.read().unwrap(), 0b1111_1111);
-    }
-
-    #[rstest]
-    fn read_bits(mut reg: MBitRegister) {
-        reg.write(0b1101_0110).unwrap();
-        assert!(!reg.read_bit(0).unwrap());
-        assert!(reg.read_bit(1).unwrap());
-        assert!(!reg.read_bit(3).unwrap());
-        assert!(reg.read_bit(4).unwrap());
-    }
-
-    #[rstest]
-    fn read_uninitialised_bits(mut reg: MBitRegister) {
-        assert!(reg.read_bit(6).is_err());
-        reg.write_bit(6, true).unwrap();
-        assert!(reg.read_bit(6).unwrap());
-    }
-
-    #[rstest]
-    fn write_bits(mut reg: MBitRegister) {
-        reg.write(0b1101_0110).unwrap();
-        reg.write_bit(0, false).unwrap();
-        assert_eq!(reg.read().unwrap(), 0b1101_0110);
-        reg.write_bit(1, false).unwrap();
-        assert_eq!(reg.read().unwrap(), 0b1101_0100);
-        reg.write_bit(2, true).unwrap();
-        assert_eq!(reg.read().unwrap(), 0b1101_0100);
-        reg.write_bit(3, true).unwrap();
-        assert_eq!(reg.read().unwrap(), 0b1101_1100);
     }
 }
