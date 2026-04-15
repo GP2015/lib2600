@@ -7,10 +7,12 @@ pub struct BitRegister {
 }
 
 impl BitRegister {
+    #[must_use]
     pub fn new(name: String) -> Self {
         Self { name, state: None }
     }
 
+    #[must_use]
     pub fn state(&self) -> Option<bool> {
         self.state
     }
@@ -54,7 +56,7 @@ mod tests {
         assert!(matches!(
             reg.read().err().unwrap(),
             RegisterError::ReadUndefined { .. }
-        ))
+        ));
     }
 
     #[rstest]
@@ -65,6 +67,6 @@ mod tests {
         assert!(matches!(
             reg.read().err().unwrap(),
             RegisterError::ReadUndefined { .. }
-        ))
+        ));
     }
 }

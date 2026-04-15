@@ -17,7 +17,7 @@ impl PossibleSignals {
             PinSignal::High => self.high = enable,
             PinSignal::Low => self.low = enable,
             PinSignal::HighZ => self.high_z = enable,
-        };
+        }
     }
 
     pub fn set_all(&mut self, enable: bool) {
@@ -46,23 +46,26 @@ impl PossibleSignals {
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
     }
 
-    pub fn all_enabled(&self) -> Vec<PinSignal> {
+    pub fn all_enabled(self) -> Vec<PinSignal> {
         self.iter_all_enabled().collect()
     }
 
-    pub fn all_possible_reads(&self) -> Vec<bool> {
+    pub fn all_possible_reads(self) -> Vec<bool> {
         match (self.high, self.low, self.high_z) {
             (false, false, false) => Vec::new(),
             (false, true, false) => vec![false],
             (true, false, false) => vec![true],
-            (true, true, false) => vec![true, false],
-            (_, _, true) => vec![true, false],
+            (true, true, false) | (_, _, true) => vec![true, false],
         }
     }
 
-    pub fn collapsed(&self) -> Option<PinSignal> {
+    pub fn collapsed(self) -> Option<PinSignal> {
         let vec = self.all_enabled();
-        if vec.len() == 1 { Some(vec[0]) } else { None }
+        if vec.len() == 1 {
+            vec.first().copied()
+        } else {
+            None
+        }
     }
 
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {

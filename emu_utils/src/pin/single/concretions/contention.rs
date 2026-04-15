@@ -1,7 +1,4 @@
-use crate::pin::{
-    PinError, PinSignal, SinglePinCore, SinglePinInterface, SinglePinOutput,
-    possible::PossibleSignals,
-};
+use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
 use delegate::delegate;
 
 pub struct ContentionPin {
@@ -50,12 +47,14 @@ impl SinglePinCore for ContentionPin {
     fn new(name: String) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);
-        let contended_signals = PossibleSignals::contend_together(signals_in, signals_out).unwrap();
+        let contended_signals = PossibleSignals::contend_together(signals_in, signals_out)
+            .expect("this is a valid contention");
 
         let prev_signals_in = PossibleSignals::from(false, false, true);
         let prev_signals_out = PossibleSignals::from(false, false, true);
         let prev_contended_signals =
-            PossibleSignals::contend_together(prev_signals_in, prev_signals_out).unwrap();
+            PossibleSignals::contend_together(prev_signals_in, prev_signals_out)
+                .expect("this is a valid contention");
 
         Self {
             name,
@@ -75,14 +74,6 @@ impl SinglePinCore for ContentionPin {
         self.signals_in.set_all(false);
         self.signals_out.set_all(false);
         self.contended_signals.set_all(false);
-    }
-
-    fn interface<E>(&self) -> SinglePinInterface<'_, E, Self, false> {
-        SinglePinInterface::from_ref(self)
-    }
-
-    fn interface_mut<E>(&mut self) -> SinglePinInterface<'_, E, Self, true> {
-        SinglePinInterface::from_mut(self)
     }
 
     fn name(&self) -> &str {

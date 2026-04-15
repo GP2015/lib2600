@@ -1,16 +1,18 @@
 mod bus;
 mod error;
-mod obj_ref;
 mod possible;
 mod signal;
 mod single;
 
 pub use crate::pin::{
-    bus::{BusCore, BusInterface, BusOutput, standard::StandardBus},
+    bus::{
+        interfaces::{core::BusCore, out::BusOutput},
+        standard::StandardBus,
+    },
     error::PinError,
     signal::PinSignal,
     single::{
-        SinglePinCore, SinglePinInterface, SinglePinOutput, contention::ContentionPin,
-        input::InputPin,
+        concretions::{contention::ContentionPin, input::InputPin},
+        interfaces::{core::SinglePinCore, out::SinglePinOutput},
     },
 };

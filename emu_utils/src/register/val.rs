@@ -11,6 +11,7 @@ impl<T> ValueRegister<T>
 where
     T: Copy + NumOps + One,
 {
+    #[must_use]
     pub fn new(name: String) -> Self {
         Self { name, value: None }
     }

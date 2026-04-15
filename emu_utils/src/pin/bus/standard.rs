@@ -1,21 +1,20 @@
 use crate::{
     bit,
-    pin::{BusCore, BusInterface, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
+    pin::{BusCore, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
 };
 
 pub struct StandardBus<P> {
     name: String,
-    size: usize,
-    pins: Vec<P>,
+    pins: Box<[P]>,
 }
 
-impl<P> StandardBus<P> {
+impl<P: SinglePinCore> StandardBus<P> {
     fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), PinError> {
-        if bit >= self.size {
+        if bit >= self.size() {
             Err(PinError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
-                size: self.size,
+                size: self.size(),
             })
         } else {
             Ok(())
@@ -23,23 +22,23 @@ impl<P> StandardBus<P> {
     }
 
     fn check_if_drive_val_too_large(&self, val: usize) -> Result<(), PinError> {
-        if bit::usize_exceeds_bit_count(val, self.size) {
+        if bit::usize_exceeds_bit_count(val, self.size()) {
             Err(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
                 value: val,
-                size: self.size,
+                size: self.size(),
             })
         } else {
             Ok(())
         }
     }
 
-    fn collapsed_as_usize(&self, collapsed: Vec<Option<PinSignal>>) -> Option<usize> {
+    fn collapsed_as_usize(collapsed: &[Option<PinSignal>]) -> Option<usize> {
         let mut combined = 0;
-        for bit in (0..self.size).rev() {
-            let b = collapsed[bit]?.as_bool()?;
+        for bit in collapsed.iter().rev() {
+            let b = (*bit)?.as_bool()?;
             combined <<= 1;
-            combined |= b as usize;
+            combined |= usize::from(b);
         }
         Some(combined)
     }
@@ -48,28 +47,23 @@ impl<P> StandardBus<P> {
 impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
     fn new(name: String, size: usize) -> Self {
         Self {
-            size,
             pins: (0..size)
-                .map(|bit| P::new(format!("{}{}", name, bit)))
+                .map(|bit| P::new(format!("{name}{bit}")))
                 .collect(),
             name,
         }
     }
 
     fn post_tick_update(&mut self) {
-        self.pins.iter_mut().for_each(|pin| pin.post_tick_update());
-    }
-
-    fn interface<E>(&self) -> BusInterface<'_, Self, E, P, false> {
-        BusInterface::from_ref(self)
-    }
-
-    fn interface_mut<E>(&mut self) -> BusInterface<'_, Self, E, P, true> {
-        BusInterface::from_mut(self)
+        self.pins.iter_mut().for_each(P::post_tick_update);
     }
 
     fn name(&self) -> &str {
         self.name.as_str()
+    }
+
+    fn size(&self) -> usize {
+        self.pins.len()
     }
 
     fn pin(&self, bit: usize) -> Result<&P, PinError> {
@@ -90,29 +84,37 @@ impl<P: SinglePinCore> BusCore<P> for StandardBus<P> {
     }
 
     fn read(&self) -> Option<usize> {
-        let collapsed = self.pins.iter().map(|pin| pin.collapsed()).collect();
-        self.collapsed_as_usize(collapsed)
+        let collapsed = self
+            .pins
+            .iter()
+            .map(P::collapsed)
+            .collect::<Vec<Option<PinSignal>>>();
+        Self::collapsed_as_usize(&collapsed)
     }
 
     fn read_prev(&self) -> Option<usize> {
-        let collapsed = self.pins.iter().map(|pin| pin.prev_collapsed()).collect();
-        self.collapsed_as_usize(collapsed)
+        let collapsed = self
+            .pins
+            .iter()
+            .map(P::prev_collapsed)
+            .collect::<Vec<Option<PinSignal>>>();
+        Self::collapsed_as_usize(&collapsed)
     }
 
     fn add_possible_drive_in(&mut self, val: usize) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
-        for bit in 0..self.size {
-            self.pins[bit].set_drive_in(bit::get_bit_of_usize(val, bit), true)?;
+        for (bit, pin) in self.pins.iter_mut().enumerate() {
+            pin.add_drive_in(bit::get_bit_of_usize(val, bit))?;
         }
         Ok(())
     }
 
     fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), PinError> {
-        self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size))
+        self.add_possible_drive_in(bit::get_low_bits_of_usize(val, self.size()))
     }
 }
 
-impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
+impl<P: SinglePinCore + SinglePinOutput> BusOutput<P> for StandardBus<P> {
     fn pin_out(&mut self, bit: usize) -> Result<&mut P, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
@@ -120,8 +122,8 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 
     fn add_possible_drive_out(&mut self, val: usize) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
-        for bit in 0..self.size {
-            self.pins[bit].set_drive_out(bit::get_bit_of_usize(val, bit), true)?;
+        for (bit, pin) in self.pins.iter_mut().enumerate() {
+            pin.add_drive_out(bit::get_bit_of_usize(val, bit))?;
         }
         Ok(())
     }
@@ -130,7 +132,7 @@ impl<P: SinglePinOutput> BusOutput<P> for StandardBus<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pin::{PinError, single::mock_pin::MockPin};
+    use crate::pin::{PinError, single::concretions::mock_pin::MockPin};
     use rstest::{fixture, rstest};
 
     type BusType = StandardBus<MockPin>;
@@ -201,7 +203,7 @@ mod tests {
         assert!(matches!(
             func(&mut bus, 0x167).err().unwrap(),
             PinError::DriveValueTooLarge { .. }
-        ))
+        ));
     }
 
     #[rstest]

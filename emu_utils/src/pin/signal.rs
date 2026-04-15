@@ -13,26 +13,27 @@ pub enum PinSignal {
 }
 
 impl PinSignal {
+    #[must_use]
     pub fn from_bool(b: bool) -> Self {
         if b { PinSignal::High } else { PinSignal::Low }
     }
 
+    #[must_use]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             PinSignal::High => Some(true),
             PinSignal::Low => Some(false),
-            _ => None,
+            PinSignal::HighZ => None,
         }
     }
 
+    #[must_use]
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
         match (first, second) {
             (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
             (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
-            (any, PinSignal::HighZ) => Some(any),
-            (PinSignal::HighZ, any) => Some(any),
-            (PinSignal::Low, PinSignal::High) => None,
-            (PinSignal::High, PinSignal::Low) => None,
+            (any, PinSignal::HighZ) | (PinSignal::HighZ, any) => Some(any),
+            (PinSignal::Low, PinSignal::High) | (PinSignal::High, PinSignal::Low) => None,
         }
     }
 }
