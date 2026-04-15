@@ -1,4 +1,4 @@
-use crate::register::bitstates::PossibleBitStates;
+use crate::register::states::PossibleBitStates;
 use delegate::delegate;
 
 #[derive(Clone)]
