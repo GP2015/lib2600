@@ -21,11 +21,21 @@ impl BitRegister {
         &self.name
     }
 
+    #[must_use]
+    pub fn could_read_high(&self) -> bool {
+        self.states.high
+    }
+
+    #[must_use]
+    pub fn could_read_low(&self) -> bool {
+        self.states.low
+    }
+
     delegate! {
         #[must_use]
         to self.states {
-            pub fn possible_reads(&self) -> Vec<bool>;
             pub fn collapsed(&self) -> Option<bool>;
+            pub fn possible_reads(&self) -> Vec<bool>;
         }
 
         to self.states {
@@ -56,6 +66,7 @@ mod tests {
 
     #[rstest]
     fn read_initial(reg: BitRegister) {
-        assert_eq!(reg.possible_reads(), Vec::new());
+        assert!(!reg.could_read_high());
+        assert!(!reg.could_read_low());
     }
 }

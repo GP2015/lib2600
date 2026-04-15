@@ -44,9 +44,9 @@ where
             #[call(all_enabled)]
             fn possible_signals(&self) -> Vec<PinSignal>;
 
-            #[call(possible_reads)]
             fn possible_reads(&self) -> Vec<bool>;
-
+            fn could_read_high(&self) -> bool;
+            fn could_read_low(&self) -> bool;
             fn collapsed(&self) -> Option<PinSignal>;
         }
 

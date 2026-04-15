@@ -28,6 +28,8 @@ pub trait SinglePinCore<'a> {
     fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
     fn possible_signals(&self) -> Vec<PinSignal>;
     fn prev_possible_signals(&self) -> Vec<PinSignal>;
+    fn could_read_high(&self) -> bool;
+    fn could_read_low(&self) -> bool;
     fn possible_reads(&self) -> Vec<bool>;
     fn prev_possible_reads(&self) -> Vec<bool>;
     fn collapsed(&self) -> Option<PinSignal>;
