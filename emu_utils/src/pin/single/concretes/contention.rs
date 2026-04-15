@@ -128,7 +128,7 @@ where
 
     fn set_high_z_in(&mut self, possible: bool) {
         let mut signals_in = self.signals_in;
-        signals_in.high = possible;
+        signals_in.high_z = possible;
         self.update_in(signals_in)
             .expect("setting high impedance in cannot cause a short-circuit");
     }
@@ -152,7 +152,7 @@ where
 
     fn set_high_z_out(&mut self, possible: bool) {
         let mut signals_out = self.signals_out;
-        signals_out.high = possible;
+        signals_out.high_z = possible;
         self.update_out(signals_out)
             .expect("setting high impedance in cannot cause a short-circuit");
     }

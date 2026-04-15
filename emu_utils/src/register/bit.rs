@@ -56,7 +56,7 @@ mod tests {
 
     #[fixture]
     fn reg() -> BitRegister {
-        BitRegister::new(String::new())
+        BitRegister::new(String::from(REG_NAME))
     }
 
     #[rstest]
@@ -66,7 +66,7 @@ mod tests {
 
     #[rstest]
     fn read_initial(reg: BitRegister) {
-        assert!(!reg.high_possible());
-        assert!(!reg.low_possible());
+        assert!(reg.high_possible());
+        assert!(reg.low_possible());
     }
 }
