@@ -1,4 +1,4 @@
-use emu_utils::register::{BitRegister, MBitRegister, ValueRegister};
+use emu_utils::register::{BitRegister, MBitRegister};
 
 pub struct Registers {
     pub ddra: MBitRegister,
@@ -10,9 +10,9 @@ pub struct Registers {
     pub edc_enable_irq: BitRegister,
     pub edc_interrupt_flag: BitRegister,
 
-    pub timer: ValueRegister<u8>,
-    pub sub_timer: ValueRegister<usize>,
-    pub timer_inc: ValueRegister<usize>,
+    // pub timer: ValueRegister<u8>,
+    // pub sub_timer: ValueRegister<usize>,
+    // pub timer_inc: ValueRegister<usize>,
     pub timer_flag: BitRegister,
 }
 
@@ -28,9 +28,9 @@ impl Registers {
             edc_enable_irq: BitRegister::new(String::from("Edge-Detect IRQ Control")),
             edc_interrupt_flag: BitRegister::new(String::from("Edge-Detect Interrupt Flag")),
 
-            timer: ValueRegister::new(String::from("Timer")),
-            sub_timer: ValueRegister::new(String::from("Sub-Timer")),
-            timer_inc: ValueRegister::new(String::from("Timer Interval")),
+            // timer: ValueRegister::new(String::from("Timer")),
+            // sub_timer: ValueRegister::new(String::from("Sub-Timer")),
+            // timer_inc: ValueRegister::new(String::from("Timer Interval")),
             timer_flag: BitRegister::new(String::from("Timer Interrupt Flag")),
         }
     }

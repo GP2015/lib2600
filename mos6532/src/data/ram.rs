@@ -1,26 +1,33 @@
 use emu_utils::register::MBitRegister;
+use std::array;
 
 const RAM_SIZE: usize = 128;
 
 pub struct Ram {
-    bytes: Vec<MBitRegister>,
+    bytes: [MBitRegister; RAM_SIZE],
 }
 
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: (0..RAM_SIZE)
-                .map(|byte| MBitRegister::new(8, format!("RAM byte {:x}", byte)))
-                .collect(),
+            bytes: array::from_fn(|i| MBitRegister::new(8, format!("RAM byte {:x}", i))),
         }
     }
 
-    pub fn byte(&mut self, address: usize) -> &mut MBitRegister {
-        &mut self.bytes[address]
+    pub fn byte(&self, address: u8) -> &MBitRegister {
+        &self.bytes[address as usize]
+    }
+
+    pub fn byte_mut(&mut self, address: u8) -> &mut MBitRegister {
+        &mut self.bytes[address as usize]
     }
 
     pub fn reset(&mut self) {
-        self.bytes.iter_mut().for_each(|reg| reg.undefine());
+        for byte in self.bytes.iter_mut() {
+            for bitreg in byte.iter_mut() {
+                bitreg.add_all();
+            }
+        }
     }
 }
 
@@ -35,16 +42,24 @@ mod tests {
     }
 
     #[rstest]
-    fn read_uninitialised_byte(mut ram: Ram) {
-        assert_eq!(ram.byte(67).state(), vec![None; 8]);
+    fn read_uninitialised_byte(ram: Ram) {
+        for bit in ram.byte(67).iter() {
+            assert!(bit.possible_reads().len() == 2);
+        }
     }
 
     #[rstest]
     fn reset(mut ram: Ram) {
-        ram.byte(23).write(0x45).unwrap();
-        ram.byte(67).write(0x89).unwrap();
+        ram.byte_mut(23).add(0x45).unwrap();
+        ram.byte_mut(67).add(0x89).unwrap();
         ram.reset();
-        assert_eq!(ram.byte(23).state(), vec![None; 8]);
-        assert_eq!(ram.byte(67).state(), vec![None; 8]);
+
+        for bit in ram.byte(23).iter() {
+            assert!(bit.possible_reads().len() == 2);
+        }
+
+        for bit in ram.byte(67).iter() {
+            assert!(bit.possible_reads().len() == 2);
+        }
     }
 }

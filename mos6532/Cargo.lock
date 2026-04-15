@@ -45,6 +45,7 @@ name = "emu_utils"
 version = "0.1.0"
 dependencies = [
  "delegate",
+ "itertools",
  "num-traits",
  "strum_macros",
  "thiserror",
