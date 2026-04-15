@@ -28,6 +28,7 @@ where
     }
 
     delegate! {
+        #[must_use]
         to self.inner{
             pub fn name(&self) -> &str;
             pub fn size(&self) -> usize;

@@ -24,16 +24,21 @@ where
     }
 
     delegate! {
+        #[must_use]
         to self.inner{
             pub fn name(&self) -> &str;
-            pub fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
-            pub fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
             pub fn possible_signals(&self) -> Vec<PinSignal>;
             pub fn prev_possible_signals(&self) -> Vec<PinSignal>;
             pub fn possible_reads(&self) -> Vec<bool>;
             pub fn prev_possible_reads(&self) -> Vec<bool>;
             pub fn collapsed(&self) -> Option<PinSignal>;
             pub fn prev_collapsed(&self) -> Option<PinSignal>;
+        }
+
+
+        to self.inner{
+            pub fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
+            pub fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
             pub fn set_high_z_in(&mut self, possible: bool);
             pub fn add_high_z_in(&mut self);
         }

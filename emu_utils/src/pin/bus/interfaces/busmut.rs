@@ -28,15 +28,18 @@ where
     }
 
     delegate! {
+        #[must_use]
         to self.inner{
-            pub fn for_each_pin_mut<F>(&mut self, f: F)
-            where
-                F: FnMut(&mut P);
-
             pub fn name(&self) -> &str;
             pub fn size(&self) -> usize;
             pub fn read(&self) -> Option<usize>;
             pub fn read_prev(&self) -> Option<usize>;
+        }
+
+        to self.inner{
+            pub fn for_each_pin_mut<F>(&mut self, f: F)
+            where
+                F: FnMut(&mut P);
         }
 
         #[expr($.map_err(Into::into))]
