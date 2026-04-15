@@ -22,12 +22,12 @@ impl BitRegister {
     }
 
     #[must_use]
-    pub fn could_read_high(&self) -> bool {
+    pub fn high_possible(&self) -> bool {
         self.states.high
     }
 
     #[must_use]
-    pub fn could_read_low(&self) -> bool {
+    pub fn low_possible(&self) -> bool {
         self.states.low
     }
 
@@ -66,7 +66,7 @@ mod tests {
 
     #[rstest]
     fn read_initial(reg: BitRegister) {
-        assert!(!reg.could_read_high());
-        assert!(!reg.could_read_low());
+        assert!(!reg.high_possible());
+        assert!(!reg.low_possible());
     }
 }

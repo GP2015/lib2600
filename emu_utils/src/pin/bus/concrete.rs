@@ -211,13 +211,6 @@ mod tests {
     }
 
     #[rstest]
-    fn read_fail(mut bus: BusType) {
-        bus.add_drive_in(0x67).unwrap();
-        bus.pin_mut(6).unwrap().set_all_signals_in(false).unwrap();
-        assert!(bus.read().is_none());
-    }
-
-    #[rstest]
     fn drive_in(
         mut bus: BusType,
         #[values(StandardBus::add_drive_in, StandardBus::add_drive_out)] func: DriveFn,

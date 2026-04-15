@@ -26,17 +26,7 @@ impl PossibleSignals {
         self.high_z = enable;
     }
 
-    pub fn with_signal(mut self, signal: PinSignal, enable: bool) -> Self {
-        self.set_signal(signal, enable);
-        self
-    }
-
-    pub fn with_all(mut self, enable: bool) -> Self {
-        self.set_all(enable);
-        self
-    }
-
-    pub fn iter_all_enabled(&self) -> impl Iterator<Item = PinSignal> {
+    pub fn all_enabled(self) -> Vec<PinSignal> {
         [
             (self.high, PinSignal::High),
             (self.low, PinSignal::Low),
@@ -44,42 +34,7 @@ impl PossibleSignals {
         ]
         .into_iter()
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
-    }
-
-    pub fn all_enabled(self) -> Vec<PinSignal> {
-        self.iter_all_enabled().collect()
-    }
-
-    pub fn could_read_high(self) -> bool {
-        match (self.high, self.low, self.high_z) {
-            (false, _, false) => false,
-            (true, _, false) | (_, _, true) => true,
-        }
-    }
-
-    pub fn could_read_low(self) -> bool {
-        match (self.high, self.low, self.high_z) {
-            (_, false, false) => false,
-            (_, true, false) | (_, _, true) => true,
-        }
-    }
-
-    pub fn possible_reads(self) -> Vec<bool> {
-        match (self.high, self.low, self.high_z) {
-            (false, false, false) => Vec::new(),
-            (false, true, false) => vec![false],
-            (true, false, false) => vec![true],
-            (true, true, false) | (_, _, true) => vec![true, false],
-        }
-    }
-
-    pub fn collapsed(self) -> Option<PinSignal> {
-        let vec = self.all_enabled();
-        if vec.len() == 1 {
-            vec.first().copied()
-        } else {
-            None
-        }
+        .collect()
     }
 
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
@@ -145,32 +100,6 @@ mod tests {
     }
 
     #[rstest]
-    fn with_signal(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] enable: bool,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
-    ) {
-        let signals = PossibleSignals::from(initial, initial, initial).with_signal(signal, enable);
-        let result = match signal {
-            PinSignal::High => signals.high,
-            PinSignal::Low => signals.low,
-            PinSignal::HighZ => signals.high_z,
-        };
-        assert_eq!(result, enable);
-    }
-
-    #[rstest]
-    fn with_all(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] high_z: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let signals = PossibleSignals::from(high, low, high_z).with_all(enable);
-        assert_eq!(signals, PossibleSignals::from(enable, enable, enable));
-    }
-
-    #[rstest]
     #[case(false, false, false, vec![])]
     #[case(false, false, true, vec![PinSignal::HighZ])]
     #[case(false, true, false, vec![PinSignal::Low])]
@@ -187,31 +116,6 @@ mod tests {
     ) {
         let signals = PossibleSignals::from(high, low, high_z).all_enabled();
         assert_eq!(signals, res_vec);
-    }
-
-    #[rstest]
-    #[case(true, false, false, PinSignal::High)]
-    #[case(false, true, false, PinSignal::Low)]
-    #[case(false, false, true, PinSignal::HighZ)]
-    fn collapsed_success(
-        #[case] high: bool,
-        #[case] low: bool,
-        #[case] high_z: bool,
-        #[case] signal: PinSignal,
-    ) {
-        let signals = PossibleSignals::from(high, low, high_z);
-        assert_eq!(signals.collapsed().unwrap(), signal);
-    }
-
-    #[rstest]
-    #[case(false, false, false)]
-    #[case(false, true, true)]
-    #[case(true, false, true)]
-    #[case(true, true, false)]
-    #[case(true, true, true)]
-    fn collapsed_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
-        let signals = PossibleSignals::from(high, low, high_z);
-        assert!(signals.collapsed().is_none());
     }
 
     #[rstest]

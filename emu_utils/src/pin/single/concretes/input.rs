@@ -1,5 +1,4 @@
-use crate::pin::{PinError, PinSignal, SinglePinCore, possible::PossibleSignals};
-use delegate::delegate;
+use crate::pin::{PinError, SinglePinCore, possible::PossibleSignals};
 use std::marker::PhantomData;
 
 pub struct InputPin<E>
@@ -36,52 +35,49 @@ where
         self.name.as_str()
     }
 
-    delegate! {
-        to self.signals {
-            #[call(iter_all_enabled)]
-            fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
-
-            #[call(all_enabled)]
-            fn possible_signals(&self) -> Vec<PinSignal>;
-
-            fn possible_reads(&self) -> Vec<bool>;
-            fn could_read_high(&self) -> bool;
-            fn could_read_low(&self) -> bool;
-            fn collapsed(&self) -> Option<PinSignal>;
-        }
-
-        to self.prev_signals {
-            #[call(iter_all_enabled)]
-            fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
-
-            #[call(all_enabled)]
-            fn prev_possible_signals(&self) -> Vec<PinSignal>;
-
-            #[call(possible_reads)]
-            fn prev_possible_reads(&self) -> Vec<bool>;
-
-            #[call(collapsed)]
-            fn prev_collapsed(&self) -> Option<PinSignal>;
-        }
-
-        #[expr($; Ok(()))]
-        to self.signals {
-            #[call(set_signal)]
-            fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
-
-            #[call(set_all)]
-            fn set_all_signals_in(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-        }
+    fn high_possible(&self) -> bool {
+        self.signals.high
     }
 
-    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
-        self.signals = self.prev_signals;
+    fn low_possible(&self) -> bool {
+        self.signals.low
+    }
+
+    fn high_z_possible(&self) -> bool {
+        self.signals.high_z
+    }
+
+    fn prev_high_possible(&self) -> bool {
+        self.prev_signals.high
+    }
+
+    fn prev_low_possible(&self) -> bool {
+        self.prev_signals.low
+    }
+
+    fn prev_high_z_possible(&self) -> bool {
+        self.prev_signals.high_z
+    }
+
+    fn set_high_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
+        self.signals.high = possible;
         Ok(())
+    }
+
+    fn set_low_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
+        self.signals.low = possible;
+        Ok(())
+    }
+
+    fn set_high_z_in(&mut self, possible: bool) {
+        self.signals.high_z = possible;
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::pin::PinSignal;
+
     use super::*;
     use rstest::{fixture, rstest};
 
@@ -109,42 +105,9 @@ mod tests {
         mut pin: PinType,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        pin.set_signal_in(signal, true).unwrap();
+        pin.set_in(signal, true).unwrap();
         pin.post_tick_update();
         assert_eq!(pin.prev_collapsed().unwrap(), signal);
         assert!(pin.possible_signals().is_empty());
-    }
-
-    #[rstest]
-    #[case(vec![PinSignal::High, PinSignal::Low])]
-    fn set_signal_in_and_possible_signals(mut pin: PinType, #[case] signals: Vec<PinSignal>) {
-        for signal in &signals {
-            pin.set_signal_in(*signal, true).unwrap();
-        }
-        assert_eq!(pin.possible_signals(), signals);
-        pin.post_tick_update();
-        assert_eq!(pin.prev_possible_signals(), signals);
-    }
-
-    #[rstest]
-    fn collapsed(
-        mut pin: PinType,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
-    ) {
-        pin.set_signal_in(signal, true).unwrap();
-        assert_eq!(pin.collapsed().unwrap(), signal);
-        pin.post_tick_update();
-        assert_eq!(pin.prev_collapsed().unwrap(), signal);
-    }
-
-    #[rstest]
-    fn set_in_to_prev(
-        mut pin: PinType,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
-    ) {
-        pin.set_signal_in(signal, true).unwrap();
-        pin.post_tick_update();
-        pin.set_in_to_prev().unwrap();
-        assert_eq!(pin.collapsed().unwrap(), signal);
     }
 }

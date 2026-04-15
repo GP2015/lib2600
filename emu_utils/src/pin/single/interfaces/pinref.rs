@@ -20,17 +20,20 @@ where
         #[must_use]
         to self.inner {
             pub fn name(&self) -> &str;
+            pub fn high_possible(&self) -> bool;
+            pub fn low_possible(&self) -> bool;
+            pub fn high_z_possible(&self) -> bool;
+            pub fn prev_high_possible(&self) -> bool;
+            pub fn prev_low_possible(&self) -> bool;
+            pub fn prev_high_z_possible(&self) -> bool;
+            pub fn could_read_high(&self) -> bool;
+            pub fn could_read_low(&self) -> bool;
+            pub fn collapsed(&self) -> Option<PinSignal>;
+            pub fn prev_collapsed(&self) -> Option<PinSignal>;
             pub fn possible_signals(&self) -> Vec<PinSignal>;
             pub fn prev_possible_signals(&self) -> Vec<PinSignal>;
             pub fn possible_reads(&self) -> Vec<bool>;
             pub fn prev_possible_reads(&self) -> Vec<bool>;
-            pub fn collapsed(&self) -> Option<PinSignal>;
-            pub fn prev_collapsed(&self) -> Option<PinSignal>;
-        }
-
-        to self.inner {
-            pub fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
-            pub fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
         }
     }
 }
