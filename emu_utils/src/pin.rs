@@ -8,11 +8,13 @@ pub use crate::pin::{
     bus::{
         abstracts::{core::BusCore, out::BusOutput},
         concrete::StandardBus,
+        interfaces::{busmut::BusMut, busref::BusRef},
     },
     error::PinError,
     signal::PinSignal,
     single::{
         abstracts::{core::SinglePinCore, out::SinglePinOutput},
         concretes::{contention::ContentionPin, input::InputPin},
+        interfaces::{pinmut::SinglePinMut, pinref::SinglePinRef},
     },
 };
