@@ -18,7 +18,7 @@ where
 
     delegate! {
         #[must_use]
-        to self.inner{
+        to self.inner {
             pub fn name(&self) -> &str;
             pub fn possible_signals(&self) -> Vec<PinSignal>;
             pub fn prev_possible_signals(&self) -> Vec<PinSignal>;
@@ -29,7 +29,7 @@ where
         }
 
 
-        to self.inner{
+        to self.inner {
             pub fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
             pub fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
             pub fn set_high_z_in(&mut self, possible: bool);
@@ -37,7 +37,7 @@ where
         }
 
         #[expr($.map_err((Into::into)))]
-        to self.inner{
+        to self.inner {
             pub fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), P::ErrType>;
             pub fn set_all_signals_in(&mut self, possible: bool) -> Result<(), P::ErrType>;
             pub fn set_possible_in_to_prev(&mut self) -> Result<(), P::ErrType>;

@@ -37,7 +37,7 @@ where
     }
 
     delegate! {
-        to self.signals{
+        to self.signals {
             #[call(iter_all_enabled)]
             fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
 
@@ -50,7 +50,7 @@ where
             fn collapsed(&self) -> Option<PinSignal>;
         }
 
-        to self.prev_signals{
+        to self.prev_signals {
             #[call(iter_all_enabled)]
             fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
 
@@ -65,7 +65,7 @@ where
         }
 
         #[expr($; Ok(()))]
-        to self.signals{
+        to self.signals {
             #[call(set_signal)]
             fn set_signal_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType>;
 

@@ -92,7 +92,7 @@ where
     }
 
     delegate! {
-        to self.contended_signals{
+        to self.contended_signals {
             #[call(iter_all_enabled)]
             fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
 
@@ -105,7 +105,7 @@ where
             fn collapsed(&self) -> Option<PinSignal>;
         }
 
-        to self.prev_contended_signals{
+        to self.prev_contended_signals {
             #[call(iter_all_enabled)]
             fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
 

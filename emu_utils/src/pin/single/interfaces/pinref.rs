@@ -18,7 +18,7 @@ where
 
     delegate! {
         #[must_use]
-        to self.inner{
+        to self.inner {
             pub fn name(&self) -> &str;
             pub fn possible_signals(&self) -> Vec<PinSignal>;
             pub fn prev_possible_signals(&self) -> Vec<PinSignal>;
@@ -28,7 +28,7 @@ where
             pub fn prev_collapsed(&self) -> Option<PinSignal>;
         }
 
-        to self.inner{
+        to self.inner {
             pub fn iter_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
             pub fn iter_prev_possible_signals(&self) -> impl Iterator<Item = PinSignal>;
         }
