@@ -24,15 +24,16 @@ where
         BusMut::from(self)
     }
 
-    fn iter(&'a self) -> impl Iterator<Item = &'a P>;
-    fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P>;
-
     fn name(&self) -> &str;
     fn size(&self) -> usize;
     fn pin(&self, bit: usize) -> Result<&P, P::ErrType>;
     fn pin_mut(&mut self, bit: usize) -> Result<&mut P, P::ErrType>;
+    fn iter(&'a self) -> impl Iterator<Item = &'a P>;
+    fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P>;
     fn read(&self) -> Option<usize>;
     fn read_prev(&self) -> Option<usize>;
+    fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
+    fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize>;
     fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
     fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
 }

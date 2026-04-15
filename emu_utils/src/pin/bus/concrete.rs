@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     bit,
     pin::{BusCore, BusOutput, PinError, PinSignal, SinglePinCore, SinglePinOutput},
@@ -38,12 +40,19 @@ where
 
     fn collapsed_as_usize(collapsed: &[Option<PinSignal>]) -> Option<usize> {
         let mut combined = 0;
-        for bit in collapsed.iter().rev() {
-            let b = (*bit)?.as_bool()?;
-            combined <<= 1;
-            combined |= usize::from(b);
+        for &bit in collapsed.iter().rev() {
+            let b = bit?.as_bool()?;
+            combined = (combined << 1) | usize::from(b);
         }
         Some(combined)
+    }
+
+    fn bools_as_usize(bools: &[bool]) -> usize {
+        let mut combined = 0;
+        for b in bools.iter().rev().map(|&b| usize::from(b)) {
+            combined = (combined << 1) | b;
+        }
+        combined
     }
 }
 
@@ -106,6 +115,22 @@ where
             .map(P::prev_collapsed)
             .collect::<Vec<Option<PinSignal>>>();
         Self::collapsed_as_usize(&collapsed)
+    }
+
+    fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
+        self.pins
+            .iter()
+            .map(P::possible_reads)
+            .multi_cartesian_product()
+            .map(|bools| Self::bools_as_usize(&bools))
+    }
+
+    fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize> {
+        self.pins
+            .iter()
+            .map(P::prev_possible_reads)
+            .multi_cartesian_product()
+            .map(|bools| Self::bools_as_usize(&bools))
     }
 
     fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType> {

@@ -43,15 +43,20 @@ where
 
     delegate! {
         #[must_use]
-        to self.inner{
+        to self.inner {
             pub fn name(&self) -> &str;
             pub fn size(&self) -> usize;
             pub fn read(&self) -> Option<usize>;
             pub fn read_prev(&self) -> Option<usize>;
         }
 
+        to self.inner {
+            pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
+            pub fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize>;
+        }
+
         #[expr($.map_err(Into::into))]
-        to self.inner{
+        to self.inner {
             pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
             pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
         }

@@ -34,11 +34,16 @@ where
 
     delegate! {
         #[must_use]
-        to self.inner{
+        to self.inner {
             pub fn name(&self) -> &str;
             pub fn size(&self) -> usize;
             pub fn read(&self) -> Option<usize>;
             pub fn read_prev(&self) -> Option<usize>;
+        }
+
+        to self.inner {
+            pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
+            pub fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize>;
         }
     }
 }
