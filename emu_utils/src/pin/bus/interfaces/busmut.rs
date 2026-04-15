@@ -1,11 +1,11 @@
-use crate::pin::{BusCore, SinglePinCore};
+use crate::pin::{BusCore, SinglePinCore, SinglePinMut, SinglePinRef};
 use delegate::delegate;
 use std::marker::PhantomData;
 
 pub struct BusMut<'a, B, P>
 where
     B: BusCore<'a, P>,
-    P: SinglePinCore<'a>,
+    P: 'a + SinglePinCore<'a>,
 {
     inner: &'a mut B,
     pin_type: PhantomData<P>,
@@ -23,6 +23,24 @@ where
         }
     }
 
+    pub fn pin(&'a self, bit: usize) -> Result<SinglePinRef<'a, P>, P::ErrType> {
+        let pin = self.inner.pin(bit)?;
+        Ok(SinglePinRef::from(pin))
+    }
+
+    pub fn pin_mut(&'a mut self, bit: usize) -> Result<SinglePinMut<'a, P>, P::ErrType> {
+        let pin = self.inner.pin_mut(bit)?;
+        Ok(SinglePinMut::from(pin))
+    }
+
+    pub fn iter(&'a self) -> impl Iterator<Item = SinglePinRef<'a, P>> {
+        self.inner.iter().map(|pin| SinglePinRef::from(pin))
+    }
+
+    pub fn iter_mut(&'a mut self) -> impl Iterator<Item = SinglePinMut<'a, P>> {
+        self.inner.iter_mut().map(|pin| SinglePinMut::from(pin))
+    }
+
     delegate! {
         #[must_use]
         to self.inner{
@@ -32,16 +50,8 @@ where
             pub fn read_prev(&self) -> Option<usize>;
         }
 
-        to self.inner{
-            pub fn for_each_pin_mut<F>(&mut self, f: F)
-            where
-                F: FnMut(&mut P);
-        }
-
         #[expr($.map_err(Into::into))]
         to self.inner{
-            pub fn pin(&self, bit: usize) -> Result<&P, P::ErrType>;
-            pub fn pin_mut(&mut self, bit: usize) -> Result<&mut P, P::ErrType>;
             pub fn add_possible_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
             pub fn add_possible_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
         }

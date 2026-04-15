@@ -5,7 +5,7 @@ use crate::pin::{
 
 pub trait BusCore<'a, P>
 where
-    P: SinglePinCore<'a>,
+    P: 'a + SinglePinCore<'a>,
 {
     fn new(name: String, size: usize) -> Self;
     fn post_tick_update(&mut self);
@@ -24,9 +24,8 @@ where
         BusMut::from(self)
     }
 
-    fn for_each_pin_mut<F>(&mut self, f: F)
-    where
-        F: FnMut(&mut P);
+    fn iter(&'a self) -> impl Iterator<Item = &'a P>;
+    fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P>;
 
     fn name(&self) -> &str;
     fn size(&self) -> usize;

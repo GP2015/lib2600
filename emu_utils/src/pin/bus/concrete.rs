@@ -10,7 +10,7 @@ pub struct StandardBus<P> {
 
 impl<'a, P> StandardBus<P>
 where
-    P: SinglePinCore<'a>,
+    P: 'a + SinglePinCore<'a>,
 {
     fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), PinError> {
         if bit >= self.size() {
@@ -49,7 +49,7 @@ where
 
 impl<'a, P> BusCore<'a, P> for StandardBus<P>
 where
-    P: SinglePinCore<'a>,
+    P: 'a + SinglePinCore<'a>,
 {
     fn new(name: String, size: usize) -> Self {
         Self {
@@ -82,11 +82,12 @@ where
         Ok(&mut self.pins[bit])
     }
 
-    fn for_each_pin_mut<F>(&mut self, f: F)
-    where
-        F: FnMut(&mut P),
-    {
-        self.pins.iter_mut().for_each(f);
+    fn iter(&'a self) -> impl Iterator<Item = &'a P> {
+        self.pins.iter()
+    }
+
+    fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P> {
+        self.pins.iter_mut()
     }
 
     fn read(&self) -> Option<usize> {
@@ -122,7 +123,7 @@ where
 
 impl<'a, P> BusOutput<'a, P> for StandardBus<P>
 where
-    P: SinglePinCore<'a> + SinglePinOutput<'a>,
+    P: 'a + SinglePinCore<'a> + SinglePinOutput<'a>,
 {
     fn pin_out(&mut self, bit: usize) -> Result<&mut P, P::ErrType> {
         self.check_for_bit_out_of_range(bit)?;
@@ -221,11 +222,5 @@ mod tests {
     fn wrapping_drive_in(mut bus: BusType, #[case] ival: usize, #[case] oval: usize) {
         bus.add_possible_drive_in_wrapping(ival).unwrap();
         assert_eq!(bus.read().unwrap(), oval);
-    }
-
-    #[rstest]
-    fn for_each_pin(mut bus: BusType) {
-        bus.for_each_pin_mut(|pin| pin.add_drive_in(false).unwrap());
-        assert_eq!(bus.read().unwrap(), 0);
     }
 }
