@@ -11,9 +11,9 @@ impl PossibleBitStates {
 
     pub fn set(&mut self, state: bool, enable: bool) {
         if state {
-            self.low = enable;
-        } else {
             self.high = enable;
+        } else {
+            self.low = enable;
         }
     }
 
@@ -40,11 +40,10 @@ impl PossibleBitStates {
     }
 
     pub fn collapsed(self) -> Option<bool> {
-        let vec = self.possible_reads();
-        if vec.len() == 1 {
-            vec.first().copied()
-        } else {
-            None
+        match (self.high, self.low) {
+            (false, true) => Some(false),
+            (true, false) => Some(true),
+            _ => None,
         }
     }
 }
