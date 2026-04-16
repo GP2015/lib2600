@@ -1,4 +1,4 @@
-use mos6532::{Riot, SinglePinInterface};
+use mos6532::Riot;
 use rstest::fixture;
 
 #[allow(dead_code)]
@@ -6,7 +6,7 @@ use rstest::fixture;
 pub fn riot_post_reset() -> Riot {
     let mut riot = Riot::new();
     riot.reset_pulse().unwrap();
-    riot.res_mut().drive_in(true).unwrap();
+    riot.res_mut().add_high_in(true).unwrap();
     riot
 }
 

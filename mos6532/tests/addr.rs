@@ -1,5 +1,5 @@
 mod common;
-use mos6532::{BusInterface, Riot, SinglePinInterface};
+use mos6532::Riot;
 use rstest::rstest;
 
 #[rstest]
@@ -11,8 +11,8 @@ fn use_ram_with_uninitialised_pins(
     for i in 0..2 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(rw).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_drive_in(rw, true).unwrap(),
                 _ => (),
             }
         }
@@ -31,11 +31,21 @@ fn use_io_with_uninitialised_pins(
     for i in 0..5 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(rw).unwrap(),
-                2 => riot.a_mut().pin_mut(2).unwrap().drive_in(false).unwrap(),
-                3 => riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap(),
-                4 => riot.a_mut().pin_mut(0).unwrap().drive_in(a0).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_drive_in(rw, true).unwrap(),
+                2 => riot.a_mut().pin_mut(2).unwrap().add_low_in(true).unwrap(),
+                3 => riot
+                    .a_mut()
+                    .pin_mut(1)
+                    .unwrap()
+                    .add_drive_in(a1, true)
+                    .unwrap(),
+                4 => riot
+                    .a_mut()
+                    .pin_mut(0)
+                    .unwrap()
+                    .add_drive_in(a0, true)
+                    .unwrap(),
                 _ => (),
             }
         }
@@ -54,13 +64,28 @@ fn write_timer_with_uninitialised_pins(
     for i in 0..7 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(false).unwrap(),
-                2 => riot.a_mut().pin_mut(4).unwrap().drive_in(true).unwrap(),
-                3 => riot.a_mut().pin_mut(3).unwrap().drive_in(a3).unwrap(),
-                4 => riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap(),
-                5 => riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap(),
-                6 => riot.a_mut().pin_mut(0).unwrap().drive_in(a0).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_low_in(true).unwrap(),
+                2 => riot.a_mut().pin_mut(4).unwrap().add_high_in(true).unwrap(),
+                3 => riot
+                    .a_mut()
+                    .pin_mut(3)
+                    .unwrap()
+                    .add_drive_in(a3, true)
+                    .unwrap(),
+                4 => riot.a_mut().pin_mut(2).unwrap().add_high_in(true).unwrap(),
+                5 => riot
+                    .a_mut()
+                    .pin_mut(1)
+                    .unwrap()
+                    .add_drive_in(a1, true)
+                    .unwrap(),
+                6 => riot
+                    .a_mut()
+                    .pin_mut(0)
+                    .unwrap()
+                    .add_drive_in(a0, true)
+                    .unwrap(),
                 _ => (),
             }
         }
@@ -77,11 +102,16 @@ fn read_timer_with_uninitialised_pins(
     for i in 0..5 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(true).unwrap(),
-                2 => riot.a_mut().pin_mut(3).unwrap().drive_in(a3).unwrap(),
-                3 => riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap(),
-                4 => riot.a_mut().pin_mut(0).unwrap().drive_in(false).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_high_in(true).unwrap(),
+                2 => riot
+                    .a_mut()
+                    .pin_mut(3)
+                    .unwrap()
+                    .add_drive_in(a3, true)
+                    .unwrap(),
+                3 => riot.a_mut().pin_mut(2).unwrap().add_high_in(true).unwrap(),
+                4 => riot.a_mut().pin_mut(0).unwrap().add_low_in(true).unwrap(),
                 _ => (),
             }
         }
@@ -97,10 +127,10 @@ fn read_interrupt_flags_with_uninitialised_pins(
     for i in 0..4 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(true).unwrap(),
-                4 => riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap(),
-                6 => riot.a_mut().pin_mut(0).unwrap().drive_in(true).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_high_in(true).unwrap(),
+                4 => riot.a_mut().pin_mut(2).unwrap().add_high_in(true).unwrap(),
+                6 => riot.a_mut().pin_mut(0).unwrap().add_high_in(true).unwrap(),
                 _ => (),
             }
         }
@@ -118,12 +148,22 @@ fn write_edc_with_uninitialised_pins(
     for i in 0..6 {
         if i != skip {
             match i {
-                0 => riot.rs_mut().drive_in(true).unwrap(),
-                1 => riot.rw_mut().drive_in(false).unwrap(),
-                2 => riot.a_mut().pin_mut(4).unwrap().drive_in(false).unwrap(),
-                3 => riot.a_mut().pin_mut(2).unwrap().drive_in(true).unwrap(),
-                4 => riot.a_mut().pin_mut(1).unwrap().drive_in(a1).unwrap(),
-                5 => riot.a_mut().pin_mut(0).unwrap().drive_in(a0).unwrap(),
+                0 => riot.rs_mut().add_high_in(true).unwrap(),
+                1 => riot.rw_mut().add_low_in(true).unwrap(),
+                2 => riot.a_mut().pin_mut(4).unwrap().add_low_in(true).unwrap(),
+                3 => riot.a_mut().pin_mut(2).unwrap().add_high_in(true).unwrap(),
+                4 => riot
+                    .a_mut()
+                    .pin_mut(1)
+                    .unwrap()
+                    .add_drive_in(a1, true)
+                    .unwrap(),
+                5 => riot
+                    .a_mut()
+                    .pin_mut(0)
+                    .unwrap()
+                    .add_drive_in(a0, true)
+                    .unwrap(),
                 _ => (),
             }
         }
