@@ -47,7 +47,7 @@ impl Riot {
     //     Ok(())
     // }
 
-    pub(crate) fn possible_instructions(&mut self) -> Result<PossibleInstructions, RiotError> {
+    pub(crate) fn possible_instructions(&mut self) -> PossibleInstructions {
         let mut instructions = PossibleInstructions::new();
 
         if self.pin.cs1.could_read_low() || self.pin.cs2.could_read_high() {
@@ -60,27 +60,27 @@ impl Riot {
             }
 
             if self.pin.rs.could_read_high() {
-                if self.pin.a.pin(2)?.could_read_low() {
+                if self.pin.a.pin(2).expect("valid pin").could_read_low() {
                     instructions.io = true;
                 }
 
-                if self.pin.a.pin(2)?.could_read_high() {
+                if self.pin.a.pin(2).expect("valid pin").could_read_high() {
                     if self.pin.rw.could_read_low() {
-                        if self.pin.a.pin(4)?.could_read_low() {
+                        if self.pin.a.pin(4).expect("valid pin").could_read_low() {
                             instructions.write_edc = true;
                         }
 
-                        if self.pin.a.pin(4)?.could_read_high() {
+                        if self.pin.a.pin(4).expect("valid pin").could_read_high() {
                             instructions.write_timer = true;
                         }
                     }
 
                     if self.pin.rw.could_read_high() {
-                        if self.pin.a.pin(0)?.could_read_low() {
+                        if self.pin.a.pin(0).expect("valid pin").could_read_low() {
                             instructions.read_timer = true;
                         }
 
-                        if self.pin.a.pin(0)?.could_read_high() {
+                        if self.pin.a.pin(0).expect("valid pin").could_read_high() {
                             instructions.read_interrupt_flag = true;
                         }
                     }
@@ -88,7 +88,7 @@ impl Riot {
             }
         }
 
-        Ok(instructions)
+        instructions
     }
 
     pub(crate) fn execute_possible_instructions(

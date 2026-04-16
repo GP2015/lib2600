@@ -68,7 +68,7 @@ impl Riot {
     }
 
     pub fn tick(&mut self) -> Result<(), RiotError> {
-        let instructions = self.possible_instructions()?;
+        let instructions = self.possible_instructions();
         self.execute_possible_instructions(instructions)
     }
 
