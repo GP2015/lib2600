@@ -9,13 +9,17 @@ impl Riot {
         if rw_could_read_low {
             self.handle_write_ram(only_possible && !rw_could_read_high);
         }
+
         if rw_could_read_high {
             self.handle_read_ram(only_possible && !rw_could_read_low)?;
         }
+
         Ok(())
     }
 
-    fn handle_write_ram(&mut self, only_possible: bool) {
+    fn handle_write_ram(&mut self, mut only_possible: bool) {
+        only_possible &= self.pin.a.only_one_possible_read();
+
         for address in self.pin.a.iter_possible_reads() {
             self.ram
                 .byte_mut(address as u8)
@@ -23,7 +27,9 @@ impl Riot {
         }
     }
 
-    fn handle_read_ram(&mut self, only_possible: bool) -> Result<(), RiotError> {
+    fn handle_read_ram(&mut self, mut only_possible: bool) -> Result<(), RiotError> {
+        only_possible &= self.pin.a.only_one_possible_read();
+
         for address in self.pin.a.iter_possible_reads() {
             self.pin
                 .db
