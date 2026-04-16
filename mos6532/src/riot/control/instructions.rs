@@ -15,7 +15,7 @@ impl PossibleInstructions {
         Self::default()
     }
 
-    pub fn num_possible(&self) -> usize {
+    pub fn only_possible(&self) -> bool {
         [
             self.nop,
             self.reset,
@@ -29,5 +29,6 @@ impl PossibleInstructions {
         .into_iter()
         .filter(|&b| b)
         .count()
+            < 2
     }
 }

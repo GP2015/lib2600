@@ -25,7 +25,7 @@ impl Ram {
     pub fn reset(&mut self) {
         for byte in self.bytes.iter_mut() {
             for bitreg in byte.iter_mut() {
-                bitreg.add_all();
+                bitreg.set_all(true, true);
             }
         }
     }
@@ -50,8 +50,8 @@ mod tests {
 
     #[rstest]
     fn reset(mut ram: Ram) {
-        ram.byte_mut(23).add(0x45).unwrap();
-        ram.byte_mut(67).add(0x89).unwrap();
+        ram.byte_mut(23).add(0x45, true).unwrap();
+        ram.byte_mut(67).add(0x89, true).unwrap();
         ram.reset();
 
         for bit in ram.byte(23).iter() {

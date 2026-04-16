@@ -1,7 +1,17 @@
-use crate::data::{
-    pins::{AddressBusType, DataBusType, InputPinType, OutputPinType, Pins},
-    ram::Ram,
-    registers::Registers,
+mod control;
+pub mod error;
+pub mod helpers;
+mod pins;
+mod ram;
+mod registers;
+
+use crate::{
+    RiotError,
+    riot::{
+        pins::{AddressBusType, DataBusType, InputPinType, OutputPinType, Pins},
+        ram::Ram,
+        registers::Registers,
+    },
 };
 use emu_utils::pin::{
     BusCore, BusMut, BusRef, SinglePinCore, SinglePinMut, SinglePinOutput, SinglePinRef,
@@ -37,9 +47,9 @@ macro_rules! create_bus_input {
 }
 
 pub struct Riot {
-    pub(crate) pin: Pins,
-    pub(crate) reg: Registers,
-    pub(crate) ram: Ram,
+    pin: Pins,
+    reg: Registers,
+    ram: Ram,
 }
 
 impl Default for Riot {
@@ -57,11 +67,16 @@ impl Riot {
         }
     }
 
+    pub fn tick(&mut self) -> Result<(), RiotError> {
+        let instructions = self.possible_instructions()?;
+        self.execute_possible_instructions(instructions)
+    }
+
     pub fn release_db(&mut self) {
         self.pin
             .db
             .iter_mut()
-            .for_each(OutputPinType::add_high_z_out);
+            .for_each(|pin| pin.add_high_z_out(true));
     }
 
     create_bus_input!(a, AddressBusType, InputPinType);

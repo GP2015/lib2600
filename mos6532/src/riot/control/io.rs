@@ -1,8 +1,4 @@
 use crate::{Riot, RiotError};
-use emu_utils::pin::BusOutput;
-
-const ATYPE: bool = false;
-const BTYPE: bool = true;
 
 impl Riot {
     pub(crate) fn handle_io(&mut self, only_possible: bool) -> Result<(), RiotError> {

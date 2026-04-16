@@ -1,7 +1,12 @@
+mod edc;
 mod instructions;
-mod section;
+mod interrupt;
+mod io;
+mod ram;
+mod reset;
+mod timer;
 
-use crate::{Riot, RiotError, control::instructions::PossibleInstructions};
+use crate::{Riot, RiotError, riot::control::instructions::PossibleInstructions};
 use emu_utils::pin::{BusCore, SinglePinCore};
 
 impl Riot {
@@ -42,47 +47,41 @@ impl Riot {
     //     Ok(())
     // }
 
-    fn possible_instructions(&mut self) -> Result<PossibleInstructions, RiotError> {
+    pub(crate) fn possible_instructions(&mut self) -> Result<PossibleInstructions, RiotError> {
         let mut instructions = PossibleInstructions::new();
 
-        if self.pin.res.could_read_low() {
-            instructions.reset = true;
+        if self.pin.cs1.could_read_low() || self.pin.cs2.could_read_high() {
+            instructions.nop = true;
         }
 
-        if self.pin.res.could_read_high() {
-            if self.pin.cs1.could_read_low() || self.pin.cs2.could_read_high() {
-                instructions.nop = true;
+        if self.pin.cs1.could_read_high() && self.pin.cs2.could_read_low() {
+            if self.pin.rs.could_read_low() {
+                instructions.ram = true;
             }
 
-            if self.pin.cs1.could_read_high() && self.pin.cs2.could_read_low() {
-                if self.pin.rs.could_read_low() {
-                    instructions.ram = true;
+            if self.pin.rs.could_read_high() {
+                if self.pin.a.pin(2)?.could_read_low() {
+                    instructions.io = true;
                 }
 
-                if self.pin.rs.could_read_high() {
-                    if self.pin.a.pin(2)?.could_read_low() {
-                        instructions.io = true;
-                    }
-
-                    if self.pin.a.pin(2)?.could_read_high() {
-                        if self.pin.rw.could_read_low() {
-                            if self.pin.a.pin(4)?.could_read_low() {
-                                instructions.write_edc = true;
-                            }
-
-                            if self.pin.a.pin(4)?.could_read_high() {
-                                instructions.write_timer = true;
-                            }
+                if self.pin.a.pin(2)?.could_read_high() {
+                    if self.pin.rw.could_read_low() {
+                        if self.pin.a.pin(4)?.could_read_low() {
+                            instructions.write_edc = true;
                         }
 
-                        if self.pin.rw.could_read_high() {
-                            if self.pin.a.pin(0)?.could_read_low() {
-                                instructions.read_timer = true;
-                            }
+                        if self.pin.a.pin(4)?.could_read_high() {
+                            instructions.write_timer = true;
+                        }
+                    }
 
-                            if self.pin.a.pin(0)?.could_read_high() {
-                                instructions.read_interrupt_flag = true;
-                            }
+                    if self.pin.rw.could_read_high() {
+                        if self.pin.a.pin(0)?.could_read_low() {
+                            instructions.read_timer = true;
+                        }
+
+                        if self.pin.a.pin(0)?.could_read_high() {
+                            instructions.read_interrupt_flag = true;
                         }
                     }
                 }
@@ -92,15 +91,11 @@ impl Riot {
         Ok(instructions)
     }
 
-    fn execute_possible_instructions(
+    pub(crate) fn execute_possible_instructions(
         &mut self,
         instructions: PossibleInstructions,
     ) -> Result<(), RiotError> {
-        let only_possible = match instructions.num_possible() {
-            0 => return Ok(()),
-            1 => true,
-            _ => false,
-        };
+        let only_possible = instructions.only_possible();
 
         if instructions.reset {
             self.handle_reset(only_possible)?;
