@@ -78,6 +78,32 @@ pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
         Ok(())
     }
 
+    fn output_from_pin<P>(&mut self, pin: &P, only_possible: bool) -> Result<(), Self::ErrType>
+    where
+        P: SinglePinCore<'a>,
+    {
+        if only_possible {
+            self.set_all_out(
+                pin.high_possible(),
+                pin.low_possible(),
+                pin.high_z_possible(),
+            )?;
+        } else {
+            if pin.high_possible() {
+                self.add_high_out(false)?;
+            }
+
+            if pin.low_possible() {
+                self.add_low_out(false)?;
+            }
+
+            if pin.high_z_possible() {
+                self.add_high_z_out(false);
+            }
+        }
+        Ok(())
+    }
+
     fn output_from_reg(
         &mut self,
         reg: &BitRegister,

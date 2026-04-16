@@ -32,6 +32,7 @@ where
     fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P>;
     fn read(&self) -> Option<usize>;
     fn read_prev(&self) -> Option<usize>;
+    fn only_one_possible_read(&self) -> bool;
     fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
     fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize>;
     fn add_drive_in(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType>;

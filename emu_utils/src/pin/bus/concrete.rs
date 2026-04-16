@@ -117,6 +117,15 @@ where
         Self::collapsed_as_usize(&collapsed)
     }
 
+    fn only_one_possible_read(&self) -> bool {
+        for pin in &self.pins {
+            if pin.could_read_high() && pin.could_read_low() {
+                return false;
+            }
+        }
+        true
+    }
+
     fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
         self.pins
             .iter()
