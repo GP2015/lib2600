@@ -20,9 +20,11 @@ where
         #[must_use]
         to self.inner {
             pub fn name(&self) -> &str;
+            pub fn signal_possible(&self, signal: PinSignal) -> bool;
             pub fn high_possible(&self) -> bool;
             pub fn low_possible(&self) -> bool;
             pub fn high_z_possible(&self) -> bool;
+            pub fn prev_signal_possible(&self, signal: PinSignal) -> bool;
             pub fn prev_high_possible(&self) -> bool;
             pub fn prev_low_possible(&self) -> bool;
             pub fn prev_high_z_possible(&self) -> bool;

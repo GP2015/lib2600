@@ -12,18 +12,12 @@ impl PossibleSignals {
         Self { high, low, high_z }
     }
 
-    pub fn set_signal(&mut self, signal: PinSignal, enable: bool) {
+    pub fn signal_possible(self, signal: PinSignal) -> bool {
         match signal {
-            PinSignal::High => self.high = enable,
-            PinSignal::Low => self.low = enable,
-            PinSignal::HighZ => self.high_z = enable,
+            PinSignal::High => self.high,
+            PinSignal::Low => self.low,
+            PinSignal::HighZ => self.high_z,
         }
-    }
-
-    pub fn set_all(&mut self, enable: bool) {
-        self.high = enable;
-        self.low = enable;
-        self.high_z = enable;
     }
 
     pub fn all_enabled(self) -> Vec<PinSignal> {
@@ -37,6 +31,45 @@ impl PossibleSignals {
         .collect()
     }
 
+    pub fn add_signal(&mut self, signal: PinSignal, only_possible: bool) {
+        if only_possible {
+            match signal {
+                PinSignal::High => {
+                    self.low = false;
+                    self.high_z = false;
+                }
+                PinSignal::Low => {
+                    self.high = false;
+                    self.high_z = false;
+                }
+                PinSignal::HighZ => {
+                    self.high = false;
+                    self.low = false;
+                }
+            }
+        }
+
+        match signal {
+            PinSignal::High => self.high = true,
+            PinSignal::Low => self.low = true,
+            PinSignal::HighZ => self.high_z = true,
+        }
+    }
+
+    pub fn remove_signal(&mut self, signal: PinSignal) {
+        match signal {
+            PinSignal::High => self.high = false,
+            PinSignal::Low => self.low = false,
+            PinSignal::HighZ => self.high_z = false,
+        }
+    }
+
+    pub fn set_all(&mut self, high: bool, low: bool, high_z: bool) {
+        self.high = high;
+        self.low = low;
+        self.high_z = high_z;
+    }
+
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
         let first_all_enabled = first.all_enabled();
         let second_all_enabled = second.all_enabled();
@@ -46,7 +79,7 @@ impl PossibleSignals {
         for first_signal in &first_all_enabled {
             for second_signal in &second_all_enabled {
                 let signal = PinSignal::contend_together(*first_signal, *second_signal)?;
-                result.set_signal(signal, true);
+                result.add_signal(signal, false);
             }
         }
 
@@ -78,25 +111,13 @@ mod tests {
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
         let mut signals = PossibleSignals::from(initial, initial, initial);
-        signals.set_signal(signal, enable);
+        signals.add_signal(signal, false);
         let result: bool = match signal {
             PinSignal::High => signals.high,
             PinSignal::Low => signals.low,
             PinSignal::HighZ => signals.high_z,
         };
         assert_eq!(result, enable);
-    }
-
-    #[rstest]
-    fn set_all(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] high_z: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let mut signals = PossibleSignals::from(high, low, high_z);
-        signals.set_all(enable);
-        assert_eq!(signals, PossibleSignals::from(enable, enable, enable));
     }
 
     #[rstest]

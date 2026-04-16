@@ -31,21 +31,6 @@ impl BitRegister {
         self.states.low
     }
 
-    delegate! {
-        #[must_use]
-        to self.states {
-            pub fn collapsed(&self) -> Option<bool>;
-            pub fn possible_reads(&self) -> Vec<bool>;
-        }
-
-        to self.states {
-            pub fn set(&mut self, signal: bool, possible: bool);
-            pub fn set_all(&mut self, possible: bool);
-            pub fn add(&mut self, signal: bool);
-            pub fn add_all(&mut self);
-        }
-    }
-
     pub fn input_from_pin<'a, P>(&mut self, pin: &P, only_possible: bool)
     where
         P: SinglePinCore<'a>,
@@ -61,6 +46,20 @@ impl BitRegister {
             if pin.could_read_low() {
                 self.states.low = true;
             }
+        }
+    }
+
+    delegate! {
+        #[must_use]
+        to self.states {
+            pub fn collapsed(&self) -> Option<bool>;
+            pub fn possible_reads(&self) -> Vec<bool>;
+        }
+
+        to self.states {
+            pub fn add(&mut self, state: bool, only_possible: bool);
+            pub fn remove(&mut self, state: bool);
+            pub fn set_all(&mut self, high: bool, low: bool);
         }
     }
 }

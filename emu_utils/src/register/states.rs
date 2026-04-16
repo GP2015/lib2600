@@ -9,25 +9,12 @@ impl PossibleBitStates {
         Self { high, low }
     }
 
-    pub fn set(&mut self, state: bool, enable: bool) {
-        if state {
-            self.high = enable;
-        } else {
-            self.low = enable;
+    pub fn collapsed(self) -> Option<bool> {
+        match (self.high, self.low) {
+            (false, true) => Some(false),
+            (true, false) => Some(true),
+            _ => None,
         }
-    }
-
-    pub fn set_all(&mut self, enable: bool) {
-        self.high = enable;
-        self.low = enable;
-    }
-
-    pub fn add(&mut self, state: bool) {
-        self.set(state, true);
-    }
-
-    pub fn add_all(&mut self) {
-        self.set_all(true);
     }
 
     pub fn possible_reads(self) -> Vec<bool> {
@@ -39,12 +26,32 @@ impl PossibleBitStates {
         }
     }
 
-    pub fn collapsed(self) -> Option<bool> {
-        match (self.high, self.low) {
-            (false, true) => Some(false),
-            (true, false) => Some(true),
-            _ => None,
+    pub fn add(&mut self, state: bool, only_possible: bool) {
+        match (only_possible, state) {
+            (false, false) => self.low = true,
+            (false, true) => self.high = true,
+            (true, false) => {
+                self.high = false;
+                self.low = true;
+            }
+            (true, true) => {
+                self.high = true;
+                self.low = false;
+            }
         }
+    }
+
+    pub fn remove(&mut self, state: bool) {
+        if state {
+            self.high = false;
+        } else {
+            self.low = false;
+        }
+    }
+
+    pub fn set_all(&mut self, high: bool, low: bool) {
+        self.high = high;
+        self.low = low;
     }
 }
 
@@ -67,20 +74,16 @@ mod tests {
         #[values(true, false)] state: bool,
     ) {
         let mut states = PossibleBitStates::from(initial, initial);
-        states.set(state, enable);
+        states.add(state, enable);
         let result = if state { states.high } else { states.low };
         assert_eq!(result, enable);
     }
 
     #[rstest]
-    fn set_all(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] enable: bool,
-    ) {
-        let mut states = PossibleBitStates::from(high, low);
-        states.set_all(enable);
-        assert_eq!(states, PossibleBitStates::from(enable, enable));
+    fn set_all(#[values(true, false)] high: bool, #[values(true, false)] low: bool) {
+        let mut states = PossibleBitStates::from(false, false);
+        states.set_all(high, low);
+        assert_eq!(states, PossibleBitStates::from(high, low));
     }
 
     #[rstest]

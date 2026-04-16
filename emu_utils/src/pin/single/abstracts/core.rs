@@ -2,22 +2,22 @@ use crate::pin::{
     PinError, PinSignal,
     single::interfaces::{pinmut::SinglePinMut, pinref::SinglePinRef},
 };
+use std::fmt::Debug;
 
 pub trait SinglePinCore<'a> {
-    type ErrType: From<PinError>;
+    type ErrType: From<PinError> + Debug;
 
     fn new(name: String) -> Self;
     fn post_tick_update(&mut self);
     fn name(&self) -> &str;
-    fn high_possible(&self) -> bool;
-    fn low_possible(&self) -> bool;
-    fn high_z_possible(&self) -> bool;
-    fn prev_high_possible(&self) -> bool;
-    fn prev_low_possible(&self) -> bool;
-    fn prev_high_z_possible(&self) -> bool;
-    fn set_high_in(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_low_in(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_high_z_in(&mut self, possible: bool);
+    fn signal_possible(&self, signal: PinSignal) -> bool;
+    fn prev_signal_possible(&self, signal: PinSignal) -> bool;
+    fn add_signal_in(
+        &mut self,
+        signal: PinSignal,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType>;
+    fn remove_signal_in(&mut self, signal: PinSignal);
 
     fn interface(&'a self) -> SinglePinRef<'a, Self>
     where
@@ -33,59 +33,28 @@ pub trait SinglePinCore<'a> {
         SinglePinMut::from(self)
     }
 
-    fn add_high_in(&mut self) -> Result<(), Self::ErrType> {
-        self.set_high_in(true)
+    fn high_possible(&self) -> bool {
+        self.signal_possible(PinSignal::High)
     }
 
-    fn add_low_in(&mut self) -> Result<(), Self::ErrType> {
-        self.set_low_in(true)
+    fn low_possible(&self) -> bool {
+        self.signal_possible(PinSignal::Low)
     }
 
-    fn add_high_z_in(&mut self) {
-        self.set_high_z_in(true);
+    fn high_z_possible(&self) -> bool {
+        self.signal_possible(PinSignal::HighZ)
     }
 
-    fn set_in(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType> {
-        match signal {
-            PinSignal::High => self.set_high_in(possible)?,
-            PinSignal::Low => self.set_low_in(possible)?,
-            PinSignal::HighZ => self.set_high_z_in(possible),
-        }
-        Ok(())
+    fn prev_high_possible(&self) -> bool {
+        self.prev_signal_possible(PinSignal::High)
     }
 
-    fn add_in(&mut self, signal: PinSignal) -> Result<(), Self::ErrType> {
-        self.set_in(signal, true)
+    fn prev_low_possible(&self) -> bool {
+        self.prev_signal_possible(PinSignal::Low)
     }
 
-    fn set_drive_in(&mut self, bool_signal: bool, possible: bool) -> Result<(), Self::ErrType> {
-        if bool_signal {
-            self.set_high_in(possible)
-        } else {
-            self.set_low_in(possible)
-        }
-    }
-
-    fn add_drive_in(&mut self, bool_signal: bool) -> Result<(), Self::ErrType> {
-        self.set_drive_in(bool_signal, true)
-    }
-
-    fn set_all_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.set_high_in(possible)?;
-        self.set_low_in(possible)?;
-        self.set_high_z_in(possible);
-        Ok(())
-    }
-
-    fn add_all_in(&mut self) -> Result<(), Self::ErrType> {
-        self.set_all_in(true)
-    }
-
-    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
-        self.set_high_in(self.high_possible())?;
-        self.set_low_in(self.low_possible())?;
-        self.set_high_z_in(self.high_z_possible());
-        Ok(())
+    fn prev_high_z_possible(&self) -> bool {
+        self.prev_signal_possible(PinSignal::HighZ)
     }
 
     fn could_read_high(&self) -> bool {
@@ -168,5 +137,80 @@ pub trait SinglePinCore<'a> {
             (true, false, false) => vec![true],
             (true, true, false) | (_, _, true) => vec![true, false],
         }
+    }
+
+    fn add_high_in(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+        self.add_signal_in(PinSignal::High, only_possible)
+    }
+
+    fn add_low_in(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+        self.add_signal_in(PinSignal::Low, only_possible)
+    }
+
+    fn add_high_z_in(&mut self, only_possible: bool) {
+        self.add_signal_in(PinSignal::HighZ, only_possible)
+            .expect("setting high impedance in cannot cause a short-circuit");
+    }
+
+    fn remove_high_in(&mut self) {
+        self.remove_signal_in(PinSignal::High);
+    }
+
+    fn remove_low_in(&mut self) {
+        self.remove_signal_in(PinSignal::Low);
+    }
+
+    fn remove_high_z_in(&mut self) {
+        self.remove_signal_in(PinSignal::HighZ);
+    }
+
+    fn add_drive_in(
+        &mut self,
+        bool_signal: bool,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType> {
+        if bool_signal {
+            self.add_high_in(only_possible)
+        } else {
+            self.add_low_in(only_possible)
+        }
+    }
+
+    fn remove_drive_in(&mut self, bool_signal: bool) {
+        if bool_signal {
+            self.remove_high_in();
+        } else {
+            self.remove_low_in();
+        }
+    }
+
+    fn set_all_in(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), Self::ErrType> {
+        if high {
+            self.add_high_in(false)?;
+        } else {
+            self.remove_high_in();
+        }
+
+        if low {
+            self.add_low_in(false)?;
+        } else {
+            self.remove_low_in();
+        }
+
+        if high_z {
+            self.add_high_z_in(false);
+        } else {
+            self.remove_high_z_in();
+        }
+
+        Ok(())
+    }
+
+    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
+        self.set_all_in(
+            self.high_possible(),
+            self.low_possible(),
+            self.high_z_possible(),
+        )
     }
 }

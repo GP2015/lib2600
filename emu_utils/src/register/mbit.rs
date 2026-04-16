@@ -104,16 +104,16 @@ impl MBitRegister {
             .map(|bools| Self::bools_as_usize(&bools))
     }
 
-    pub fn add(&mut self, val: usize) -> Result<(), RegisterError> {
-        self.check_write_val_valid(val)?;
+    pub fn add_wrapping(&mut self, val: usize, only_possible: bool) {
         for (bit, bitreg) in self.bits.iter_mut().enumerate() {
-            bitreg.add(bit::get_bit_of_usize(val, bit));
+            bitreg.add(bit::get_bit_of_usize(val, bit), only_possible);
         }
-        Ok(())
     }
 
-    pub fn add_wrapping(&mut self, val: usize) -> Result<(), RegisterError> {
-        self.add(bit::get_low_bits_of_usize(val, self.size()))
+    pub fn add(&mut self, val: usize, only_possible: bool) -> Result<(), RegisterError> {
+        self.check_write_val_valid(val)?;
+        self.add_wrapping(val, only_possible);
+        Ok(())
     }
 
     pub fn input_from_bus<'a, B, P>(&mut self, bus: &'a B, only_possible: bool)

@@ -4,56 +4,78 @@ use crate::{
 };
 
 pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
-    fn set_high_out(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_low_out(&mut self, possible: bool) -> Result<(), Self::ErrType>;
-    fn set_high_z_out(&mut self, possible: bool);
+    fn add_signal_out(
+        &mut self,
+        signal: PinSignal,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType>;
+    fn remove_signal_out(&mut self, signal: PinSignal);
 
-    fn add_high_out(&mut self) -> Result<(), Self::ErrType> {
-        self.set_high_out(true)
+    fn add_high_out(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+        self.add_signal_out(PinSignal::High, only_possible)
     }
 
-    fn add_low_out(&mut self) -> Result<(), Self::ErrType> {
-        self.set_low_out(true)
+    fn add_low_out(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+        self.add_signal_out(PinSignal::Low, only_possible)
     }
 
-    fn add_high_z_out(&mut self) {
-        self.set_high_z_out(true);
+    fn add_high_z_out(&mut self, only_possible: bool) {
+        self.add_signal_out(PinSignal::HighZ, only_possible)
+            .expect("setting high impedance in cannot cause a short-circuit");
     }
 
-    fn set_out(&mut self, signal: PinSignal, possible: bool) -> Result<(), Self::ErrType> {
-        match signal {
-            PinSignal::High => self.set_high_out(possible)?,
-            PinSignal::Low => self.set_low_out(possible)?,
-            PinSignal::HighZ => self.set_high_z_out(possible),
-        }
-        Ok(())
+    fn remove_high_out(&mut self) {
+        self.remove_signal_out(PinSignal::High);
     }
 
-    fn add_out(&mut self, signal: PinSignal) -> Result<(), Self::ErrType> {
-        self.set_out(signal, true)
+    fn remove_low_out(&mut self) {
+        self.remove_signal_out(PinSignal::Low);
     }
 
-    fn set_drive_out(&mut self, bool_signal: bool, possible: bool) -> Result<(), Self::ErrType> {
+    fn remove_high_z_out(&mut self) {
+        self.remove_signal_out(PinSignal::HighZ);
+    }
+
+    fn add_drive_out(
+        &mut self,
+        bool_signal: bool,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType> {
         if bool_signal {
-            self.set_high_out(possible)
+            self.add_high_out(only_possible)
         } else {
-            self.set_low_out(possible)
+            self.add_low_out(only_possible)
         }
     }
 
-    fn add_drive_out(&mut self, bool_signal: bool) -> Result<(), Self::ErrType> {
-        self.set_drive_out(bool_signal, true)
+    fn remove_drive_out(&mut self, bool_signal: bool) {
+        if bool_signal {
+            self.remove_high_out();
+        } else {
+            self.remove_low_out();
+        }
     }
 
-    fn set_all_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.set_high_out(possible)?;
-        self.set_low_out(possible)?;
-        self.set_high_z_out(possible);
+    fn set_all_out(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), Self::ErrType> {
+        if high {
+            self.add_high_out(false)?;
+        } else {
+            self.remove_high_out();
+        }
+
+        if low {
+            self.add_low_out(false)?;
+        } else {
+            self.remove_low_out();
+        }
+
+        if high_z {
+            self.add_high_z_out(false);
+        } else {
+            self.remove_high_z_out();
+        }
+
         Ok(())
-    }
-
-    fn add_all_out(&mut self) -> Result<(), Self::ErrType> {
-        self.set_all_out(true)
     }
 
     fn output_from_reg(
@@ -62,15 +84,14 @@ pub trait SinglePinOutput<'a>: SinglePinCore<'a> {
         only_possible: bool,
     ) -> Result<(), Self::ErrType> {
         if only_possible {
-            self.set_high_out(reg.high_possible())?;
-            self.set_low_out(reg.low_possible())?;
+            self.set_all_out(reg.high_possible(), reg.low_possible(), false)?;
         } else {
             if reg.high_possible() {
-                self.add_high_out()?;
+                self.add_high_out(false)?;
             }
 
             if reg.low_possible() {
-                self.add_low_out()?;
+                self.add_low_out(false)?;
             }
         }
         Ok(())

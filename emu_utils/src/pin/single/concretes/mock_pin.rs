@@ -1,5 +1,6 @@
-use crate::pin::{PinError, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
-use std::marker::PhantomData;
+use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
+use delegate::delegate;
+use std::{fmt::Debug, marker::PhantomData};
 
 pub struct MockPin<E>
 where
@@ -13,7 +14,7 @@ where
 
 impl<E> SinglePinCore<'_> for MockPin<E>
 where
-    E: From<PinError>,
+    E: From<PinError> + Debug,
 {
     type ErrType = E;
 
@@ -28,67 +29,44 @@ where
 
     fn post_tick_update(&mut self) {
         self.prev_signals = self.signals;
-        self.signals.set_all(false);
+        self.signals.set_all(false, false, false);
     }
 
     fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    fn high_possible(&self) -> bool {
-        self.signals.high
-    }
+    delegate! {
+        to self.signals{
+            fn signal_possible(&self, signal: PinSignal) -> bool;
 
-    fn low_possible(&self) -> bool {
-        self.signals.low
-    }
+            #[call(add_signal)]
+            #[expr($; Ok(()))]
+            fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), Self::ErrType>;
 
-    fn high_z_possible(&self) -> bool {
-        self.signals.high_z
-    }
+            #[call(remove_signal)]
+            fn remove_signal_in(&mut self, signal: PinSignal);
+        }
 
-    fn prev_high_possible(&self) -> bool {
-        self.prev_signals.high
-    }
-
-    fn prev_low_possible(&self) -> bool {
-        self.prev_signals.low
-    }
-
-    fn prev_high_z_possible(&self) -> bool {
-        self.prev_signals.high_z
-    }
-
-    fn set_high_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.signals.high = possible;
-        Ok(())
-    }
-
-    fn set_low_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.signals.low = possible;
-        Ok(())
-    }
-
-    fn set_high_z_in(&mut self, possible: bool) {
-        self.signals.high_z = possible;
+        to self.prev_signals{
+            #[call(signal_possible)]
+            fn prev_signal_possible(&self, signal: PinSignal) -> bool;
+        }
     }
 }
 
 impl<E> SinglePinOutput<'_> for MockPin<E>
 where
-    E: From<PinError>,
+    E: From<PinError> + Debug,
 {
-    fn set_high_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.signals.high = possible;
-        Ok(())
-    }
+    delegate! {
+        to self.signals{
+            #[call(add_signal)]
+            #[expr($; Ok(()))]
+            fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), Self::ErrType>;
 
-    fn set_low_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        self.signals.low = possible;
-        Ok(())
-    }
-
-    fn set_high_z_out(&mut self, possible: bool) {
-        self.signals.high_z = possible;
+            #[call(remove_signal)]
+            fn remove_signal_out(&mut self, signal: PinSignal);
+        }
     }
 }

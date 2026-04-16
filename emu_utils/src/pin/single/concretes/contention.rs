@@ -1,5 +1,6 @@
-use crate::pin::{PinError, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
-use std::marker::PhantomData;
+use crate::pin::{PinError, PinSignal, SinglePinCore, SinglePinOutput, possible::PossibleSignals};
+use delegate::delegate;
+use std::{fmt::Debug, marker::PhantomData};
 
 pub struct ContentionPin<E> {
     name: String,
@@ -22,34 +23,20 @@ where
         }
     }
 
-    fn handle_contention(
-        &mut self,
-        signals_in: PossibleSignals,
-        signals_out: PossibleSignals,
-    ) -> Result<(), PinError> {
-        let Some(contended_signals) = PossibleSignals::contend_together(signals_in, signals_out)
+    fn update_contention(&mut self) -> Result<(), PinError> {
+        let Some(contended_signals) =
+            PossibleSignals::contend_together(self.signals_in, self.signals_out)
         else {
             return Err(self.short_circuit_err());
         };
-
-        self.signals_in = signals_in;
-        self.signals_out = signals_out;
         self.contended_signals = contended_signals;
         Ok(())
-    }
-
-    fn update_in(&mut self, signals_in: PossibleSignals) -> Result<(), PinError> {
-        self.handle_contention(signals_in, self.signals_out)
-    }
-
-    fn update_out(&mut self, signals_out: PossibleSignals) -> Result<(), PinError> {
-        self.handle_contention(self.signals_in, signals_out)
     }
 }
 
 impl<E> SinglePinCore<'_> for ContentionPin<E>
 where
-    E: From<PinError>,
+    E: From<PinError> + Debug,
 {
     type ErrType = E;
 
@@ -81,80 +68,59 @@ where
         self.prev_signals_in = self.signals_in;
         self.prev_signals_out = self.signals_out;
         self.prev_contended_signals = self.contended_signals;
-        self.signals_in.set_all(false);
-        self.signals_out.set_all(false);
-        self.contended_signals.set_all(false);
+        self.signals_in.set_all(false, false, false);
+        self.signals_out.set_all(false, false, false);
+        self.contended_signals.set_all(false, false, false);
     }
 
     fn name(&self) -> &str {
         self.name.as_str()
     }
 
-    fn high_possible(&self) -> bool {
-        self.contended_signals.high
+    delegate! {
+        to self.contended_signals{
+            fn signal_possible(&self, signal: PinSignal) -> bool;
+        }
+
+        to self.prev_contended_signals{
+            #[call(signal_possible)]
+            fn prev_signal_possible(&self, signal: PinSignal) -> bool;
+        }
     }
 
-    fn low_possible(&self) -> bool {
-        self.contended_signals.low
+    fn add_signal_in(
+        &mut self,
+        signal: PinSignal,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType> {
+        self.signals_in.add_signal(signal, only_possible);
+        self.update_contention().map_err(Into::into)
     }
 
-    fn high_z_possible(&self) -> bool {
-        self.contended_signals.high_z
-    }
-
-    fn prev_high_possible(&self) -> bool {
-        self.prev_contended_signals.high
-    }
-
-    fn prev_low_possible(&self) -> bool {
-        self.prev_contended_signals.low
-    }
-
-    fn prev_high_z_possible(&self) -> bool {
-        self.prev_contended_signals.high_z
-    }
-
-    fn set_high_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        let mut signals_in = self.signals_in;
-        signals_in.high = possible;
-        self.update_in(signals_in).map_err(Into::into)
-    }
-
-    fn set_low_in(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        let mut signals_in = self.signals_in;
-        signals_in.low = possible;
-        self.update_in(signals_in).map_err(Into::into)
-    }
-
-    fn set_high_z_in(&mut self, possible: bool) {
-        let mut signals_in = self.signals_in;
-        signals_in.high_z = possible;
-        self.update_in(signals_in)
-            .expect("setting high impedance in cannot cause a short-circuit");
+    fn remove_signal_in(&mut self, signal: PinSignal) {
+        self.signals_in.remove_signal(signal);
+        self.update_contention()
+            .expect("removing possible signals cannot cause a short-circuit");
     }
 }
 
 impl<E> SinglePinOutput<'_> for ContentionPin<E>
 where
-    E: From<PinError>,
+    E: From<PinError> + Debug,
 {
-    fn set_high_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        let mut signals_out = self.signals_out;
-        signals_out.high = possible;
-        self.update_out(signals_out).map_err(Into::into)
+    fn add_signal_out(
+        &mut self,
+        signal: PinSignal,
+        only_possible: bool,
+    ) -> Result<(), Self::ErrType> {
+        self.signals_out.add_signal(signal, only_possible);
+        self.update_contention().map_err(Into::into)
     }
 
-    fn set_low_out(&mut self, possible: bool) -> Result<(), Self::ErrType> {
-        let mut signals_out = self.signals_out;
-        signals_out.low = possible;
-        self.update_out(signals_out).map_err(Into::into)
-    }
-
-    fn set_high_z_out(&mut self, possible: bool) {
-        let mut signals_out = self.signals_out;
-        signals_out.high_z = possible;
-        self.update_out(signals_out)
-            .expect("setting high impedance in cannot cause a short-circuit");
+    fn remove_signal_out(&mut self, signal: PinSignal) {
+        self.signals_out.remove_signal(signal);
+        self.update_contention()
+            .expect("removing possible signals cannot cause a short-circuit");
     }
 }
 
@@ -176,15 +142,14 @@ mod tests {
     #[fixture]
     fn pin_none_out() -> PinType {
         let mut pin = ContentionPin::new(String::from(PIN_NAME));
-        pin.set_all_out(false).unwrap();
+        pin.set_all_out(false, false, false).unwrap();
         pin
     }
 
     #[fixture]
     fn pin_high_z_out() -> PinType {
         let mut pin = ContentionPin::new(String::new());
-        pin.set_all_out(false).unwrap();
-        pin.add_high_z_out();
+        pin.set_all_out(false, false, true).unwrap();
         pin
     }
 
@@ -204,8 +169,8 @@ mod tests {
         #[from(pin_none_out)] mut pin: PinType,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        pin.add_in(signal).unwrap();
-        pin.add_out(signal).unwrap();
+        pin.add_signal_in(signal, false).unwrap();
+        pin.add_signal_out(signal, false).unwrap();
         pin.post_tick_update();
         assert_eq!(pin.prev_collapsed().unwrap(), signal);
         assert!(pin.possible_signals().is_empty());
@@ -225,8 +190,8 @@ mod tests {
         #[case] ostate: PinSignal,
         #[case] state: PinSignal,
     ) {
-        pin.add_in(istate).unwrap();
-        pin.add_out(ostate).unwrap();
+        pin.add_signal_in(istate, false).unwrap();
+        pin.add_signal_out(ostate, false).unwrap();
         assert_eq!(pin.collapsed().unwrap(), state);
     }
 }

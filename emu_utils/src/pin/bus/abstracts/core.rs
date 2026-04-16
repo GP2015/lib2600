@@ -34,6 +34,6 @@ where
     fn read_prev(&self) -> Option<usize>;
     fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
     fn iter_prev_possible_reads(&self) -> impl Iterator<Item = usize>;
-    fn add_drive_in(&mut self, val: usize) -> Result<(), P::ErrType>;
-    fn add_drive_in_wrapping(&mut self, val: usize) -> Result<(), P::ErrType>;
+    fn add_drive_in(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType>;
+    fn add_drive_in_wrapping(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType>;
 }
