@@ -179,7 +179,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pin::{PinError, single::concretes::mock_pin::MockPin};
+    use crate::pin::{PinError, single::real::concrete::mock::MockPin};
     use rstest::{fixture, rstest};
 
     type BusType = StandardBus<MockPin<PinError>>;

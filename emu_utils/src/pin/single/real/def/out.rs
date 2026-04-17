@@ -1,6 +1,6 @@
 use crate::{
     pin::{PinSignal, SinglePinCore},
-    register::BitRegister,
+    reg::BitRegister,
 };
 
 pub trait SinglePinOutput<'a>: SinglePinCore<'a> {

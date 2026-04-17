@@ -4,4 +4,4 @@
 
 mod bit;
 pub mod pin;
-pub mod register;
+pub mod reg;

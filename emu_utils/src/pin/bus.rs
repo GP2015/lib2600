@@ -1,3 +1,2 @@
-pub mod abstracts;
-pub mod concrete;
-pub mod interfaces;
+pub mod interface;
+pub mod real;

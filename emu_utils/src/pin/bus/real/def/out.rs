@@ -1,6 +1,6 @@
 use crate::{
     pin::{BusCore, SinglePinCore, SinglePinOutput},
-    register::MBitRegister,
+    reg::MBitRegister,
 };
 
 pub trait BusOutput<'a, P>: BusCore<'a, P>

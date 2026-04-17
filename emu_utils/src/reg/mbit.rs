@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     bit,
     pin::{BusCore, SinglePinCore},
-    register::{BitRegister, RegisterError},
+    reg::{BitRegister, RegisterError},
 };
 
 #[derive(Clone)]

@@ -1,4 +1,4 @@
-use crate::{pin::SinglePinCore, register::states::PossibleBitStates};
+use crate::{pin::SinglePinCore, reg::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone)]

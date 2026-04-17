@@ -1,7 +1,4 @@
-use crate::pin::{
-    SinglePinCore,
-    bus::interfaces::{busmut::BusMut, busref::BusRef},
-};
+use crate::pin::{BusMut, BusRef, SinglePinCore};
 
 pub trait BusCore<'a, P>
 where

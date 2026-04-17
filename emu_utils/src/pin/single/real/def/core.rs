@@ -1,7 +1,4 @@
-use crate::pin::{
-    PinError, PinSignal,
-    single::interfaces::{pinmut::SinglePinMut, pinref::SinglePinRef},
-};
+use crate::pin::{PinError, PinSignal, SinglePinMut, SinglePinRef};
 use std::fmt::Debug;
 
 pub trait SinglePinCore<'a> {
