@@ -2,6 +2,4 @@
 Don't allow pins with no possible value.
 Handle iter unit tests in Pins.
 Add in error name checking.
-Stop errored method calls from changing the chip at all.
 Should the reset sequence be dependant on the clock?
-Reduce pessimism.
