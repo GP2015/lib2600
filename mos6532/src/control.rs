@@ -6,7 +6,7 @@ mod ram;
 mod reset;
 mod timer;
 
-use crate::{Riot, RiotError, riot::control::instructions::PossibleInstructions};
+use crate::{Riot, RiotError, control::instructions::PossibleInstructions};
 use emutils::pin::{BusInputUI, PinInputUI};
 
 impl Riot {

@@ -6,7 +6,7 @@ use itertools::izip;
 
 use crate::{
     Riot, RiotError,
-    riot::control::io::{ab::AB, instructions::PossibleIoInstructions},
+    control::io::{ab::AB, instructions::PossibleIoInstructions},
 };
 
 impl Riot {
