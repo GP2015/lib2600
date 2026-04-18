@@ -1,8 +1,7 @@
-use crate::RiotError;
-use emu_utils::pin::{BusCore, ContentionPin, InputPin, SinglePinCore, StandardBus};
+use emutils::pin::{BusCore, ContentionPin, InputPin, PinCore, StandardBus};
 
-pub(crate) type InputPinType = InputPin<RiotError>;
-pub(crate) type OutputPinType = ContentionPin<RiotError>;
+pub(crate) type InputPinType = InputPin;
+pub(crate) type OutputPinType = ContentionPin;
 pub(crate) type AddressBusType = StandardBus<InputPinType>;
 pub(crate) type DataBusType = StandardBus<OutputPinType>;
 

@@ -1,3 +1,4 @@
+use emutils::pin::PinInputUI;
 use mos6532::Riot;
 use rstest::fixture;
 

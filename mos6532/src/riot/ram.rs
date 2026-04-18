@@ -1,4 +1,4 @@
-use emu_utils::register::MBitRegister;
+use emutils::reg::MBitRegister;
 use std::array;
 
 const RAM_SIZE: usize = 128;

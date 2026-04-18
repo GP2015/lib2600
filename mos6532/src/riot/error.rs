@@ -1,4 +1,4 @@
-use emu_utils::{pin::PinError, register::RegisterError};
+use emutils::{pin::PinError, reg::RegisterError};
 use thiserror::Error;
 
 #[derive(Error, Debug)]

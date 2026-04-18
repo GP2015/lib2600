@@ -1,4 +1,4 @@
-use emu_utils::register::MBitRegister;
+use emutils::reg::MBitRegister;
 
 pub struct Registers {
     pub ddra: MBitRegister,

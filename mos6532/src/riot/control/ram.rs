@@ -1,5 +1,5 @@
 use crate::{Riot, RiotError};
-use emu_utils::pin::{BusCore, BusOutput, SinglePinCore};
+use emutils::pin::{BusInputUI, BusOutput, PinInputUI};
 
 impl Riot {
     pub(crate) fn handle_ram(&mut self, only_possible: bool) -> Result<(), RiotError> {

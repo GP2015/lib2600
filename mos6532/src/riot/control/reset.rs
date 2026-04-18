@@ -1,6 +1,5 @@
-use emu_utils::pin::{BusCore, SinglePinOutput};
-
 use crate::{Riot, RiotError};
+use emutils::pin::{BusOutput, PinOutput};
 
 impl Riot {
     pub(crate) fn handle_reset(&mut self, only_possible: bool) -> Result<(), RiotError> {
@@ -12,11 +11,11 @@ impl Riot {
         self.reg.orb.add(0, only_possible)?;
         self.pin
             .pa
-            .iter_mut()
+            .iter_out_mut()
             .for_each(|pin| pin.add_high_z_out(only_possible));
         self.pin
             .pb
-            .iter_mut()
+            .iter_out_mut()
             .for_each(|pin| pin.add_high_z_out(only_possible));
 
         // self.reg.edc_enable_irq.add(false, only_possible);

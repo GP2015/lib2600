@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-emu_utils = { version = "0.1.0", path = "../emu_utils" }
+emutils = { version = "0.1.0", path = "../emutils" }
 itertools = "0.14.0"
 paste = "1.0.15"
 thiserror = "2.0.17"

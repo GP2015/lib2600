@@ -1,4 +1,6 @@
 mod common;
+
+use emutils::pin::{BusInputUI, PinInputUI};
 use mos6532::Riot;
 use rstest::rstest;
 

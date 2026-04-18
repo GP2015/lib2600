@@ -1,7 +1,7 @@
 mod ab;
 mod instructions;
 
-use emu_utils::pin::{BusCore, BusOutput, SinglePinCore, SinglePinOutput};
+use emutils::pin::{BusInputUI, BusOutput, PinInputUI, PinOutput};
 use itertools::izip;
 
 use crate::{
@@ -125,13 +125,16 @@ impl Riot {
     }
 
     fn read_ddr(&mut self, ab: AB, only_possible: bool) -> Result<(), RiotError> {
-        self.pin.db.output_from_reg(
-            match ab {
-                AB::A => &self.reg.ddra,
-                AB::B => &self.reg.ddrb,
-            },
-            only_possible,
-        )
+        self.pin
+            .db
+            .output_from_reg(
+                match ab {
+                    AB::A => &self.reg.ddra,
+                    AB::B => &self.reg.ddrb,
+                },
+                only_possible,
+            )
+            .map_err(Into::into)
     }
 
     fn write_or(&mut self, ab: AB, only_possible: bool) {
@@ -143,11 +146,20 @@ impl Riot {
     }
 
     fn read_ora(&mut self, only_possible: bool) -> Result<(), RiotError> {
-        self.pin.db.output_from_bus(&self.pin.pa, only_possible)
+        self.pin
+            .db
+            .output_from_bus(&self.pin.pa, only_possible)
+            .map_err(Into::into)
     }
 
     fn read_orb(&mut self, only_possible: bool) -> Result<(), RiotError> {
-        for (bit, (pin, reg)) in self.pin.db.iter_mut().zip(self.reg.ddrb.iter()).enumerate() {
+        for (bit, (pin, reg)) in self
+            .pin
+            .db
+            .iter_out_mut()
+            .zip(self.reg.ddrb.iter())
+            .enumerate()
+        {
             let reg_could_read_high = reg.high_possible();
             let reg_could_read_low = reg.low_possible();
 
@@ -175,7 +187,7 @@ impl Riot {
             AB::B => (&mut self.pin.pb, &self.reg.ddrb, &self.reg.orb),
         };
 
-        for (p_pin, ddr_bit, or_bit) in izip!(p.iter_mut(), ddr.iter(), or.iter()) {
+        for (p_pin, ddr_bit, or_bit) in izip!(p.iter_out_mut(), ddr.iter(), or.iter()) {
             if ddr_bit.high_possible() {
                 p_pin.output_from_reg(or_bit, only_possible && !ddr_bit.low_possible())?;
             }

@@ -1,4 +1,5 @@
 mod common;
+
 use mos6532::Riot;
 use rstest::rstest;
 

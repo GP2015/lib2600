@@ -1,10 +1,12 @@
 use crate::{Riot, RiotError};
+use emutils::pin::{BusInputUI, PinInputUI};
 
 impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.phi2_mut().add_drive_in(false, true)?;
         self.phi2_mut().add_drive_in(true, true)?;
-        self.phi2_mut().add_drive_in(false, true)
+        self.phi2_mut().add_drive_in(false, true)?;
+        Ok(())
     }
 
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
@@ -15,7 +17,8 @@ impl Riot {
 
     pub fn select(&mut self) -> Result<(), RiotError> {
         self.cs1_mut().add_drive_in(true, true)?;
-        self.cs2_mut().add_drive_in(false, true)
+        self.cs2_mut().add_drive_in(false, true)?;
+        Ok(())
     }
 
     fn general_pulse(&mut self) -> Result<(), RiotError> {

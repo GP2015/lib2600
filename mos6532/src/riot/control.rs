@@ -7,7 +7,7 @@ mod reset;
 mod timer;
 
 use crate::{Riot, RiotError, riot::control::instructions::PossibleInstructions};
-use emu_utils::pin::{BusCore, SinglePinCore};
+use emutils::pin::{BusInputUI, PinInputUI};
 
 impl Riot {
     // pub fn tick(&mut self) -> Result<(), RiotError> {
