@@ -1,32 +1,18 @@
-use crate::pin::{
-    PinError, PinInputUI, PinInputUIBorrow, PinInputUIMut, PinInputUIMutate, PinInputter,
-    PinOutputter, PinSignal, possible::PossibleSignals,
-};
+use crate::pin::{PinCore, PinError, PinInputUI, PinOutput, PinSignal, possible::PossibleSignals};
 use delegate::delegate;
-use std::{fmt::Debug, marker::PhantomData};
 
-pub struct MockPin<E>
-where
-    E: From<PinError>,
-{
+pub struct MockPin {
     name: String,
     signals: PossibleSignals,
     prev_signals: PossibleSignals,
-    err_type: PhantomData<E>,
 }
 
-impl<E> PinInputter<'_> for MockPin<E>
-where
-    E: From<PinError> + Debug,
-{
-    type ErrType = E;
-
+impl PinCore for MockPin {
     fn new(name: String) -> Self {
         Self {
             name,
             signals: PossibleSignals::from(false, false, false),
             prev_signals: PossibleSignals::from(false, false, true),
-            err_type: PhantomData,
         }
     }
 
@@ -34,17 +20,11 @@ where
         self.prev_signals = self.signals;
         self.signals.set_all(false, false, false);
     }
+}
 
+impl PinInputUI for MockPin {
     fn name(&self) -> &str {
         self.name.as_str()
-    }
-
-    fn interface(&'_ self) -> impl PinInputUIBorrow {
-        PinInputUI::from(self)
-    }
-
-    fn interface_mut(&'_ mut self) -> impl PinInputUIMutate {
-        PinInputUIMut::from(self)
     }
 
     delegate! {
@@ -53,7 +33,7 @@ where
 
             #[call(add_signal)]
             #[expr($; Ok(()))]
-            fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), Self::ErrType>;
+            fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
 
             #[call(remove_signal)]
             fn remove_signal_in(&mut self, signal: PinSignal);
@@ -66,15 +46,12 @@ where
     }
 }
 
-impl<E> PinOutputter<'_> for MockPin<E>
-where
-    E: From<PinError> + Debug,
-{
+impl PinOutput for MockPin {
     delegate! {
         to self.signals{
             #[call(add_signal)]
             #[expr($; Ok(()))]
-            fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), Self::ErrType>;
+            fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
 
             #[call(remove_signal)]
             fn remove_signal_out(&mut self, signal: PinSignal);

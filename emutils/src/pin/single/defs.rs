@@ -1,23 +1,19 @@
-use crate::pin::{PinError, PinInputUIBorrow, PinInputUIMutate, PinSignal};
-use std::fmt::Debug;
+use crate::{
+    pin::{PinError, PinSignal},
+    reg::BitRegister,
+};
 
-pub trait PinInputter<'a> {
-    type ErrType: From<PinError> + Debug;
-
+pub trait PinCore {
     fn new(name: String) -> Self;
     fn post_tick_update(&mut self);
+}
+
+pub trait PinInputUI {
     fn name(&self) -> &str;
     fn signal_possible(&self, signal: PinSignal) -> bool;
     fn prev_signal_possible(&self, signal: PinSignal) -> bool;
-    fn add_signal_in(
-        &mut self,
-        signal: PinSignal,
-        only_possible: bool,
-    ) -> Result<(), Self::ErrType>;
+    fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
     fn remove_signal_in(&mut self, signal: PinSignal);
-
-    fn interface(&'a self) -> impl PinInputUIBorrow;
-    fn interface_mut(&'a mut self) -> impl PinInputUIMutate;
 
     fn high_possible(&self) -> bool {
         self.signal_possible(PinSignal::High)
@@ -125,11 +121,11 @@ pub trait PinInputter<'a> {
         }
     }
 
-    fn add_high_in(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+    fn add_high_in(&mut self, only_possible: bool) -> Result<(), PinError> {
         self.add_signal_in(PinSignal::High, only_possible)
     }
 
-    fn add_low_in(&mut self, only_possible: bool) -> Result<(), Self::ErrType> {
+    fn add_low_in(&mut self, only_possible: bool) -> Result<(), PinError> {
         self.add_signal_in(PinSignal::Low, only_possible)
     }
 
@@ -150,11 +146,7 @@ pub trait PinInputter<'a> {
         self.remove_signal_in(PinSignal::HighZ);
     }
 
-    fn add_drive_in(
-        &mut self,
-        bool_signal: bool,
-        only_possible: bool,
-    ) -> Result<(), Self::ErrType> {
+    fn add_drive_in(&mut self, bool_signal: bool, only_possible: bool) -> Result<(), PinError> {
         if bool_signal {
             self.add_high_in(only_possible)
         } else {
@@ -170,7 +162,7 @@ pub trait PinInputter<'a> {
         }
     }
 
-    fn set_all_in(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), Self::ErrType> {
+    fn set_all_in(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), PinError> {
         if high {
             self.add_high_in(false)?;
         } else {
@@ -192,11 +184,120 @@ pub trait PinInputter<'a> {
         Ok(())
     }
 
-    fn set_in_to_prev(&mut self) -> Result<(), Self::ErrType> {
+    fn set_in_to_prev(&mut self) -> Result<(), PinError> {
         self.set_all_in(
             self.high_possible(),
             self.low_possible(),
             self.high_z_possible(),
         )
+    }
+}
+
+pub trait PinOutput {
+    fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
+    fn remove_signal_out(&mut self, signal: PinSignal);
+
+    fn add_high_out(&mut self, only_possible: bool) -> Result<(), PinError> {
+        self.add_signal_out(PinSignal::High, only_possible)
+    }
+
+    fn add_low_out(&mut self, only_possible: bool) -> Result<(), PinError> {
+        self.add_signal_out(PinSignal::Low, only_possible)
+    }
+
+    fn add_high_z_out(&mut self, only_possible: bool) {
+        self.add_signal_out(PinSignal::HighZ, only_possible)
+            .expect("setting high impedance in cannot cause a short-circuit");
+    }
+
+    fn remove_high_out(&mut self) {
+        self.remove_signal_out(PinSignal::High);
+    }
+
+    fn remove_low_out(&mut self) {
+        self.remove_signal_out(PinSignal::Low);
+    }
+
+    fn remove_high_z_out(&mut self) {
+        self.remove_signal_out(PinSignal::HighZ);
+    }
+
+    fn add_drive_out(&mut self, bool_signal: bool, only_possible: bool) -> Result<(), PinError> {
+        if bool_signal {
+            self.add_high_out(only_possible)
+        } else {
+            self.add_low_out(only_possible)
+        }
+    }
+
+    fn remove_drive_out(&mut self, bool_signal: bool) {
+        if bool_signal {
+            self.remove_high_out();
+        } else {
+            self.remove_low_out();
+        }
+    }
+
+    fn set_all_out(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), PinError> {
+        if high {
+            self.add_high_out(false)?;
+        } else {
+            self.remove_high_out();
+        }
+
+        if low {
+            self.add_low_out(false)?;
+        } else {
+            self.remove_low_out();
+        }
+
+        if high_z {
+            self.add_high_z_out(false);
+        } else {
+            self.remove_high_z_out();
+        }
+
+        Ok(())
+    }
+
+    fn output_from_pin<P>(&mut self, pin: &P, only_possible: bool) -> Result<(), PinError>
+    where
+        P: PinInputUI,
+    {
+        if only_possible {
+            self.set_all_out(
+                pin.high_possible(),
+                pin.low_possible(),
+                pin.high_z_possible(),
+            )?;
+        } else {
+            if pin.high_possible() {
+                self.add_high_out(false)?;
+            }
+
+            if pin.low_possible() {
+                self.add_low_out(false)?;
+            }
+
+            if pin.high_z_possible() {
+                self.add_high_z_out(false);
+            }
+        }
+        Ok(())
+    }
+
+    fn output_from_reg(&mut self, reg: &BitRegister, only_possible: bool) -> Result<(), PinError> {
+        if only_possible {
+            self.set_all_out(reg.high_possible(), reg.low_possible(), false)?;
+        } else {
+            if reg.high_possible() {
+                self.add_high_out(false)?;
+            }
+
+            if reg.low_possible() {
+                self.add_low_out(false)?;
+            }
+        }
+        Ok(())
     }
 }

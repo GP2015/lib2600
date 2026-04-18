@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     bit,
-    pin::{BusInputter, PinInputter},
+    pin::BusInputUI,
     reg::{BitRegister, RegisterError},
 };
 
@@ -116,11 +116,7 @@ impl MBitRegister {
         Ok(())
     }
 
-    pub fn input_from_bus<'a, B, P>(&mut self, bus: &'a B, only_possible: bool)
-    where
-        B: BusInputter<'a, P>,
-        P: 'a + PinInputter<'a>,
-    {
+    pub fn input_from_bus(&mut self, bus: &impl BusInputUI, only_possible: bool) {
         for (reg, pin) in self.iter_mut().zip(bus.iter()) {
             reg.input_from_pin(pin, only_possible);
         }

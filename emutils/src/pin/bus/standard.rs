@@ -1,25 +1,21 @@
-use itertools::Itertools;
-
 use crate::{
     bit,
-    pin::{BusInputter, BusOutputter, PinError, PinInputter, PinOutputter, PinSignal},
+    pin::{BusCore, BusInputUI, BusOutput, PinCore, PinError, PinInputUI, PinOutput, PinSignal},
 };
+use itertools::Itertools;
 
 pub struct StandardBus<P> {
     name: String,
     pins: Box<[P]>,
 }
 
-impl<'a, P> StandardBus<P>
-where
-    P: 'a + PinInputter<'a>,
-{
+impl<P> StandardBus<P> {
     fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), PinError> {
-        if bit >= self.size() {
+        if bit >= self.pins.len() {
             Err(PinError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
-                size: self.size(),
+                size: self.pins.len(),
             })
         } else {
             Ok(())
@@ -27,11 +23,11 @@ where
     }
 
     fn check_if_drive_val_too_large(&self, val: usize) -> Result<(), PinError> {
-        if bit::usize_exceeds_bit_count(val, self.size()) {
+        if bit::usize_exceeds_bit_count(val, self.pins.len()) {
             Err(PinError::DriveValueTooLarge {
                 name: self.name.clone(),
                 value: val,
-                size: self.size(),
+                size: self.pins.len(),
             })
         } else {
             Ok(())
@@ -56,9 +52,9 @@ where
     }
 }
 
-impl<'a, P> BusInputter<'a, P> for StandardBus<P>
+impl<P> BusCore for StandardBus<P>
 where
-    P: 'a + PinInputter<'a>,
+    P: PinCore,
 {
     fn new(name: String, size: usize) -> Self {
         Self {
@@ -72,7 +68,12 @@ where
     fn post_tick_update(&mut self) {
         self.pins.iter_mut().for_each(P::post_tick_update);
     }
+}
 
+impl<P> BusInputUI for StandardBus<P>
+where
+    P: PinInputUI,
+{
     fn name(&self) -> &str {
         self.name.as_str()
     }
@@ -81,21 +82,21 @@ where
         self.pins.len()
     }
 
-    fn pin(&self, bit: usize) -> Result<&P, P::ErrType> {
+    fn pin(&self, bit: usize) -> Result<&impl PinInputUI, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&self.pins[bit])
     }
 
-    fn pin_mut(&mut self, bit: usize) -> Result<&mut P, P::ErrType> {
+    fn pin_mut(&mut self, bit: usize) -> Result<&mut impl PinInputUI, PinError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&mut self.pins[bit])
     }
 
-    fn iter(&'a self) -> impl Iterator<Item = &'a P> {
+    fn iter(&self) -> impl Iterator<Item = &impl PinInputUI> {
         self.pins.iter()
     }
 
-    fn iter_mut(&'a mut self) -> impl Iterator<Item = &'a mut P> {
+    fn iter_mut(&mut self) -> impl Iterator<Item = &mut impl PinInputUI> {
         self.pins.iter_mut()
     }
 
@@ -142,47 +143,67 @@ where
             .map(|bools| Self::bools_as_usize(&bools))
     }
 
-    fn add_drive_in_wrapping(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType> {
+    fn add_drive_in_wrapping(&mut self, val: usize, only_possible: bool) -> Result<(), PinError> {
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_in(bit::get_bit_of_usize(val, bit), only_possible)?;
         }
         Ok(())
     }
 
-    fn add_drive_in(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType> {
+    fn add_drive_in(&mut self, val: usize, only_possible: bool) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
-        self.add_drive_in_wrapping(bit::get_low_bits_of_usize(val, self.size()), only_possible)
+        self.add_drive_in_wrapping(
+            bit::get_low_bits_of_usize(val, self.pins.len()),
+            only_possible,
+        )
     }
 }
 
-impl<'a, P> BusOutputter<'a, P> for StandardBus<P>
+impl<P> BusOutput for StandardBus<P>
 where
-    P: 'a + PinInputter<'a> + PinOutputter<'a>,
+    P: PinOutput,
 {
-    fn add_drive_out_wrapping(
-        &mut self,
-        val: usize,
-        only_possible: bool,
-    ) -> Result<(), P::ErrType> {
+    fn pin_out(&self, bit: usize) -> Result<&impl PinOutput, PinError> {
+        self.check_for_bit_out_of_range(bit)?;
+        Ok(&self.pins[bit])
+    }
+
+    fn pin_out_mut(&mut self, bit: usize) -> Result<&mut impl PinOutput, PinError> {
+        self.check_for_bit_out_of_range(bit)?;
+        Ok(&mut self.pins[bit])
+    }
+
+    fn iter_out(&self) -> impl Iterator<Item = &impl PinOutput> {
+        self.pins.iter()
+    }
+
+    fn iter_out_mut(&mut self) -> impl Iterator<Item = &mut impl PinOutput> {
+        self.pins.iter_mut()
+    }
+
+    fn add_drive_out_wrapping(&mut self, val: usize, only_possible: bool) -> Result<(), PinError> {
         for (bit, pin) in self.pins.iter_mut().enumerate() {
             pin.add_drive_out(bit::get_bit_of_usize(val, bit), only_possible)?;
         }
         Ok(())
     }
 
-    fn add_drive_out(&mut self, val: usize, only_possible: bool) -> Result<(), P::ErrType> {
+    fn add_drive_out(&mut self, val: usize, only_possible: bool) -> Result<(), PinError> {
         self.check_if_drive_val_too_large(val)?;
-        self.add_drive_out_wrapping(bit::get_low_bits_of_usize(val, self.size()), only_possible)
+        self.add_drive_out_wrapping(
+            bit::get_low_bits_of_usize(val, self.pins.len()),
+            only_possible,
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pin::{PinError, single::real::mock::MockPin};
+    use crate::pin::{PinError, single::mock::MockPin};
     use rstest::{fixture, rstest};
 
-    type BusType = StandardBus<MockPin<PinError>>;
+    type BusType = StandardBus<MockPin>;
     const BUS_NAME: &str = "bus";
 
     type DriveFn = fn(&mut BusType, usize, bool) -> Result<(), PinError>;

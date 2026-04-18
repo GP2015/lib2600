@@ -1,4 +1,4 @@
-use crate::{pin::PinInputter, reg::states::PossibleBitStates};
+use crate::{pin::PinInputUI, reg::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone)]
@@ -31,10 +31,7 @@ impl BitRegister {
         self.states.low
     }
 
-    pub fn input_from_pin<'a, P>(&mut self, pin: &P, only_possible: bool)
-    where
-        P: PinInputter<'a>,
-    {
+    pub fn input_from_pin(&mut self, pin: &impl PinInputUI, only_possible: bool) {
         if only_possible {
             self.states.high = pin.could_read_high();
             self.states.low = pin.could_read_low();
