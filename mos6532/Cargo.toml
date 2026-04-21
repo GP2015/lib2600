@@ -1,13 +1,13 @@
 [package]
 name = "mos6532"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 
 [dependencies]
-emutils = { version = "0.1.0", path = "../emutils" }
-itertools = "0.14.0"
-paste = "1.0.15"
-thiserror = "2.0.17"
+emutils = { path = "../emutils" }
+itertools.workspace = true
+paste.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
-rstest = "0.26.1"
+rstest.workspace = true
