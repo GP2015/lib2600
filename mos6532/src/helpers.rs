@@ -4,14 +4,24 @@ use emutils::pin::{BusInputUI, PinInputUI};
 impl Riot {
     pub fn pulse_phi2(&mut self) -> Result<(), RiotError> {
         self.phi2_mut().add_drive_in(false, true)?;
+        self.tick()?;
         self.phi2_mut().add_drive_in(true, true)?;
+        self.tick()?;
         self.phi2_mut().add_drive_in(false, true)?;
         Ok(())
     }
 
+    fn db_high_z_in(&mut self) {
+        for pin in self.db_mut().iter_mut() {
+            pin.add_high_z_in(true);
+        }
+    }
+
     pub fn reset_pulse(&mut self) -> Result<(), RiotError> {
         self.res_mut().add_drive_in(false, true)?;
+
         self.pulse_phi2()?;
+        self.res_mut().add_drive_in(true, true)?;
         Ok(())
     }
 
