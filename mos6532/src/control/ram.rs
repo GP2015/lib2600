@@ -18,7 +18,7 @@ impl Riot {
     }
 
     fn handle_write_ram(&mut self, mut only_possible: bool) {
-        only_possible &= self.pin.a.only_one_possible_read();
+        only_possible &= self.pin.a.iter_possible_reads().count() == 1;
 
         for address in self.pin.a.iter_possible_reads() {
             self.ram
@@ -28,7 +28,7 @@ impl Riot {
     }
 
     fn handle_read_ram(&mut self, mut only_possible: bool) -> Result<(), RiotError> {
-        only_possible &= self.pin.a.only_one_possible_read();
+        only_possible &= self.pin.a.iter_possible_reads().count() == 1;
 
         for address in self.pin.a.iter_possible_reads() {
             self.pin

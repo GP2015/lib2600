@@ -10,7 +10,7 @@ pub struct Ram {
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: array::from_fn(|i| MBitRegister::new(8, format!("RAM byte {:x}", i))),
+            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {:x}", i), 8)),
         }
     }
 
