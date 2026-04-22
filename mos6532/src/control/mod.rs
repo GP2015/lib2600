@@ -93,7 +93,7 @@ impl Riot {
 
     pub(crate) fn execute_possible_instructions(
         &mut self,
-        instructions: PossibleInstructions,
+        instructions: &PossibleInstructions,
     ) -> Result<(), RiotError> {
         let only_possible = instructions.only_possible();
 

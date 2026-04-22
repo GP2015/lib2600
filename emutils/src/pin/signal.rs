@@ -75,7 +75,7 @@ mod tests {
         #[case] second: PinSignal,
         #[case] result: PinSignal,
     ) {
-        let o: PinSignal = PinSignal::contend_together(first, second).unwrap();
+        let o = PinSignal::contend_together(first, second).unwrap();
         assert_eq!(o, result);
     }
 

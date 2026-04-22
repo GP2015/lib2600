@@ -10,7 +10,7 @@ pub struct Ram {
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {:x}", i), 8)),
+            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {i:x}"), 8)),
         }
     }
 
@@ -23,7 +23,7 @@ impl Ram {
     }
 
     pub fn reset(&mut self) {
-        for byte in self.bytes.iter_mut() {
+        for byte in &mut self.bytes {
             for bitreg in byte.iter_mut() {
                 bitreg.set_all(true, true);
             }

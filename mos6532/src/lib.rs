@@ -1,3 +1,9 @@
+#![warn(clippy::pedantic)]
+#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::cast_possible_truncation)]
+
 mod control;
 mod error;
 mod helpers;
@@ -12,31 +18,35 @@ use crate::{pins::Pins, ram::Ram, registers::Registers};
 use emutils::pin::{BusOutput, PinOutput};
 use paste::paste;
 
-macro_rules! create_pin_input {
-    ($name:ident) => {
-        pub fn $name(&self) -> &impl PinInputUI {
-            &self.pin.$name
-        }
-
-        paste! {
-            pub fn [<$name _mut>](&mut self) -> &mut impl PinInputUI {
-                &mut self.pin.$name
+macro_rules! pin_inputs {
+    ($($name:ident),* $(,)?) => {
+        $(
+            pub fn $name(&self) -> &impl PinInputUI {
+                &self.pin.$name
             }
-        }
+
+            paste! {
+                pub fn [<$name _mut>](&mut self) -> &mut impl PinInputUI {
+                    &mut self.pin.$name
+                }
+            }
+        )*
     };
 }
 
-macro_rules! create_bus_input {
-    ($name:ident) => {
-        pub fn $name(&self) -> &impl BusInputUI {
-            &self.pin.$name
-        }
-
-        paste! {
-            pub fn [<$name _mut>](&mut self) -> &mut impl BusInputUI {
-                &mut self.pin.$name
+macro_rules! bus_inputs {
+    ($($name:ident),* $(,)?) => {
+        $(
+            pub fn $name(&self) -> &impl BusInputUI {
+                &self.pin.$name
             }
-        }
+
+            paste! {
+                pub fn [<$name _mut>](&mut self) -> &mut impl BusInputUI {
+                    &mut self.pin.$name
+                }
+            }
+        )*
     };
 }
 
@@ -53,6 +63,7 @@ impl Default for Riot {
 }
 
 impl Riot {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             pin: Pins::new(),
@@ -63,7 +74,7 @@ impl Riot {
 
     pub fn tick(&mut self) -> Result<(), RiotError> {
         let instructions = self.possible_instructions();
-        self.execute_possible_instructions(instructions)
+        self.execute_possible_instructions(&instructions)
     }
 
     pub fn release_db(&mut self) {
@@ -73,15 +84,6 @@ impl Riot {
             .for_each(|pin| pin.add_high_z_out(true));
     }
 
-    create_bus_input!(a);
-    create_bus_input!(db);
-    create_bus_input!(pa);
-    create_bus_input!(pb);
-    create_pin_input!(res);
-    create_pin_input!(phi2);
-    create_pin_input!(cs1);
-    create_pin_input!(cs2);
-    create_pin_input!(rw);
-    create_pin_input!(rs);
-    create_pin_input!(irq);
+    bus_inputs!(a, db, pa, pb);
+    pin_inputs!(res, phi2, cs1, cs2, rw, rs, irq);
 }

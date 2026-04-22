@@ -1,7 +1,8 @@
-mod bus;
 mod error;
 mod possible;
 mod signal;
+
+pub(crate) mod bus;
 pub(crate) mod single;
 
 pub use crate::pin::{

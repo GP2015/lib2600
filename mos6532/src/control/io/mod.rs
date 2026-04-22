@@ -1,13 +1,12 @@
 mod ab;
 mod instructions;
 
-use emutils::pin::{BusInputUI, BusOutput, PinInputUI, PinOutput};
-use itertools::izip;
-
 use crate::{
     Riot, RiotError,
     control::io::{ab::AB, instructions::PossibleIoInstructions},
 };
+use emutils::pin::{BusInputUI, BusOutput, PinInputUI, PinOutput};
+use itertools::izip;
 
 impl Riot {
     pub(crate) fn handle_io(&mut self, mut only_possible: bool) -> Result<(), RiotError> {
@@ -121,7 +120,7 @@ impl Riot {
             AB::A => &mut self.reg.ddra,
             AB::B => &mut self.reg.ddrb,
         }
-        .input_from_bus(&self.pin.db, only_possible)
+        .input_from_bus(&self.pin.db, only_possible);
     }
 
     fn read_ddr(&mut self, ab: AB, only_possible: bool) -> Result<(), RiotError> {
