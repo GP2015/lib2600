@@ -2,7 +2,7 @@ mod bus;
 mod error;
 mod possible;
 mod signal;
-mod single;
+pub(crate) mod single;
 
 pub use crate::pin::{
     bus::{

@@ -9,9 +9,9 @@ pub struct BitRegister {
 
 impl BitRegister {
     #[must_use]
-    pub fn new(name: String) -> Self {
+    pub fn new<S: Into<String>>(name: S) -> Self {
         Self {
-            name,
+            name: name.into(),
             states: PossibleBitStates::from(true, true),
         }
     }
@@ -19,16 +19,6 @@ impl BitRegister {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    #[must_use]
-    pub fn high_possible(&self) -> bool {
-        self.states.high
-    }
-
-    #[must_use]
-    pub fn low_possible(&self) -> bool {
-        self.states.low
     }
 
     pub fn input_from_pin(&mut self, pin: &impl PinInputUI, only_possible: bool) {
@@ -49,8 +39,11 @@ impl BitRegister {
     delegate! {
         #[must_use]
         to self.states {
+            pub fn is_possible(&self, state: bool) -> bool;
+            pub fn high_possible(&self) -> bool;
+            pub fn low_possible(&self) -> bool;
             pub fn collapsed(&self) -> Option<bool>;
-            pub fn possible_reads(&self) -> Vec<bool>;
+            pub fn possible_reads(&self) -> &'static [bool];
         }
 
         to self.states {
@@ -64,13 +57,22 @@ impl BitRegister {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pin::{PinCore, PinOutput, single::mock::MockPin};
     use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
 
     #[fixture]
+    fn single_pin() -> MockPin {
+        let mut single_pin = MockPin::new("pin");
+        single_pin.set_all_in(false, false, false).unwrap();
+        single_pin.set_all_out(false, false, false).unwrap();
+        single_pin
+    }
+
+    #[fixture]
     fn reg() -> BitRegister {
-        BitRegister::new(String::from(REG_NAME))
+        BitRegister::new(REG_NAME)
     }
 
     #[rstest]
@@ -82,5 +84,35 @@ mod tests {
     fn read_initial(reg: BitRegister) {
         assert!(reg.high_possible());
         assert!(reg.low_possible());
+    }
+
+    #[rstest]
+    fn input_from_pin_not_only_possible(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        mut reg: BitRegister,
+        mut single_pin: MockPin,
+    ) {
+        reg.set_all(initial, initial);
+        single_pin.set_all_in(high, low, false).unwrap();
+        reg.input_from_pin(&single_pin, false);
+        assert_eq!(reg.high_possible(), high | initial);
+        assert_eq!(reg.low_possible(), low | initial);
+    }
+
+    #[rstest]
+    fn input_from_pin_only_possible(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        mut reg: BitRegister,
+        mut single_pin: MockPin,
+    ) {
+        reg.set_all(initial, initial);
+        single_pin.set_all_in(high, low, false).unwrap();
+        reg.input_from_pin(&single_pin, true);
+        assert_eq!(reg.high_possible(), high);
+        assert_eq!(reg.low_possible(), low);
     }
 }

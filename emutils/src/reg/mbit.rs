@@ -1,3 +1,4 @@
+use delegate::delegate;
 use itertools::Itertools;
 
 use crate::{
@@ -15,58 +16,35 @@ pub struct MBitRegister {
 impl MBitRegister {
     fn check_bit_in_range(&self, bit: usize) -> Result<(), RegisterError> {
         if bit >= self.size() {
-            Err(RegisterError::BitOutOfRange {
+            return Err(RegisterError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
                 size: self.size(),
-            })
-        } else {
-            Ok(())
+            });
         }
+        Ok(())
     }
 
     fn check_write_val_valid(&self, val: usize) -> Result<(), RegisterError> {
         if bit::usize_exceeds_bit_count(val, self.size()) {
-            Err(RegisterError::WriteValueTooLarge {
+            return Err(RegisterError::WriteValueTooLarge {
                 name: self.name.clone(),
                 value: val,
                 size: self.size(),
-            })
-        } else {
-            Ok(())
+            });
         }
-    }
-
-    fn collapsed_as_usize(collapsed: &[Option<bool>]) -> Option<usize> {
-        let mut combined = 0;
-        for &bit in collapsed.iter().rev() {
-            let b = bit?;
-            combined = (combined << 1) | usize::from(b);
-        }
-        Some(combined)
-    }
-
-    fn bools_as_usize(bools: &[bool]) -> usize {
-        let mut combined = 0;
-        for b in bools.iter().rev().map(|&b| usize::from(b)) {
-            combined = (combined << 1) | b;
-        }
-        combined
+        Ok(())
     }
 
     #[must_use]
-    pub fn new(size: usize, name: String) -> Self {
+    pub fn new<S: Into<String>>(name: S, size: usize) -> Self {
+        let name = name.into();
         Self {
             bits: (0..size)
                 .map(|bit| BitRegister::new(format!("{name} bit {bit}")))
                 .collect(),
             name,
         }
-    }
-
-    #[must_use]
-    pub fn size(&self) -> usize {
-        self.bits.len()
     }
 
     pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
@@ -79,21 +57,8 @@ impl MBitRegister {
         Ok(&mut self.bits[bit])
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &BitRegister> {
-        self.bits.iter()
-    }
-
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut BitRegister> {
-        self.bits.iter_mut()
-    }
-
     pub fn read(&self) -> Option<usize> {
-        let collapsed = self
-            .bits
-            .iter()
-            .map(BitRegister::collapsed)
-            .collect::<Vec<Option<bool>>>();
-        Self::collapsed_as_usize(&collapsed)
+        bit::some_bits_to_usize(self.bits.iter().map(BitRegister::collapsed))
     }
 
     pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
@@ -101,12 +66,12 @@ impl MBitRegister {
             .iter()
             .map(BitRegister::possible_reads)
             .multi_cartesian_product()
-            .map(|bools| Self::bools_as_usize(&bools))
+            .map(|bits| bit::bits_to_usize(bits.into_iter().copied()))
     }
 
     pub fn add_wrapping(&mut self, val: usize, only_possible: bool) {
-        for (bit, bitreg) in self.bits.iter_mut().enumerate() {
-            bitreg.add(bit::get_bit_of_usize(val, bit), only_possible);
+        for (bit, reg) in self.bits.iter_mut().enumerate() {
+            reg.add(bit::bit_of_usize(val, bit), only_possible);
         }
     }
 
@@ -121,6 +86,16 @@ impl MBitRegister {
             reg.input_from_pin(pin, only_possible);
         }
     }
+
+    delegate! {
+        to self.bits {
+            #[must_use]
+            #[call(len)]
+            pub fn size(&self) -> usize;
+            pub fn iter(&self) -> impl Iterator<Item = &BitRegister>;
+            pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut BitRegister>;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -128,8 +103,10 @@ mod tests {
     use super::*;
     use rstest::fixture;
 
+    const REG_NAME: &str = "reg";
+
     #[fixture]
     fn reg() -> MBitRegister {
-        MBitRegister::new(8, String::new())
+        MBitRegister::new(REG_NAME, 8)
     }
 }

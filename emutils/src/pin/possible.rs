@@ -20,7 +20,7 @@ impl PossibleSignals {
         }
     }
 
-    pub fn all_enabled(self) -> Vec<PinSignal> {
+    pub fn iter_all_enabled(self) -> impl Iterator<Item = PinSignal> {
         [
             (self.high, PinSignal::High),
             (self.low, PinSignal::Low),
@@ -28,25 +28,11 @@ impl PossibleSignals {
         ]
         .into_iter()
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
-        .collect()
     }
 
     pub fn add_signal(&mut self, signal: PinSignal, only_possible: bool) {
         if only_possible {
-            match signal {
-                PinSignal::High => {
-                    self.low = false;
-                    self.high_z = false;
-                }
-                PinSignal::Low => {
-                    self.high = false;
-                    self.high_z = false;
-                }
-                PinSignal::HighZ => {
-                    self.high = false;
-                    self.low = false;
-                }
-            }
+            self.set_all(false, false, false);
         }
 
         match signal {
@@ -71,14 +57,11 @@ impl PossibleSignals {
     }
 
     pub fn contend_together(first: Self, second: Self) -> Option<Self> {
-        let first_all_enabled = first.all_enabled();
-        let second_all_enabled = second.all_enabled();
-
         let mut result = Self::from(false, false, false);
 
-        for first_signal in &first_all_enabled {
-            for second_signal in &second_all_enabled {
-                let signal = PinSignal::contend_together(*first_signal, *second_signal)?;
+        for first_signal in first.iter_all_enabled() {
+            for second_signal in second.iter_all_enabled() {
+                let signal = PinSignal::contend_together(first_signal, second_signal)?;
                 result.add_signal(signal, false);
             }
         }
@@ -129,13 +112,15 @@ mod tests {
     #[case(true, false, true, vec![PinSignal::High, PinSignal::HighZ])]
     #[case(true, true, false, vec![PinSignal::High, PinSignal::Low])]
     #[case(true, true, true, vec![PinSignal::High, PinSignal::Low, PinSignal::HighZ])]
-    fn all_enabled(
+    fn iter_all_enabled(
         #[case] high: bool,
         #[case] low: bool,
         #[case] high_z: bool,
         #[case] res_vec: Vec<PinSignal>,
     ) {
-        let signals = PossibleSignals::from(high, low, high_z).all_enabled();
+        let signals = PossibleSignals::from(high, low, high_z)
+            .iter_all_enabled()
+            .collect::<Vec<PinSignal>>();
         assert_eq!(signals, res_vec);
     }
 

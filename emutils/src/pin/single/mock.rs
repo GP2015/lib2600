@@ -8,9 +8,9 @@ pub struct MockPin {
 }
 
 impl PinCore for MockPin {
-    fn new(name: String) -> Self {
+    fn new<S: Into<String>>(name: S) -> Self {
         Self {
-            name,
+            name: name.into(),
             signals: PossibleSignals::from(false, false, false),
             prev_signals: PossibleSignals::from(false, false, true),
         }
@@ -27,10 +27,16 @@ impl PinInputUI for MockPin {
         self.name.as_str()
     }
 
-    delegate! {
-        to self.signals{
-            fn signal_possible(&self, signal: PinSignal) -> bool;
+    fn signal_possible_when(&self, signal: PinSignal, prev: bool) -> bool {
+        if prev {
+            self.prev_signals.signal_possible(signal)
+        } else {
+            self.signals.signal_possible(signal)
+        }
+    }
 
+    delegate! {
+        to self.signals {
             #[call(add_signal)]
             #[expr($; Ok(()))]
             fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
@@ -38,17 +44,12 @@ impl PinInputUI for MockPin {
             #[call(remove_signal)]
             fn remove_signal_in(&mut self, signal: PinSignal);
         }
-
-        to self.prev_signals{
-            #[call(signal_possible)]
-            fn prev_signal_possible(&self, signal: PinSignal) -> bool;
-        }
     }
 }
 
 impl PinOutput for MockPin {
     delegate! {
-        to self.signals{
+        to self.signals {
             #[call(add_signal)]
             #[expr($; Ok(()))]
             fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;

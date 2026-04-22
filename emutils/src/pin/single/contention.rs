@@ -1,5 +1,4 @@
 use crate::pin::{PinCore, PinError, PinInputUI, PinOutput, PinSignal, possible::PossibleSignals};
-use delegate::delegate;
 
 pub struct ContentionPin {
     name: String,
@@ -30,7 +29,7 @@ impl ContentionPin {
 }
 
 impl PinCore for ContentionPin {
-    fn new(name: String) -> Self {
+    fn new<S: Into<String>>(name: S) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);
         let contended_signals = PossibleSignals::contend_together(signals_in, signals_out)
@@ -43,7 +42,7 @@ impl PinCore for ContentionPin {
                 .expect("this is a valid contention");
 
         Self {
-            name,
+            name: name.into(),
             signals_in,
             signals_out,
             contended_signals,
@@ -68,6 +67,14 @@ impl PinInputUI for ContentionPin {
         self.name.as_str()
     }
 
+    fn signal_possible_when(&self, signal: PinSignal, prev: bool) -> bool {
+        if prev {
+            self.prev_contended_signals.signal_possible(signal)
+        } else {
+            self.contended_signals.signal_possible(signal)
+        }
+    }
+
     fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
         self.signals_in.add_signal(signal, only_possible);
         self.update_contention()
@@ -77,17 +84,6 @@ impl PinInputUI for ContentionPin {
         self.signals_in.remove_signal(signal);
         self.update_contention()
             .expect("removing possible signals cannot cause a short-circuit");
-    }
-
-    delegate! {
-        to self.contended_signals{
-            fn signal_possible(&self, signal: PinSignal) -> bool;
-        }
-
-        to self.prev_contended_signals{
-            #[call(signal_possible)]
-            fn prev_signal_possible(&self, signal: PinSignal) -> bool;
-        }
     }
 }
 
@@ -116,19 +112,19 @@ mod tests {
 
     #[fixture]
     fn pin_default() -> PinType {
-        ContentionPin::new(String::from(PIN_NAME))
+        ContentionPin::new(PIN_NAME)
     }
 
     #[fixture]
     fn pin_none_out() -> PinType {
-        let mut pin = ContentionPin::new(String::from(PIN_NAME));
+        let mut pin = ContentionPin::new(PIN_NAME);
         pin.set_all_out(false, false, false).unwrap();
         pin
     }
 
     #[fixture]
     fn pin_high_z_out() -> PinType {
-        let mut pin = ContentionPin::new(String::new());
+        let mut pin = ContentionPin::new(PIN_NAME);
         pin.set_all_out(false, false, true).unwrap();
         pin
     }
@@ -141,7 +137,7 @@ mod tests {
     #[rstest]
     fn initial_state(#[from(pin_default)] pin: PinType) {
         assert_eq!(pin.prev_collapsed().unwrap(), PinSignal::HighZ);
-        assert!(pin.possible_signals().is_empty());
+        assert_eq!(pin.iter_possible_signals().count(), 0);
     }
 
     #[rstest]
@@ -153,7 +149,7 @@ mod tests {
         pin.add_signal_out(signal, false).unwrap();
         pin.post_tick_update();
         assert_eq!(pin.prev_collapsed().unwrap(), signal);
-        assert!(pin.possible_signals().is_empty());
+        assert_eq!(pin.iter_possible_signals().count(), 0);
     }
 
     #[rstest]
