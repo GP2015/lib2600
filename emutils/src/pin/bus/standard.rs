@@ -79,11 +79,7 @@ impl<P: PinInputUI> BusInputUI for StandardBus<P> {
     }
 
     fn read_when(&self, prev: bool) -> Option<usize> {
-        bit::some_bits_to_usize(
-            self.pins
-                .iter()
-                .map(|pin| pin.collapsed_when(prev).and_then(|signal| signal.as_bool())),
-        )
+        bit::some_bits_to_usize(self.pins.iter().map(|pin| pin.read_when(prev)))
     }
 
     fn iter_possible_reads_when(&self, prev: bool) -> impl Iterator<Item = usize> {

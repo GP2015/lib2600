@@ -37,6 +37,11 @@ pub trait PinInputUI {
         }
     }
 
+    fn read_when(&self, prev: bool) -> Option<bool> {
+        self.collapsed_when(prev)
+            .and_then(|signal| signal.as_bool())
+    }
+
     fn iter_possible_signals_when(&self, prev: bool) -> impl Iterator<Item = PinSignal> {
         [
             (self.high_possible_when(prev), PinSignal::High),
@@ -148,6 +153,11 @@ pub trait PinInputUI {
             fn collapsed(&self, [false]) -> Option<PinSignal>;
             #[call(collapsed_when)]
             fn prev_collapsed(&self, [true]) -> Option<PinSignal>;
+
+            #[call(read_when)]
+            fn read(&self, [false]) -> Option<bool>;
+            #[call(read_when)]
+            fn prev_read(&self, [true]) -> Option<bool>;
 
             #[call(iter_possible_signals_when)]
             fn iter_possible_signals(&self, [false]) -> impl Iterator<Item = PinSignal>;
