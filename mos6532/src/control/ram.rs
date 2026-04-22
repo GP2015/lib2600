@@ -38,3 +38,25 @@ impl Riot {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    pub fn riot() -> Riot {
+        let mut riot = Riot::new();
+        riot.reset_pulse().unwrap();
+        riot
+    }
+
+    #[rstest]
+    fn write_ram_defined_only_possible(mut riot: Riot) {
+        riot.pin.rs.add_drive_in(false, true).unwrap();
+        riot.pin.a.add_drive_in(0x67, true).unwrap();
+        riot.pin.db.add_drive_in(0x89, true).unwrap();
+        riot.handle_ram(true).unwrap();
+        assert_eq!(riot.ram.byte(0x67).read().unwrap(), 0x89);
+    }
+}
