@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum RegisterError {
     #[error("register {name} does not have a bit {bit}")]
     BitOutOfRange {
