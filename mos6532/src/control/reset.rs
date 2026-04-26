@@ -1,14 +1,14 @@
-use crate::{Riot, RiotError};
+use crate::Riot;
 use emutils::pin::{BusOutput, PinOutput};
 
 impl Riot {
-    pub(crate) fn handle_reset(&mut self, only_possible: bool) -> Result<(), RiotError> {
+    pub(crate) fn handle_reset(&mut self, only_possible: bool) {
         self.ram.reset();
 
-        self.reg.ddra.add(0, only_possible)?;
-        self.reg.ddrb.add(0, only_possible)?;
-        self.reg.ora.add(0, only_possible)?;
-        self.reg.orb.add(0, only_possible)?;
+        self.reg.ddra.add(0, only_possible).expect("valid value");
+        self.reg.ddrb.add(0, only_possible).expect("valid value");
+        self.reg.ora.add(0, only_possible).expect("valid value");
+        self.reg.orb.add(0, only_possible).expect("valid value");
         self.pin
             .pa
             .iter_out_mut()
@@ -20,7 +20,5 @@ impl Riot {
 
         // self.reg.edc_enable_irq.add(false, only_possible);
         // self.reg.edc_use_pos_edge.add(false, only_possible);
-
-        Ok(())
     }
 }

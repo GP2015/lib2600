@@ -98,7 +98,7 @@ impl Riot {
         let only_possible = instructions.only_possible();
 
         if instructions.reset {
-            self.handle_reset(only_possible)?;
+            self.handle_reset(only_possible);
         }
 
         if instructions.ram {
