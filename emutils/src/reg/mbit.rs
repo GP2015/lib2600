@@ -46,6 +46,11 @@ impl MBitRegister {
         }
     }
 
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
         self.check_bit_in_range(bit)?;
         Ok(&self.bits[bit])
@@ -101,12 +106,112 @@ impl MBitRegister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rstest::fixture;
+    use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
+    const REG_SIZE: usize = 4;
 
     #[fixture]
     fn reg() -> MBitRegister {
-        MBitRegister::new(REG_NAME, 8)
+        MBitRegister::new(REG_NAME, REG_SIZE)
+    }
+
+    #[rstest]
+    fn new_correct_size(reg: MBitRegister) {
+        assert_eq!(reg.size(), REG_SIZE);
+    }
+
+    #[rstest]
+    fn new_correct_names(reg: MBitRegister) {
+        for bit in 0..REG_SIZE {
+            assert_eq!(
+                reg.bit(bit).unwrap().name(),
+                format!("{REG_NAME} bit {bit}")
+            );
+        }
+    }
+
+    #[rstest]
+    fn name(reg: MBitRegister) {
+        assert_eq!(reg.name(), REG_NAME);
+    }
+
+    #[rstest]
+    fn valid_bit(mut reg: MBitRegister) {
+        for bit in 0..REG_SIZE {
+            assert!(reg.bit(bit).is_ok());
+            assert!(reg.bit_mut(bit).is_ok());
+        }
+    }
+
+    #[rstest]
+    fn invalid_bit(mut reg: MBitRegister, #[values(REG_SIZE, REG_SIZE + 1)] bit: usize) {
+        let e = RegisterError::BitOutOfRange {
+            name: reg.name().to_string(),
+            bit,
+            size: REG_SIZE,
+        };
+
+        assert_eq!(reg.bit(bit).err().unwrap(), e);
+        assert_eq!(reg.bit_mut(bit).err().unwrap(), e);
+    }
+
+    #[rstest]
+    #[case([false, false, false, false], 0)]
+    #[case([false, true, false, false], 0b10)]
+    #[case([true, true, false, true], 0b1011)]
+    fn read_success(mut reg: MBitRegister, #[case] bits: [bool; REG_SIZE], #[case] val: usize) {
+        for (bit_reg, &b) in reg.iter_mut().zip(bits.iter()) {
+            bit_reg.add(b, true);
+        }
+        assert_eq!(reg.read(), Some(val));
+    }
+
+    #[rstest]
+    fn read_failure(mut reg: MBitRegister, #[values(true, false)] initial: bool) {
+        reg.iter_mut().for_each(|r| r.add(initial, true));
+        reg.bit_mut(2).unwrap().add(!initial, false);
+        assert_eq!(reg.read(), None);
+    }
+
+    // Iter possible reads
+    // Iter possible reads
+    // Iter possible reads
+    // Iter possible reads
+    // Iter possible reads
+
+    #[rstest]
+    #[case(0, [false, false, false, false])]
+    #[case(0b1011, [true, true, false, true])]
+    #[case(0b11011, [true, true, false, true])]
+    fn add_wrapping_only_possible(
+        mut reg: MBitRegister,
+        #[values(true, false)] initial: bool,
+        #[case] val: usize,
+        #[case] bits: [bool; REG_SIZE],
+    ) {
+        reg.iter_mut().for_each(|r| r.add(initial, true));
+        reg.add_wrapping(val, true);
+        for (bit_reg, &b) in reg.iter().zip(bits.iter()) {
+            assert_eq!(bit_reg.collapsed(), Some(b));
+        }
+    }
+
+    #[rstest]
+    #[case(0, [false, false, false, false])]
+    #[case(0b1011, [true, true, false, true])]
+    #[case(0b11011, [true, true, false, true])]
+    fn add_wrapping_not_only_possible(
+        mut reg: MBitRegister,
+        #[values(true, false)] initial: bool,
+        #[case] val: usize,
+        #[case] bits: [bool; REG_SIZE],
+    ) {
+        reg.iter_mut().for_each(|r| r.add(initial, true));
+        reg.add_wrapping(val, false);
+        for (bit_reg, &b) in reg.iter().zip(bits.iter()) {
+            assert!(bit_reg.is_possible(initial));
+            assert!(bit_reg.is_possible(b));
+        }
     }
 }
