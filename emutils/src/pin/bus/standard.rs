@@ -85,7 +85,7 @@ impl<P: PinInputUI> BusInputUI for StandardBus<P> {
     fn iter_possible_reads_when(&self, prev: bool) -> impl Iterator<Item = usize> {
         self.pins
             .iter()
-            .map(|pin| pin.possible_reads_when(prev))
+            .map(|pin| pin.possible_reads_when(prev).iter().copied())
             .multi_cartesian_product()
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }

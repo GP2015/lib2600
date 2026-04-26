@@ -52,16 +52,16 @@ pub trait PinInputUI {
         .filter_map(|(state, signal)| state.then_some(signal))
     }
 
-    fn possible_reads_when(&self, prev: bool) -> Vec<bool> {
+    fn possible_reads_when(&self, prev: bool) -> &'static [bool] {
         match (
             self.high_possible_when(prev),
             self.low_possible_when(prev),
             self.high_z_possible_when(prev),
         ) {
-            (false, false, false) => Vec::new(),
-            (false, true, false) => vec![false],
-            (true, false, false) => vec![true],
-            (true, true, false) | (_, _, true) => vec![true, false],
+            (false, false, false) => &[],
+            (false, true, false) => &[false],
+            (true, false, false) => &[true],
+            (true, true, false) | (_, _, true) => &[true, false],
         }
     }
 
@@ -165,9 +165,9 @@ pub trait PinInputUI {
             fn iter_prev_possible_signals(&self, [true]) -> impl Iterator<Item = PinSignal>;
 
             #[call(possible_reads_when)]
-            fn possible_reads(&self, [false]) -> Vec<bool>;
+            fn possible_reads(&self, [false]) -> &'static [bool];
             #[call(possible_reads_when)]
-            fn prev_possible_reads(&self, [true]) -> Vec<bool>;
+            fn prev_possible_reads(&self, [true]) -> &'static [bool];
 
             #[call(add_signal_in)]
             fn add_high_in(&mut self, [PinSignal::High], only_possible: bool) -> Result<(), PinError>;

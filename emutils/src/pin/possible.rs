@@ -104,24 +104,24 @@ mod tests {
     }
 
     #[rstest]
-    #[case(false, false, false, vec![])]
-    #[case(false, false, true, vec![PinSignal::HighZ])]
-    #[case(false, true, false, vec![PinSignal::Low])]
-    #[case(false, true, true, vec![PinSignal::Low, PinSignal::HighZ])]
-    #[case(true, false, false, vec![PinSignal::High])]
-    #[case(true, false, true, vec![PinSignal::High, PinSignal::HighZ])]
-    #[case(true, true, false, vec![PinSignal::High, PinSignal::Low])]
-    #[case(true, true, true, vec![PinSignal::High, PinSignal::Low, PinSignal::HighZ])]
+    #[case(false, false, false, &[])]
+    #[case(false, false, true, &[PinSignal::HighZ])]
+    #[case(false, true, false, &[PinSignal::Low])]
+    #[case(false, true, true, &[PinSignal::Low, PinSignal::HighZ])]
+    #[case(true, false, false, &[PinSignal::High])]
+    #[case(true, false, true, &[PinSignal::High, PinSignal::HighZ])]
+    #[case(true, true, false, &[PinSignal::High, PinSignal::Low])]
+    #[case(true, true, true, &[PinSignal::High, PinSignal::Low, PinSignal::HighZ])]
     fn iter_all_enabled(
         #[case] high: bool,
         #[case] low: bool,
         #[case] high_z: bool,
-        #[case] res_vec: Vec<PinSignal>,
+        #[case] res: &[PinSignal],
     ) {
         let signals = PossibleSignals::from(high, low, high_z)
             .iter_all_enabled()
             .collect::<Vec<PinSignal>>();
-        assert_eq!(signals, res_vec);
+        assert_eq!(signals, res);
     }
 
     #[rstest]
