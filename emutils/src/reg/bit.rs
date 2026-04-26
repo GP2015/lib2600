@@ -64,7 +64,7 @@ mod tests {
 
     #[fixture]
     fn single_pin() -> MockPin {
-        let mut single_pin = MockPin::new("pin");
+        let mut single_pin = MockPin::new("");
         single_pin.set_all_in(false, false, false).unwrap();
         single_pin.set_all_out(false, false, false).unwrap();
         single_pin

@@ -15,15 +15,6 @@ impl PossibleBitStates {
         if state { self.high } else { self.low }
     }
 
-    delegate! {
-        to self {
-            #[call(is_possible)]
-            pub fn high_possible(self, [true]) -> bool;
-            #[call(is_possible)]
-            pub fn low_possible(self, [false]) -> bool;
-        }
-    }
-
     pub fn collapsed(self) -> Option<bool> {
         match (self.high, self.low) {
             (false, true) => Some(false),
@@ -64,6 +55,15 @@ impl PossibleBitStates {
     pub fn set_all(&mut self, high: bool, low: bool) {
         self.high = high;
         self.low = low;
+    }
+
+    delegate! {
+        to self {
+            #[call(is_possible)]
+            pub fn high_possible(self, [true]) -> bool;
+            #[call(is_possible)]
+            pub fn low_possible(self, [false]) -> bool;
+        }
     }
 }
 
@@ -107,9 +107,9 @@ mod tests {
     #[case(false, true, &[false])]
     #[case(true, false, &[true])]
     #[case(true, true, &[true, false])]
-    fn possible_reads(#[case] high: bool, #[case] low: bool, #[case] res_vec: &[bool]) {
+    fn possible_reads(#[case] high: bool, #[case] low: bool, #[case] res: &[bool]) {
         let states = PossibleBitStates::from(high, low).possible_reads();
-        assert_eq!(states, res_vec);
+        assert_eq!(states, res);
     }
 
     #[rstest]

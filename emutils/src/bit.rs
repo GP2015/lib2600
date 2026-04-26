@@ -61,8 +61,38 @@ mod tests {
     }
 
     #[rstest]
-    #[case()]
-    fn collapsed_as_usize() {
-        //
+    #[case(&[], 0)]
+    #[case(&[false, false, false, false], 0)]
+    #[case(&[true], 1)]
+    #[case(&[false, true], 0b10)]
+    #[case(&[false, true, false, true], 0b1010)]
+    #[case(&[true, true, false, true], 0b1011)]
+    #[case(&[true, true, false, true, false, false], 0b1011)]
+    fn bits_to_usize(#[case] bits: &[bool], #[case] res: usize) {
+        assert_eq!(super::bits_to_usize(bits.iter().copied()), res);
+    }
+
+    #[rstest]
+    #[case(&[], 0)]
+    #[case(&[false, false, false, false], 0)]
+    #[case(&[true], 1)]
+    #[case(&[false, true], 0b10)]
+    #[case(&[false, true, false, true], 0b1010)]
+    #[case(&[true, true, false, true], 0b1011)]
+    #[case(&[true, true, false, true, false, false], 0b1011)]
+    fn some_bits_to_usize_success(#[case] bits: &[bool], #[case] res: usize) {
+        let val = super::some_bits_to_usize(bits.iter().map(|b| Some(*b)));
+        assert_eq!(val, Some(res));
+    }
+
+    #[rstest]
+    #[case(&[None])]
+    #[case(&[Some(true), None])]
+    #[case(&[None, Some(false)])]
+    #[case(&[Some(true), None, Some(false)])]
+    #[case(&[Some(true), Some(false), Some(true), None])]
+    #[case(&[None, Some(true), Some(false), Some(true)])]
+    fn some_bits_to_usize_failure(#[case] bits: &[Option<bool>]) {
+        assert_eq!(super::some_bits_to_usize(bits.iter().copied()), None);
     }
 }

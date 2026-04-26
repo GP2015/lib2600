@@ -1,11 +1,10 @@
-use delegate::delegate;
-use itertools::Itertools;
-
 use crate::{
     bit,
     pin::BusInputUI,
     reg::{BitRegister, RegisterError},
 };
+use delegate::delegate;
+use itertools::Itertools;
 
 #[derive(Clone)]
 pub struct MBitRegister {
@@ -57,6 +56,7 @@ impl MBitRegister {
         Ok(&mut self.bits[bit])
     }
 
+    #[must_use]
     pub fn read(&self) -> Option<usize> {
         bit::some_bits_to_usize(self.bits.iter().map(BitRegister::collapsed))
     }
