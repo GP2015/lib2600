@@ -2,17 +2,25 @@ use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum RegisterError {
-    #[error("register {name} does not have a bit {bit}")]
+    #[error("register {name} has no bit {bit}")]
     BitOutOfRange {
         name: String,
         bit: usize,
         size: usize,
     },
 
-    #[error("cannot write value {value} to {name} register without wrapping")]
+    #[error("cannot write value {value:x} to register {name} without wrapping")]
     WriteValueTooLarge {
         name: String,
         value: usize,
         size: usize,
+    },
+
+    #[error("bus {bus_name} and register {reg_name} have incompatible sizes")]
+    IncompatibleBus {
+        reg_name: String,
+        bus_name: String,
+        reg_size: usize,
+        bus_size: usize,
     },
 }
