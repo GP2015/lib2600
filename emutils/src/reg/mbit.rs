@@ -13,28 +13,6 @@ pub struct MBitRegister {
 }
 
 impl MBitRegister {
-    fn check_bit_in_range(&self, bit: usize) -> Result<(), RegisterError> {
-        if bit >= self.size() {
-            return Err(RegisterError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.size(),
-            });
-        }
-        Ok(())
-    }
-
-    fn check_write_val_valid(&self, val: usize) -> Result<(), RegisterError> {
-        if bit::usize_exceeds_bit_count(val, self.size()) {
-            return Err(RegisterError::WriteValueTooLarge {
-                name: self.name.clone(),
-                value: val,
-                size: self.size(),
-            });
-        }
-        Ok(())
-    }
-
     #[must_use]
     pub fn new<S: Into<String>>(name: S, size: usize) -> Self {
         let name = name.into();
@@ -49,6 +27,17 @@ impl MBitRegister {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    fn check_bit_in_range(&self, bit: usize) -> Result<(), RegisterError> {
+        if bit >= self.size() {
+            return Err(RegisterError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: self.size(),
+            });
+        }
+        Ok(())
     }
 
     pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
@@ -81,15 +70,34 @@ impl MBitRegister {
     }
 
     pub fn add(&mut self, val: usize, only_possible: bool) -> Result<(), RegisterError> {
-        self.check_write_val_valid(val)?;
+        if bit::usize_exceeds_bit_count(val, self.size()) {
+            return Err(RegisterError::WriteValueTooLarge {
+                name: self.name.clone(),
+                value: val,
+                size: self.size(),
+            });
+        }
         self.add_wrapping(val, only_possible);
         Ok(())
     }
 
-    pub fn input_from_bus(&mut self, bus: &impl BusInputUI, only_possible: bool) {
+    pub fn input_from_bus(
+        &mut self,
+        bus: &impl BusInputUI,
+        only_possible: bool,
+    ) -> Result<(), RegisterError> {
+        if self.size() != bus.size() {
+            return Err(RegisterError::IncompatibleBus {
+                reg_name: self.name.clone(),
+                reg_size: self.size(),
+                bus_name: bus.name().to_string(),
+                bus_size: bus.size(),
+            });
+        }
         for (reg, pin) in self.iter_mut().zip(bus.iter()) {
             reg.input_from_pin(pin, only_possible);
         }
+        Ok(())
     }
 
     delegate! {
@@ -182,6 +190,7 @@ mod tests {
 
     #[rstest]
     #[case(0, [false, false, false, false])]
+    #[case(0b101, [true, false, true, false])]
     #[case(0b1011, [true, true, false, true])]
     #[case(0b11011, [true, true, false, true])]
     fn add_wrapping_only_possible(
@@ -199,6 +208,7 @@ mod tests {
 
     #[rstest]
     #[case(0, [false, false, false, false])]
+    #[case(0b101, [true, false, true, false])]
     #[case(0b1011, [true, true, false, true])]
     #[case(0b11011, [true, true, false, true])]
     fn add_wrapping_not_only_possible(
@@ -213,5 +223,28 @@ mod tests {
             assert!(bit_reg.is_possible(initial));
             assert!(bit_reg.is_possible(b));
         }
+    }
+
+    #[rstest]
+    fn add_success(
+        mut reg: MBitRegister,
+        #[values(0, 0b100, 0b1011)] val: usize,
+        #[values(true, false)] only_possible: bool,
+    ) {
+        assert!(reg.add(val, only_possible).is_ok());
+    }
+
+    #[rstest]
+    fn add_failure(
+        mut reg: MBitRegister,
+        #[values(0b10000, 0b11011)] val: usize,
+        #[values(true, false)] only_possible: bool,
+    ) {
+        let e = RegisterError::WriteValueTooLarge {
+            name: reg.name().to_string(),
+            value: val,
+            size: reg.size(),
+        };
+        assert_eq!(reg.add(val, only_possible).err().unwrap(), e);
     }
 }
