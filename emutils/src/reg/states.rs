@@ -140,8 +140,12 @@ mod tests {
     }
 
     #[rstest]
-    fn set_all(#[values(true, false)] high: bool, #[values(true, false)] low: bool) {
-        let mut states = PossibleBitStates::from(false, false);
+    fn set_all(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+    ) {
+        let mut states = PossibleBitStates::from(initial, initial);
         states.set_all(high, low);
         assert_eq!(states, PossibleBitStates::from(high, low));
     }
