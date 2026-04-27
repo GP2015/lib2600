@@ -18,9 +18,7 @@ impl ContentionPin {
     }
 
     fn update_contention(&mut self) -> Result<(), PinError> {
-        let Some(contended_signals) =
-            PossibleSignals::contend_together(self.signals_in, self.signals_out)
-        else {
+        let Some(contended_signals) = self.signals_in.contend_with(self.signals_out) else {
             return Err(self.short_circuit_err());
         };
         self.contended_signals = contended_signals;
@@ -32,14 +30,15 @@ impl PinCore for ContentionPin {
     fn new<S: Into<String>>(name: S) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);
-        let contended_signals = PossibleSignals::contend_together(signals_in, signals_out)
+        let contended_signals = signals_in
+            .contend_with(signals_out)
             .expect("this is a valid contention");
 
         let prev_signals_in = PossibleSignals::from(false, false, true);
         let prev_signals_out = PossibleSignals::from(false, false, true);
-        let prev_contended_signals =
-            PossibleSignals::contend_together(prev_signals_in, prev_signals_out)
-                .expect("this is a valid contention");
+        let prev_contended_signals = prev_signals_in
+            .contend_with(prev_signals_out)
+            .expect("this is a valid contention");
 
         Self {
             name: name.into(),
@@ -69,19 +68,19 @@ impl PinInputUI for ContentionPin {
 
     fn signal_possible_when(&self, signal: PinSignal, prev: bool) -> bool {
         if prev {
-            self.prev_contended_signals.signal_possible(signal)
+            self.prev_contended_signals.is_possible(signal)
         } else {
-            self.contended_signals.signal_possible(signal)
+            self.contended_signals.is_possible(signal)
         }
     }
 
     fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
-        self.signals_in.add_signal(signal, only_possible);
+        self.signals_in.add(signal, only_possible);
         self.update_contention()
     }
 
     fn remove_signal_in(&mut self, signal: PinSignal) {
-        self.signals_in.remove_signal(signal);
+        self.signals_in.remove(signal);
         self.update_contention()
             .expect("removing possible signals cannot cause a short-circuit");
     }
@@ -89,12 +88,12 @@ impl PinInputUI for ContentionPin {
 
 impl PinOutput for ContentionPin {
     fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
-        self.signals_out.add_signal(signal, only_possible);
+        self.signals_out.add(signal, only_possible);
         self.update_contention()
     }
 
     fn remove_signal_out(&mut self, signal: PinSignal) {
-        self.signals_out.remove_signal(signal);
+        self.signals_out.remove(signal);
         self.update_contention()
             .expect("removing possible signals cannot cause a short-circuit");
     }

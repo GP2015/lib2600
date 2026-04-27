@@ -29,19 +29,19 @@ impl PinInputUI for MockPin {
 
     fn signal_possible_when(&self, signal: PinSignal, prev: bool) -> bool {
         if prev {
-            self.prev_signals.signal_possible(signal)
+            self.prev_signals.is_possible(signal)
         } else {
-            self.signals.signal_possible(signal)
+            self.signals.is_possible(signal)
         }
     }
 
     delegate! {
         to self.signals {
-            #[call(add_signal)]
+            #[call(add)]
             #[expr($; Ok(()))]
             fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
 
-            #[call(remove_signal)]
+            #[call(remove)]
             fn remove_signal_in(&mut self, signal: PinSignal);
         }
     }
@@ -50,11 +50,11 @@ impl PinInputUI for MockPin {
 impl PinOutput for MockPin {
     delegate! {
         to self.signals {
-            #[call(add_signal)]
+            #[call(add)]
             #[expr($; Ok(()))]
             fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError>;
 
-            #[call(remove_signal)]
+            #[call(remove)]
             fn remove_signal_out(&mut self, signal: PinSignal);
         }
     }
