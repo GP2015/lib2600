@@ -12,7 +12,7 @@ impl PossibleSignals {
         Self { high, low, high_z }
     }
 
-    pub fn signal_possible(self, signal: PinSignal) -> bool {
+    pub fn is_possible(self, signal: PinSignal) -> bool {
         match signal {
             PinSignal::High => self.high,
             PinSignal::Low => self.low,
@@ -30,7 +30,7 @@ impl PossibleSignals {
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
     }
 
-    pub fn add_signal(&mut self, signal: PinSignal, only_possible: bool) {
+    pub fn add(&mut self, signal: PinSignal, only_possible: bool) {
         if only_possible {
             self.set_all(false, false, false);
         }
@@ -42,7 +42,7 @@ impl PossibleSignals {
         }
     }
 
-    pub fn remove_signal(&mut self, signal: PinSignal) {
+    pub fn remove(&mut self, signal: PinSignal) {
         match signal {
             PinSignal::High => self.high = false,
             PinSignal::Low => self.low = false,
@@ -56,13 +56,13 @@ impl PossibleSignals {
         self.high_z = high_z;
     }
 
-    pub fn contend_together(first: Self, second: Self) -> Option<Self> {
+    pub fn contend_with(self, other: Self) -> Option<Self> {
         let mut result = Self::from(false, false, false);
 
-        for first_signal in first.iter_all_enabled() {
-            for second_signal in second.iter_all_enabled() {
+        for first_signal in self.iter_all_enabled() {
+            for second_signal in other.iter_all_enabled() {
                 let signal = PinSignal::contend_together(first_signal, second_signal)?;
-                result.add_signal(signal, false);
+                result.add(signal, false);
             }
         }
 
@@ -88,19 +88,15 @@ mod tests {
     }
 
     #[rstest]
-    fn set_signal(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] enable: bool,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+    fn is_possible(
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        #[values(true, false)] high_z: bool,
     ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
-        signals.add_signal(signal, false);
-        let result: bool = match signal {
-            PinSignal::High => signals.high,
-            PinSignal::Low => signals.low,
-            PinSignal::HighZ => signals.high_z,
-        };
-        assert_eq!(result, enable);
+        let signals = PossibleSignals::from(high, low, high_z);
+        assert_eq!(signals.is_possible(PinSignal::High), high);
+        assert_eq!(signals.is_possible(PinSignal::Low), low);
+        assert_eq!(signals.is_possible(PinSignal::HighZ), high_z);
     }
 
     #[rstest]
@@ -125,6 +121,54 @@ mod tests {
     }
 
     #[rstest]
+    fn add_not_only_possible(
+        #[values(true, false)] initial: bool,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+    ) {
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.add(signal, false);
+        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+            assert_eq!(signals.is_possible(s), signal == s || initial);
+        }
+    }
+
+    #[rstest]
+    fn add_only_possible(
+        #[values(true, false)] initial: bool,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+    ) {
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.add(signal, true);
+        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+            assert_eq!(signals.is_possible(s), signal == s);
+        }
+    }
+
+    #[rstest]
+    fn remove(
+        #[values(true, false)] initial: bool,
+        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+    ) {
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.remove(signal);
+        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+            assert_eq!(signals.is_possible(s), signal != s && initial);
+        }
+    }
+
+    #[rstest]
+    fn set_all(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        #[values(true, false)] high_z: bool,
+    ) {
+        let mut signals = PossibleSignals::from(initial, initial, initial);
+        signals.set_all(high, low, high_z);
+        assert_eq!(signals, PossibleSignals::from(high, low, high_z));
+    }
+
+    #[rstest]
     fn contend_success_empty(
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
@@ -132,14 +176,8 @@ mod tests {
     ) {
         let non_empty = PossibleSignals::from(high, low, high_z);
         let empty = PossibleSignals::from(false, false, false);
-        assert_eq!(
-            PossibleSignals::contend_together(non_empty, empty).unwrap(),
-            empty
-        );
-        assert_eq!(
-            PossibleSignals::contend_together(empty, non_empty).unwrap(),
-            empty
-        );
+        assert_eq!(non_empty.contend_with(empty).unwrap(), empty);
+        assert_eq!(empty.contend_with(non_empty).unwrap(), empty);
     }
 
     #[rstest]
@@ -157,10 +195,7 @@ mod tests {
     ) {
         let first = PossibleSignals::from(first_high, first_low, first_high_z);
         let second = PossibleSignals::from(false, false, true);
-        assert_eq!(
-            PossibleSignals::contend_together(first, second).unwrap(),
-            PossibleSignals::from(first_high, first_low, first_high_z)
-        );
+        assert_eq!(first.contend_with(second).unwrap(), first);
     }
 
     #[rstest]
@@ -171,10 +206,8 @@ mod tests {
     ) {
         let first = PossibleSignals::from(bool_state, !bool_state, first_high_z);
         let second = PossibleSignals::from(bool_state, !bool_state, second_high_z);
-        assert_eq!(
-            PossibleSignals::contend_together(first, second).unwrap(),
-            PossibleSignals::from(bool_state, !bool_state, first_high_z & second_high_z)
-        );
+        let res = PossibleSignals::from(bool_state, !bool_state, first_high_z & second_high_z);
+        assert_eq!(first.contend_with(second).unwrap(), res);
     }
 
     #[rstest]
@@ -195,6 +228,6 @@ mod tests {
     ) {
         let first = PossibleSignals::from(first_high, first_low, first_high_z);
         let second = PossibleSignals::from(second_high, second_low, second_high_z);
-        assert!(PossibleSignals::contend_together(first, second).is_none());
+        assert!(first.contend_with(second).is_none());
     }
 }
