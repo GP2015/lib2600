@@ -1,0 +1,4 @@
+Add remaining MBitRegister unit tests
+Add bus--register size checking
+Add single pin unit tests
+Add bus unit tests
