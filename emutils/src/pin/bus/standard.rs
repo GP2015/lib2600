@@ -1,6 +1,6 @@
 use crate::{
     bit,
-    pin::{BusCore, BusInputUI, BusOutput, PinCore, PinError, PinInputUI, PinOutput},
+    pin::{BusCore, BusInputUI, BusOutput, PinCore, PinError},
 };
 use itertools::Itertools;
 
@@ -138,7 +138,7 @@ impl<P: PinOutput> BusOutput for StandardBus<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pin::{PinError, single::mock::MockPin};
+    use crate::pin::{PinError, line::mock::MockPin};
     use rstest::{fixture, rstest};
 
     type BusType = StandardBus<MockPin>;

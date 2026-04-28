@@ -3,7 +3,7 @@ mod possible;
 mod signal;
 
 pub(crate) mod bus;
-pub(crate) mod single;
+pub(crate) mod core;
 
 pub use crate::pin::{
     bus::{
@@ -11,10 +11,9 @@ pub use crate::pin::{
         standard::StandardBus,
     },
     error::PinError,
-    signal::PinSignal,
-    single::{
-        contention::ContentionPin,
-        defs::{PinCore, PinInputUI, PinOutput},
-        input::InputPin,
+    line::{
+        defs::{PinCore, PinInput, PinQuery},
+        standard::StandardPin,
     },
+    signal::PinSignal,
 };

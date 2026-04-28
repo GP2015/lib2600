@@ -1,4 +1,4 @@
-use crate::{pin::PinInputUI, reg::states::PossibleBitStates};
+use crate::{pin::PinQuery, reg::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone)]
@@ -21,7 +21,7 @@ impl BitRegister {
         &self.name
     }
 
-    pub fn input_from_pin(&mut self, pin: &impl PinInputUI, only_possible: bool) {
+    pub fn input_from_pin(&mut self, pin: &impl PinQuery, only_possible: bool) {
         if only_possible {
             self.states.high = pin.could_read_high();
             self.states.low = pin.could_read_low();
@@ -56,15 +56,16 @@ impl BitRegister {
 
 #[cfg(test)]
 mod tests {
+    use crate::pin::StandardPin;
+
     use super::*;
-    use crate::pin::{PinCore, PinOutput, single::mock::MockPin};
     use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
 
     #[fixture]
-    fn single_pin() -> MockPin {
-        let mut single_pin = MockPin::new("");
+    fn single_pin() -> StandardPin {
+        let mut single_pin = StandardPin::new("");
         single_pin.set_all_in(false, false, false).unwrap();
         single_pin.set_all_out(false, false, false).unwrap();
         single_pin
@@ -92,7 +93,7 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        mut single_pin: MockPin,
+        mut single_pin: StandardPin,
     ) {
         reg.set_all(initial, initial);
         single_pin.set_all_in(high, low, false).unwrap();
@@ -107,7 +108,7 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        mut single_pin: MockPin,
+        mut single_pin: StandardPin,
     ) {
         reg.set_all(initial, initial);
         single_pin.set_all_in(high, low, false).unwrap();

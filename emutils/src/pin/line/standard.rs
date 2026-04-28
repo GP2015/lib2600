@@ -1,6 +1,6 @@
-use crate::pin::{PinCore, PinError, PinInputUI, PinOutput, PinSignal, possible::PossibleSignals};
+use crate::pin::{PinCore, PinError, PinInput, PinQuery, PinSignal, possible::PossibleSignals};
 
-pub struct ContentionPin {
+pub struct StandardPin {
     name: String,
     signals_in: PossibleSignals,
     signals_out: PossibleSignals,
@@ -10,7 +10,7 @@ pub struct ContentionPin {
     prev_contended_signals: PossibleSignals,
 }
 
-impl ContentionPin {
+impl StandardPin {
     fn short_circuit_err(&self) -> PinError {
         PinError::ShortCircuit {
             name: self.name.clone(),
@@ -26,7 +26,7 @@ impl ContentionPin {
     }
 }
 
-impl PinCore for ContentionPin {
+impl PinCore for StandardPin {
     fn new<S: Into<String>>(name: S) -> Self {
         let signals_in = PossibleSignals::from(false, false, false);
         let signals_out = PossibleSignals::from(true, true, true);
@@ -61,7 +61,7 @@ impl PinCore for ContentionPin {
     }
 }
 
-impl PinInputUI for ContentionPin {
+impl PinQuery for StandardPin {
     fn name(&self) -> &str {
         self.name.as_str()
     }
@@ -73,27 +73,16 @@ impl PinInputUI for ContentionPin {
             self.contended_signals.is_possible(signal)
         }
     }
+}
 
-    fn add_signal_in(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
+impl PinInput for StandardPin {
+    fn add_signal(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
         self.signals_in.add(signal, only_possible);
         self.update_contention()
     }
 
-    fn remove_signal_in(&mut self, signal: PinSignal) {
+    fn remove_signal(&mut self, signal: PinSignal) {
         self.signals_in.remove(signal);
-        self.update_contention()
-            .expect("removing possible signals cannot cause a short-circuit");
-    }
-}
-
-impl PinOutput for ContentionPin {
-    fn add_signal_out(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), PinError> {
-        self.signals_out.add(signal, only_possible);
-        self.update_contention()
-    }
-
-    fn remove_signal_out(&mut self, signal: PinSignal) {
-        self.signals_out.remove(signal);
         self.update_contention()
             .expect("removing possible signals cannot cause a short-circuit");
     }
@@ -106,24 +95,24 @@ mod tests {
     use super::*;
     use rstest::{fixture, rstest};
 
-    type PinType = ContentionPin;
+    type PinType = StandardPin;
     const PIN_NAME: &str = "pin";
 
     #[fixture]
     fn pin_default() -> PinType {
-        ContentionPin::new(PIN_NAME)
+        StandardPin::new(PIN_NAME)
     }
 
     #[fixture]
     fn pin_none_out() -> PinType {
-        let mut pin = ContentionPin::new(PIN_NAME);
+        let mut pin = StandardPin::new(PIN_NAME);
         pin.set_all_out(false, false, false).unwrap();
         pin
     }
 
     #[fixture]
     fn pin_high_z_out() -> PinType {
-        let mut pin = ContentionPin::new(PIN_NAME);
+        let mut pin = StandardPin::new(PIN_NAME);
         pin.set_all_out(false, false, true).unwrap();
         pin
     }

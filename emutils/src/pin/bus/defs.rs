@@ -1,9 +1,6 @@
 use delegate::delegate;
 
-use crate::{
-    pin::{PinError, PinInputUI, PinOutput},
-    reg::MBitRegister,
-};
+use crate::{pin::PinError, reg::MBitRegister};
 
 pub trait BusCore {
     fn new<S: Into<String>>(name: S, size: usize) -> Self;
