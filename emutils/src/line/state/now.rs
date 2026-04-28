@@ -1,13 +1,18 @@
-use crate::pin::PinSignal;
+use crate::line::PinSignal;
+use delegate::delegate;
+use getset::CopyGetters;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PossibleSignals {
-    pub high: bool,
-    pub low: bool,
-    pub high_z: bool,
+#[derive(Clone, Copy, Debug, PartialEq, CopyGetters)]
+pub struct DriveState {
+    #[get_copy]
+    high: bool,
+    #[get_copy]
+    low: bool,
+    #[get_copy]
+    high_z: bool,
 }
 
-impl PossibleSignals {
+impl DriveState {
     pub fn from(high: bool, low: bool, high_z: bool) -> Self {
         Self { high, low, high_z }
     }
@@ -20,7 +25,28 @@ impl PossibleSignals {
         }
     }
 
-    pub fn iter_all_enabled(self) -> impl Iterator<Item = PinSignal> {
+    pub fn could_read_high(self) -> bool {
+        self.high | self.high_z
+    }
+
+    pub fn could_read_low(self) -> bool {
+        self.low | self.high_z
+    }
+
+    pub fn collapsed(self) -> Option<PinSignal> {
+        match (self.high, self.low, self.high_z) {
+            (true, false, false) => Some(PinSignal::High),
+            (false, true, false) => Some(PinSignal::Low),
+            (false, false, true) => Some(PinSignal::HighZ),
+            _ => None,
+        }
+    }
+
+    pub fn read(self) -> Option<bool> {
+        self.collapsed().and_then(|signal| signal.as_bool())
+    }
+
+    pub fn iter_possible(self) -> impl Iterator<Item = PinSignal> {
         [
             (self.high, PinSignal::High),
             (self.low, PinSignal::Low),
@@ -28,6 +54,15 @@ impl PossibleSignals {
         ]
         .into_iter()
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
+    }
+
+    pub fn possible_reads(self) -> &'static [bool] {
+        match (self.high, self.low, self.high_z) {
+            (false, false, false) => &[],
+            (false, true, false) => &[false],
+            (true, false, false) => &[true],
+            (true, true, false) | (_, _, true) => &[true, false],
+        }
     }
 
     pub fn add(&mut self, signal: PinSignal, only_possible: bool) {
@@ -50,6 +85,22 @@ impl PossibleSignals {
         }
     }
 
+    pub fn add_drive(&mut self, val: bool, only_possible: bool) {
+        if val {
+            self.add_high(only_possible);
+        } else {
+            self.add_low(only_possible);
+        }
+    }
+
+    pub fn remove_drive(&mut self, val: bool) {
+        if val {
+            self.remove_high();
+        } else {
+            self.remove_low();
+        }
+    }
+
     pub fn set_all(&mut self, high: bool, low: bool, high_z: bool) {
         self.high = high;
         self.low = low;
@@ -59,14 +110,39 @@ impl PossibleSignals {
     pub fn contend_with(self, other: Self) -> Option<Self> {
         let mut result = Self::from(false, false, false);
 
-        for first_signal in self.iter_all_enabled() {
-            for second_signal in other.iter_all_enabled() {
+        for first_signal in self.iter_possible() {
+            for second_signal in other.iter_possible() {
                 let signal = PinSignal::contend_together(first_signal, second_signal)?;
                 result.add(signal, false);
             }
         }
 
         Some(result)
+    }
+
+    delegate! {
+        to self{
+            #[call(high)]
+            pub fn high_possible(self) -> bool;
+            #[call(low)]
+            pub fn low_possible(self) -> bool;
+            #[call(high_z)]
+            pub fn high_z_possible(self) -> bool;
+
+            #[call(add)]
+            pub fn add_high(&mut self, [PinSignal::High], only_possible: bool);
+            #[call(add)]
+            pub fn add_low(&mut self, [PinSignal::Low], only_possible: bool);
+            #[call(add)]
+            pub fn add_high_z(&mut self, [PinSignal::HighZ], only_possible: bool);
+
+            #[call(remove)]
+            pub fn remove_high(&mut self, [PinSignal::High]);
+            #[call(remove)]
+            pub fn remove_low(&mut self, [PinSignal::Low]);
+            #[call(remove)]
+            pub fn remove_high_z(&mut self, [PinSignal::HighZ]);
+        }
     }
 }
 
@@ -81,7 +157,7 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = PossibleSignals::from(high, low, high_z);
+        let signals = DriveState::from(high, low, high_z);
         assert_eq!(signals.high, high);
         assert_eq!(signals.low, low);
         assert_eq!(signals.high_z, high_z);
@@ -93,7 +169,7 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = PossibleSignals::from(high, low, high_z);
+        let signals = DriveState::from(high, low, high_z);
         assert_eq!(signals.is_possible(PinSignal::High), high);
         assert_eq!(signals.is_possible(PinSignal::Low), low);
         assert_eq!(signals.is_possible(PinSignal::HighZ), high_z);
@@ -114,8 +190,8 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: &[PinSignal],
     ) {
-        let signals = PossibleSignals::from(high, low, high_z)
-            .iter_all_enabled()
+        let signals = DriveState::from(high, low, high_z)
+            .iter_possible()
             .collect::<Vec<PinSignal>>();
         assert_eq!(signals, res);
     }
@@ -125,7 +201,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
+        let mut signals = DriveState::from(initial, initial, initial);
         signals.add(signal, false);
         for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s || initial);
@@ -137,7 +213,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
+        let mut signals = DriveState::from(initial, initial, initial);
         signals.add(signal, true);
         for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s);
@@ -149,7 +225,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
     ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
+        let mut signals = DriveState::from(initial, initial, initial);
         signals.remove(signal);
         for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal != s && initial);
@@ -163,9 +239,9 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let mut signals = PossibleSignals::from(initial, initial, initial);
+        let mut signals = DriveState::from(initial, initial, initial);
         signals.set_all(high, low, high_z);
-        assert_eq!(signals, PossibleSignals::from(high, low, high_z));
+        assert_eq!(signals, DriveState::from(high, low, high_z));
     }
 
     #[rstest]
@@ -174,8 +250,8 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let non_empty = PossibleSignals::from(high, low, high_z);
-        let empty = PossibleSignals::from(false, false, false);
+        let non_empty = DriveState::from(high, low, high_z);
+        let empty = DriveState::from(false, false, false);
         assert_eq!(non_empty.contend_with(empty).unwrap(), empty);
         assert_eq!(empty.contend_with(non_empty).unwrap(), empty);
     }
@@ -193,8 +269,8 @@ mod tests {
         #[case] first_low: bool,
         #[case] first_high_z: bool,
     ) {
-        let first = PossibleSignals::from(first_high, first_low, first_high_z);
-        let second = PossibleSignals::from(false, false, true);
+        let first = DriveState::from(first_high, first_low, first_high_z);
+        let second = DriveState::from(false, false, true);
         assert_eq!(first.contend_with(second).unwrap(), first);
     }
 
@@ -204,9 +280,9 @@ mod tests {
         #[values(true, false)] first_high_z: bool,
         #[values(true, false)] second_high_z: bool,
     ) {
-        let first = PossibleSignals::from(bool_state, !bool_state, first_high_z);
-        let second = PossibleSignals::from(bool_state, !bool_state, second_high_z);
-        let res = PossibleSignals::from(bool_state, !bool_state, first_high_z & second_high_z);
+        let first = DriveState::from(bool_state, !bool_state, first_high_z);
+        let second = DriveState::from(bool_state, !bool_state, second_high_z);
+        let res = DriveState::from(bool_state, !bool_state, first_high_z & second_high_z);
         assert_eq!(first.contend_with(second).unwrap(), res);
     }
 
@@ -226,8 +302,8 @@ mod tests {
         #[values(true, false)] first_high_z: bool,
         #[values(true, false)] second_high_z: bool,
     ) {
-        let first = PossibleSignals::from(first_high, first_low, first_high_z);
-        let second = PossibleSignals::from(second_high, second_low, second_high_z);
+        let first = DriveState::from(first_high, first_low, first_high_z);
+        let second = DriveState::from(second_high, second_low, second_high_z);
         assert!(first.contend_with(second).is_none());
     }
 }

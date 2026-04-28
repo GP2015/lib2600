@@ -3,5 +3,5 @@
 #![allow(clippy::missing_errors_doc)]
 
 pub mod bit;
-pub mod pin;
+pub mod line;
 pub mod reg;

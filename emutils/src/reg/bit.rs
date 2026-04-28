@@ -1,4 +1,4 @@
-use crate::{pin::PinQuery, reg::states::PossibleBitStates};
+use crate::{line::Line, reg::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone)]
@@ -21,16 +21,16 @@ impl BitRegister {
         &self.name
     }
 
-    pub fn input_from_pin(&mut self, pin: &impl PinQuery, only_possible: bool) {
+    pub fn copy_from_line(&mut self, line: &Line, only_possible: bool) {
         if only_possible {
-            self.states.high = pin.could_read_high();
-            self.states.low = pin.could_read_low();
+            self.states.high = line.could_read_high();
+            self.states.low = line.could_read_low();
         } else {
-            if pin.could_read_high() {
+            if line.could_read_high() {
                 self.states.high = true;
             }
 
-            if pin.could_read_low() {
+            if line.could_read_low() {
                 self.states.low = true;
             }
         }
@@ -56,19 +56,17 @@ impl BitRegister {
 
 #[cfg(test)]
 mod tests {
-    use crate::pin::StandardPin;
-
     use super::*;
+    use crate::line::LineConnection;
     use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
 
     #[fixture]
-    fn single_pin() -> StandardPin {
-        let mut single_pin = StandardPin::new("");
-        single_pin.set_all_in(false, false, false).unwrap();
-        single_pin.set_all_out(false, false, false).unwrap();
-        single_pin
+    fn line_and_connection() -> (Line, LineConnection) {
+        let mut line = Line::new("");
+        let connection = line.create_connection();
+        (line, connection)
     }
 
     #[fixture]
@@ -88,31 +86,31 @@ mod tests {
     }
 
     #[rstest]
-    fn input_from_pin_not_only_possible(
+    fn copy_from_line_not_only_possible(
         #[values(true, false)] initial: bool,
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        mut single_pin: StandardPin,
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
     ) {
         reg.set_all(initial, initial);
-        single_pin.set_all_in(high, low, false).unwrap();
-        reg.input_from_pin(&single_pin, false);
+        line.set_all(connection, high, low, true).unwrap();
+        reg.copy_from_line(&line, false);
         assert_eq!(reg.high_possible(), high | initial);
         assert_eq!(reg.low_possible(), low | initial);
     }
 
     #[rstest]
-    fn input_from_pin_only_possible(
+    fn copy_from_line_only_possible(
         #[values(true, false)] initial: bool,
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        mut single_pin: StandardPin,
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
     ) {
         reg.set_all(initial, initial);
-        single_pin.set_all_in(high, low, false).unwrap();
-        reg.input_from_pin(&single_pin, true);
+        line.set_all(connection, high, low, true).unwrap();
+        reg.copy_from_line(&line, true);
         assert_eq!(reg.high_possible(), high);
         assert_eq!(reg.low_possible(), low);
     }

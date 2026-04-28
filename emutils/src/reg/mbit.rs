@@ -1,6 +1,6 @@
 use crate::{
     bit,
-    pin::BusInputUI,
+    line::Bus,
     reg::{BitRegister, RegisterError},
 };
 use delegate::delegate;
@@ -77,15 +77,12 @@ impl MBitRegister {
                 size: self.size(),
             });
         }
+
         self.add_wrapping(val, only_possible);
         Ok(())
     }
 
-    pub fn input_from_bus(
-        &mut self,
-        bus: &impl BusInputUI,
-        only_possible: bool,
-    ) -> Result<(), RegisterError> {
+    pub fn copy_from_bus(&mut self, bus: &Bus, only_possible: bool) -> Result<(), RegisterError> {
         if self.size() != bus.size() {
             return Err(RegisterError::IncompatibleBus {
                 reg_name: self.name.clone(),
@@ -94,9 +91,11 @@ impl MBitRegister {
                 bus_size: bus.size(),
             });
         }
+
         for (reg, pin) in self.iter_mut().zip(bus.iter()) {
-            reg.input_from_pin(pin, only_possible);
+            reg.copy_from_line(pin, only_possible);
         }
+
         Ok(())
     }
 

@@ -16,7 +16,7 @@ pub enum RegisterError {
         size: usize,
     },
 
-    #[error("bus {bus_name} and register {reg_name} have incompatible sizes")]
+    #[error("register {reg_name} and bus {bus_name} have incompatible sizes")]
     IncompatibleBus {
         reg_name: String,
         bus_name: String,
