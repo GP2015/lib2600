@@ -1,5 +1,3 @@
-use delegate::delegate;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PossibleBitStates {
     pub high: bool,
@@ -9,6 +7,14 @@ pub struct PossibleBitStates {
 impl PossibleBitStates {
     pub fn from(high: bool, low: bool) -> Self {
         Self { high, low }
+    }
+
+    pub fn high_possible(self) -> bool {
+        self.high
+    }
+
+    pub fn low_possible(self) -> bool {
+        self.low
     }
 
     pub fn is_possible(self, state: bool) -> bool {
@@ -55,15 +61,6 @@ impl PossibleBitStates {
     pub fn set_all(&mut self, high: bool, low: bool) {
         self.high = high;
         self.low = low;
-    }
-
-    delegate! {
-        to self {
-            #[call(is_possible)]
-            pub fn high_possible(self, [true]) -> bool;
-            #[call(is_possible)]
-            pub fn low_possible(self, [false]) -> bool;
-        }
     }
 }
 

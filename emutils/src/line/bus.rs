@@ -3,9 +3,9 @@ use crate::{
     line::{BusConnection, Line, LineConnection, LineError},
     reg::MBitRegister,
 };
-use delegate::delegate;
 use itertools::Itertools;
 
+#[derive(Debug)]
 pub struct Bus {
     name: String,
     lines: Box<[Line]>,
@@ -62,9 +62,9 @@ impl Bus {
         &mut self,
         connection: BusConnection,
         bit: usize,
-    ) -> Result<(&mut Line, LineConnection), LineError> {
+    ) -> Result<(&mut Line, &LineConnection), LineError> {
         self.check_for_bit_out_of_range(bit)?;
-        let connection = self.line_connections[connection.id()][bit];
+        let connection = &self.line_connections[connection.id()][bit];
         Ok((&mut self.lines[bit], connection))
     }
 
@@ -75,21 +75,21 @@ impl Bus {
     pub fn iter_mut(
         &mut self,
         connection: BusConnection,
-    ) -> impl Iterator<Item = (&mut Line, LineConnection)> {
+    ) -> impl Iterator<Item = (&mut Line, &LineConnection)> {
         self.lines
             .iter_mut()
-            .zip(self.line_connections[connection.id()].iter().copied())
+            .zip(self.line_connections[connection.id()].iter())
     }
 
     #[must_use]
-    pub fn read_when(&self, prev: bool) -> Option<usize> {
-        bit::some_bits_to_usize(self.lines.iter().map(|pin| pin.read_when(prev)))
+    pub fn read(&self) -> Option<usize> {
+        bit::some_bits_to_usize(self.lines.iter().map(Line::read))
     }
 
-    pub fn iter_possible_reads_when(&self, prev: bool) -> impl Iterator<Item = usize> {
+    pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
         self.lines
             .iter()
-            .map(|pin| pin.possible_reads_when(prev).iter().copied())
+            .map(|pin| pin.possible_reads().iter().copied())
             .multi_cartesian_product()
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }
@@ -100,7 +100,7 @@ impl Bus {
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for (bit, (line, &connection)) in self
+        for (bit, (line, connection)) in self
             .lines
             .iter_mut()
             .zip(self.line_connections[connection.id()].iter())
@@ -175,23 +175,6 @@ impl Bus {
         }
 
         Ok(())
-    }
-
-    delegate! {
-        #[must_use]
-        to self {
-            #[call(read_when)]
-            pub fn read(&self, [false]) -> Option<usize>;
-            #[call(read_when)]
-            pub fn read_prev(&self, [true]) -> Option<usize>;
-        }
-
-        to self {
-            #[call(iter_possible_reads_when)]
-            pub fn iter_possible_reads(&self, [false]) -> impl Iterator<Item = usize>;
-            #[call(iter_possible_reads_when)]
-            pub fn iter_prev_possible_reads(&self, [true]) -> impl Iterator<Item = usize>;
-        }
     }
 }
 

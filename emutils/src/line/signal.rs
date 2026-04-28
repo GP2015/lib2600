@@ -28,8 +28,8 @@ impl PinSignal {
     }
 
     #[must_use]
-    pub fn contend_together(first: Self, second: Self) -> Option<Self> {
-        match (first, second) {
+    pub fn contend_with(self, other: Self) -> Option<Self> {
+        match (self, other) {
             (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
             (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
             (any, PinSignal::HighZ) | (PinSignal::HighZ, any) => Some(any),
@@ -57,7 +57,7 @@ mod tests {
         assert_eq!(signal.as_bool().unwrap(), b);
     }
 
-    #[rstest]
+    #[test]
     fn as_bool_failure() {
         assert!(PinSignal::HighZ.as_bool().is_none());
     }
@@ -73,16 +73,15 @@ mod tests {
     fn contend_together_success(
         #[case] first: PinSignal,
         #[case] second: PinSignal,
-        #[case] result: PinSignal,
+        #[case] res: PinSignal,
     ) {
-        let o = PinSignal::contend_together(first, second).unwrap();
-        assert_eq!(o, result);
+        assert_eq!(first.contend_with(second).unwrap(), res);
     }
 
     #[rstest]
     #[case(PinSignal::Low, PinSignal::High)]
     #[case(PinSignal::High, PinSignal::Low)]
     fn contend_together_failure(#[case] first: PinSignal, #[case] second: PinSignal) {
-        assert!(PinSignal::contend_together(first, second).is_none());
+        assert!(first.contend_with(second).is_none());
     }
 }

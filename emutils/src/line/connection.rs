@@ -1,6 +1,6 @@
 use getset::CopyGetters;
 
-#[derive(Clone, Copy, CopyGetters)]
+#[derive(CopyGetters, Debug)]
 pub struct LineConnection {
     #[get_copy = "pub(crate)"]
     id: usize,

@@ -75,29 +75,14 @@ mod tests {
     }
 
     #[rstest]
-    fn name(reg: BitRegister) {
-        assert_eq!(reg.name(), REG_NAME);
-    }
-
-    #[rstest]
-    fn read_initial(reg: BitRegister) {
+    fn initial(reg: BitRegister) {
         assert!(reg.high_possible());
         assert!(reg.low_possible());
     }
 
     #[rstest]
-    fn copy_from_line_not_only_possible(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
-    ) {
-        reg.set_all(initial, initial);
-        line.set_all(connection, high, low, true).unwrap();
-        reg.copy_from_line(&line, false);
-        assert_eq!(reg.high_possible(), high | initial);
-        assert_eq!(reg.low_possible(), low | initial);
+    fn name(reg: BitRegister) {
+        assert_eq!(reg.name(), REG_NAME);
     }
 
     #[rstest]
@@ -109,9 +94,24 @@ mod tests {
         #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
     ) {
         reg.set_all(initial, initial);
-        line.set_all(connection, high, low, true).unwrap();
+        line.set_all(&connection, high, low, false).unwrap();
         reg.copy_from_line(&line, true);
         assert_eq!(reg.high_possible(), high);
         assert_eq!(reg.low_possible(), low);
+    }
+
+    #[rstest]
+    fn copy_from_line_not_only_possible(
+        #[values(true, false)] initial: bool,
+        #[values(true, false)] high: bool,
+        #[values(true, false)] low: bool,
+        mut reg: BitRegister,
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
+    ) {
+        reg.set_all(initial, initial);
+        line.set_all(&connection, high, low, false).unwrap();
+        reg.copy_from_line(&line, false);
+        assert_eq!(reg.high_possible(), high | initial);
+        assert_eq!(reg.low_possible(), low | initial);
     }
 }

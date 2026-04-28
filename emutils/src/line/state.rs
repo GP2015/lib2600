@@ -1,20 +1,28 @@
 use crate::line::PinSignal;
 use delegate::delegate;
-use getset::CopyGetters;
 
-#[derive(Clone, Copy, Debug, PartialEq, CopyGetters)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DriveState {
-    #[get_copy]
-    high: bool,
-    #[get_copy]
-    low: bool,
-    #[get_copy]
-    high_z: bool,
+    pub high: bool,
+    pub low: bool,
+    pub high_z: bool,
 }
 
 impl DriveState {
     pub fn from(high: bool, low: bool, high_z: bool) -> Self {
         Self { high, low, high_z }
+    }
+
+    pub fn high_possible(self) -> bool {
+        self.high
+    }
+
+    pub fn low_possible(self) -> bool {
+        self.low
+    }
+
+    pub fn high_z_possible(self) -> bool {
+        self.high_z
     }
 
     pub fn is_possible(self, signal: PinSignal) -> bool {
@@ -112,7 +120,7 @@ impl DriveState {
 
         for first_signal in self.iter_possible() {
             for second_signal in other.iter_possible() {
-                let signal = PinSignal::contend_together(first_signal, second_signal)?;
+                let signal = first_signal.contend_with(second_signal)?;
                 result.add(signal, false);
             }
         }
@@ -122,13 +130,6 @@ impl DriveState {
 
     delegate! {
         to self{
-            #[call(high)]
-            pub fn high_possible(self) -> bool;
-            #[call(low)]
-            pub fn low_possible(self) -> bool;
-            #[call(high_z)]
-            pub fn high_z_possible(self) -> bool;
-
             #[call(add)]
             pub fn add_high(&mut self, [PinSignal::High], only_possible: bool);
             #[call(add)]
@@ -176,6 +177,77 @@ mod tests {
     }
 
     #[rstest]
+    #[case(false, false, false, false, false)]
+    #[case(false, false, true, true, true)]
+    #[case(false, true, false, false, true)]
+    #[case(false, true, true, true, true)]
+    #[case(true, false, false, true, false)]
+    #[case(true, false, true, true, true)]
+    #[case(true, true, false, true, true)]
+    #[case(true, true, true, true, true)]
+    fn could_read(
+        #[case] high: bool,
+        #[case] low: bool,
+        #[case] high_z: bool,
+        #[case] could_read_high: bool,
+        #[case] could_read_low: bool,
+    ) {
+        let signals = DriveState::from(high, low, high_z);
+        assert_eq!(signals.could_read_high(), could_read_high);
+        assert_eq!(signals.could_read_low(), could_read_low);
+    }
+
+    #[rstest]
+    #[case(true, false, false, PinSignal::High)]
+    #[case(false, true, false, PinSignal::Low)]
+    #[case(false, false, true, PinSignal::HighZ)]
+    fn collapsed_success(
+        #[case] high: bool,
+        #[case] low: bool,
+        #[case] high_z: bool,
+        #[case] res: PinSignal,
+    ) {
+        let state = DriveState::from(high, low, high_z);
+        assert_eq!(state.collapsed().unwrap(), res);
+    }
+
+    #[rstest]
+    #[case(false, false, false)]
+    #[case(false, true, true)]
+    #[case(true, false, true)]
+    #[case(true, true, false)]
+    #[case(true, true, true)]
+    fn collapsed_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
+        let state = DriveState::from(high, low, high_z);
+        assert!(state.collapsed().is_none());
+    }
+
+    #[rstest]
+    #[case(true, false, false, true)]
+    #[case(false, true, false, false)]
+    fn read_success(
+        #[case] high: bool,
+        #[case] low: bool,
+        #[case] high_z: bool,
+        #[case] res: bool,
+    ) {
+        let signals = DriveState::from(high, low, high_z);
+        assert_eq!(signals.read().unwrap(), res);
+    }
+
+    #[rstest]
+    #[case(false, false, false)]
+    #[case(false, false, true)]
+    #[case(false, true, true)]
+    #[case(true, false, true)]
+    #[case(true, true, false)]
+    #[case(true, true, true)]
+    fn read_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
+        let signals = DriveState::from(high, low, high_z);
+        assert!(signals.read().is_none());
+    }
+
+    #[rstest]
     #[case(false, false, false, &[])]
     #[case(false, false, true, &[PinSignal::HighZ])]
     #[case(false, true, false, &[PinSignal::Low])]
@@ -184,7 +256,7 @@ mod tests {
     #[case(true, false, true, &[PinSignal::High, PinSignal::HighZ])]
     #[case(true, true, false, &[PinSignal::High, PinSignal::Low])]
     #[case(true, true, true, &[PinSignal::High, PinSignal::Low, PinSignal::HighZ])]
-    fn iter_all_enabled(
+    fn iter_possible(
         #[case] high: bool,
         #[case] low: bool,
         #[case] high_z: bool,
@@ -193,6 +265,25 @@ mod tests {
         let signals = DriveState::from(high, low, high_z)
             .iter_possible()
             .collect::<Vec<PinSignal>>();
+        assert_eq!(signals, res);
+    }
+
+    #[rstest]
+    #[case(false, false, false, &[])]
+    #[case(false, false, true, &[true, false])]
+    #[case(false, true, false, &[false])]
+    #[case(false, true, true, &[true, false])]
+    #[case(true, false, false, &[true])]
+    #[case(true, false, true, &[true, false])]
+    #[case(true, true, false, &[true, false])]
+    #[case(true, true, true, &[true, false])]
+    fn possible_reads(
+        #[case] high: bool,
+        #[case] low: bool,
+        #[case] high_z: bool,
+        #[case] res: &[bool],
+    ) {
+        let signals = DriveState::from(high, low, high_z).possible_reads();
         assert_eq!(signals, res);
     }
 
@@ -230,6 +321,24 @@ mod tests {
         for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal != s && initial);
         }
+    }
+
+    #[rstest]
+    fn add_drive(#[values(true, false)] state: bool) {
+        let mut signals = DriveState::from(false, false, false);
+        signals.add_drive(state, true);
+        assert_eq!(signals.is_possible(PinSignal::High), state);
+        assert_eq!(signals.is_possible(PinSignal::Low), !state);
+        assert!(!signals.is_possible(PinSignal::HighZ));
+    }
+
+    #[rstest]
+    fn remove_drive(#[values(true, false)] state: bool) {
+        let mut signals = DriveState::from(true, true, true);
+        signals.remove_drive(state);
+        assert_eq!(signals.is_possible(PinSignal::High), !state);
+        assert_eq!(signals.is_possible(PinSignal::Low), state);
+        assert!(signals.is_possible(PinSignal::HighZ));
     }
 
     #[rstest]
