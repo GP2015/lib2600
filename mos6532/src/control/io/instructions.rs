@@ -11,10 +11,6 @@ pub struct PossibleIoInstructions {
 }
 
 impl PossibleIoInstructions {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn only_possible(&self) -> bool {
         [
             self.write_ora,

@@ -6,8 +6,53 @@ mod ram;
 mod reset;
 mod timer;
 
-use crate::{Riot, RiotError, control::instructions::PossibleInstructions};
-use emutils::pin::{BusInputUI, PinInputUI};
+use crate::{Riot, RiotError, control::instructions::PossibleInstructions, pins::RiotLineRefs};
+
+pub(crate) fn possible_instructions(
+    lines: &mut RiotLineRefs,
+) -> Result<PossibleInstructions, RiotError> {
+    let mut instructions = PossibleInstructions::default();
+
+    if lines.cs1.could_read_low() || lines.cs2.could_read_high() {
+        instructions.nop = true;
+    }
+
+    if lines.cs1.could_read_high() && lines.cs2.could_read_low() {
+        if lines.rs.could_read_low() {
+            instructions.ram = true;
+        }
+
+        if lines.rs.could_read_high() {
+            if lines.a.pin(2)?.could_read_low() {
+                instructions.io = true;
+            }
+
+            if lines.a.pin(2)?.could_read_high() {
+                if lines.rw.could_read_low() {
+                    if lines.a.pin(4)?.could_read_low() {
+                        instructions.write_edc = true;
+                    }
+
+                    if lines.a.pin(4)?.could_read_high() {
+                        instructions.write_timer = true;
+                    }
+                }
+
+                if lines.rw.could_read_high() {
+                    if lines.a.pin(0)?.could_read_low() {
+                        instructions.read_timer = true;
+                    }
+
+                    if lines.a.pin(0)?.could_read_high() {
+                        instructions.read_interrupt_flag = true;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(instructions)
+}
 
 impl Riot {
     // pub fn tick(&mut self) -> Result<(), RiotError> {
@@ -47,82 +92,39 @@ impl Riot {
     //     Ok(())
     // }
 
-    pub(crate) fn possible_instructions(&mut self) -> PossibleInstructions {
-        let mut instructions = PossibleInstructions::new();
-
-        if self.pin.cs1.could_read_low() || self.pin.cs2.could_read_high() {
-            instructions.nop = true;
-        }
-
-        if self.pin.cs1.could_read_high() && self.pin.cs2.could_read_low() {
-            if self.pin.rs.could_read_low() {
-                instructions.ram = true;
-            }
-
-            if self.pin.rs.could_read_high() {
-                if self.pin.a.pin(2).expect("valid pin").could_read_low() {
-                    instructions.io = true;
-                }
-
-                if self.pin.a.pin(2).expect("valid pin").could_read_high() {
-                    if self.pin.rw.could_read_low() {
-                        if self.pin.a.pin(4).expect("valid pin").could_read_low() {
-                            instructions.write_edc = true;
-                        }
-
-                        if self.pin.a.pin(4).expect("valid pin").could_read_high() {
-                            instructions.write_timer = true;
-                        }
-                    }
-
-                    if self.pin.rw.could_read_high() {
-                        if self.pin.a.pin(0).expect("valid pin").could_read_low() {
-                            instructions.read_timer = true;
-                        }
-
-                        if self.pin.a.pin(0).expect("valid pin").could_read_high() {
-                            instructions.read_interrupt_flag = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        instructions
-    }
-
     pub(crate) fn execute_possible_instructions(
         &mut self,
+        lines: &mut RiotLineRefs,
         instructions: &PossibleInstructions,
     ) -> Result<(), RiotError> {
         let only_possible = instructions.only_possible();
 
         if instructions.reset {
-            self.handle_reset(only_possible);
+            self.handle_reset(lines, only_possible);
         }
 
         if instructions.ram {
-            self.handle_ram(only_possible)?;
+            self.handle_ram(lines, only_possible)?;
         }
 
         if instructions.io {
-            self.handle_io(only_possible)?;
+            self.handle_io(lines, only_possible)?;
         }
 
         if instructions.write_timer {
-            self.handle_write_timer(only_possible)?;
+            self.handle_write_timer(lines, only_possible)?;
         }
 
         if instructions.read_timer {
-            self.handle_read_timer(only_possible)?;
+            self.handle_read_timer(lines, only_possible)?;
         }
 
         if instructions.read_interrupt_flag {
-            self.handle_read_interrupt_flag(only_possible)?;
+            self.handle_read_interrupt_flag(lines, only_possible)?;
         }
 
         if instructions.write_edc {
-            self.handle_write_edc(only_possible)?;
+            self.handle_write_edc(lines, only_possible)?;
         }
 
         Ok(())

@@ -1,8 +1,9 @@
-use crate::{Riot, RiotError};
+use crate::{Riot, RiotError, pins::RiotLineRefs};
 
 impl Riot {
     pub(crate) fn handle_read_interrupt_flag(
         &mut self,
+        lines: &mut RiotLineRefs,
         only_possible: bool,
     ) -> Result<(), RiotError> {
         Ok(())

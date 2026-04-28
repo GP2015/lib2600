@@ -11,10 +11,6 @@ pub struct PossibleInstructions {
 }
 
 impl PossibleInstructions {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn only_possible(&self) -> bool {
         [
             self.nop,

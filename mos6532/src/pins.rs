@@ -1,38 +1,36 @@
-use emutils::pin::{BusCore, ContentionPin, InputPin, PinCore, StandardBus};
+use emutils::line::{Bus, BusConnection, Line};
 
-pub(crate) type InputPinType = InputPin;
-pub(crate) type OutputPinType = ContentionPin;
-pub(crate) type AddressBusType = StandardBus<InputPinType>;
-pub(crate) type DataBusType = StandardBus<OutputPinType>;
-
-pub struct Pins {
-    pub a: AddressBusType,
-    pub db: DataBusType,
-    pub pa: DataBusType,
-    pub pb: DataBusType,
-    pub res: InputPinType,
-    pub phi2: InputPinType,
-    pub cs1: InputPinType,
-    pub cs2: InputPinType,
-    pub rs: InputPinType,
-    pub rw: InputPinType,
-    pub irq: OutputPinType,
+pub struct RiotLineRefs<'a> {
+    pub a: &'a Bus,
+    pub db: &'a mut Bus,
+    pub pa: &'a mut Bus,
+    pub pb: &'a mut Bus,
+    pub res: &'a Line,
+    pub cs1: &'a Line,
+    pub cs2: &'a Line,
+    pub rs: &'a Line,
+    pub rw: &'a Line,
+    pub irq: &'a mut Line,
 }
 
-impl Pins {
-    pub(crate) fn new() -> Self {
+pub struct RiotLineInitRefs<'a> {
+    pub db: &'a mut Bus,
+    pub pa: &'a mut Bus,
+    pub pb: &'a mut Bus,
+}
+
+pub struct PinConnections {
+    pub db: BusConnection,
+    pub pa: BusConnection,
+    pub pb: BusConnection,
+}
+
+impl PinConnections {
+    pub(crate) fn new(inits: &mut RiotLineInitRefs) -> Self {
         Self {
-            a: AddressBusType::new("A", 7),
-            db: DataBusType::new("DB", 8),
-            pa: DataBusType::new("PA", 8),
-            pb: DataBusType::new("PB", 8),
-            res: InputPinType::new("/RES"),
-            phi2: InputPinType::new("PHI2"),
-            cs1: InputPinType::new("CS1"),
-            cs2: InputPinType::new("/CS2"),
-            rw: InputPinType::new("R/W"),
-            rs: InputPinType::new("/RS"),
-            irq: OutputPinType::new("/IRQ"),
+            db: inits.db.create_connection(),
+            pa: inits.pa.create_connection(),
+            pb: inits.pb.create_connection(),
         }
     }
 }

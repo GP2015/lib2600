@@ -1,11 +1,19 @@
-use crate::{Riot, RiotError};
+use crate::{Riot, RiotError, pins::RiotLineRefs};
 
 impl Riot {
-    pub(crate) fn handle_write_timer(&mut self, only_possible: bool) -> Result<(), RiotError> {
+    pub(crate) fn handle_write_timer(
+        &mut self,
+        lines: &mut RiotLineRefs,
+        only_possible: bool,
+    ) -> Result<(), RiotError> {
         Ok(())
     }
 
-    pub(crate) fn handle_read_timer(&mut self, only_possible: bool) -> Result<(), RiotError> {
+    pub(crate) fn handle_read_timer(
+        &mut self,
+        lines: &mut RiotLineRefs,
+        only_possible: bool,
+    ) -> Result<(), RiotError> {
         Ok(())
     }
 
