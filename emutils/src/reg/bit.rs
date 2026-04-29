@@ -1,7 +1,7 @@
 use crate::{line::Line, reg::states::PossibleBitStates};
 use delegate::delegate;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BitRegister {
     name: String,
     states: PossibleBitStates,

@@ -6,7 +6,7 @@ use crate::{
 use delegate::delegate;
 use itertools::Itertools;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MBitRegister {
     name: String,
     bits: Box<[BitRegister]>,
