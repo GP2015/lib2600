@@ -12,7 +12,7 @@ impl LineConnection {
     }
 }
 
-#[derive(Clone, Copy, CopyGetters)]
+#[derive(CopyGetters, Debug)]
 pub struct BusConnection {
     #[get_copy = "pub(crate)"]
     id: usize,

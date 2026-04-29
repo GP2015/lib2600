@@ -262,9 +262,9 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: &[PinSignal],
     ) {
-        let signals = DriveState::from(high, low, high_z)
+        let signals: Vec<PinSignal> = DriveState::from(high, low, high_z)
             .iter_possible()
-            .collect::<Vec<PinSignal>>();
+            .collect();
         assert_eq!(signals, res);
     }
 

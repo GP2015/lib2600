@@ -60,7 +60,7 @@ impl Bus {
 
     pub fn pin_mut(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
         bit: usize,
     ) -> Result<(&mut Line, &LineConnection), LineError> {
         self.check_for_bit_out_of_range(bit)?;
@@ -74,7 +74,7 @@ impl Bus {
 
     pub fn iter_mut(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
     ) -> impl Iterator<Item = (&mut Line, &LineConnection)> {
         self.lines
             .iter_mut()
@@ -96,7 +96,7 @@ impl Bus {
 
     pub fn add_drive_wrapping(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
@@ -113,7 +113,7 @@ impl Bus {
 
     pub fn add_drive(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
@@ -134,7 +134,7 @@ impl Bus {
 
     pub fn copy_from_bus(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
         bus: &Bus,
         only_possible: bool,
     ) -> Result<(), LineError> {
@@ -157,7 +157,7 @@ impl Bus {
 
     pub fn copy_from_reg(
         &mut self,
-        connection: BusConnection,
+        connection: &BusConnection,
         reg: &MBitRegister,
         only_possible: bool,
     ) -> Result<(), LineError> {
