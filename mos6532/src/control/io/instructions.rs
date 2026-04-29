@@ -1,3 +1,5 @@
+use crate::{RiotLineRefs, error::RiotError};
+
 #[derive(Debug, Default)]
 pub struct PossibleIoInstructions {
     pub write_ora: bool,
@@ -26,5 +28,55 @@ impl PossibleIoInstructions {
         .filter(|&b| b)
         .count()
             < 2
+    }
+
+    pub fn from(lines: &mut RiotLineRefs) -> Result<Self, RiotError> {
+        let mut instructions = Self::default();
+
+        if lines.a.pin(0)?.could_read_low() {
+            if lines.a.pin(1)?.could_read_low() {
+                if lines.rw.could_read_low() {
+                    instructions.write_ora = true;
+                }
+
+                if lines.rw.could_read_high() {
+                    instructions.read_ora = true;
+                }
+            }
+
+            if lines.a.pin(1)?.could_read_high() {
+                if lines.rw.could_read_low() {
+                    instructions.write_orb = true;
+                }
+
+                if lines.rw.could_read_high() {
+                    instructions.read_orb = true;
+                }
+            }
+        }
+
+        if lines.a.pin(0)?.could_read_high() {
+            if lines.a.pin(1)?.could_read_low() {
+                if lines.rw.could_read_low() {
+                    instructions.write_ddra = true;
+                }
+
+                if lines.rw.could_read_high() {
+                    instructions.read_ddra = true;
+                }
+            }
+
+            if lines.a.pin(1)?.could_read_high() {
+                if lines.rw.could_read_low() {
+                    instructions.write_ddrb = true;
+                }
+
+                if lines.rw.could_read_high() {
+                    instructions.read_ddrb = true;
+                }
+            }
+        }
+
+        Ok(instructions)
     }
 }

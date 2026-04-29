@@ -1,4 +1,4 @@
-use crate::{Riot, RiotError, pins::RiotLineRefs};
+use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
     pub(crate) fn handle_write_timer(
@@ -18,18 +18,18 @@ impl Riot {
     }
 
     // pub(super) fn tick_timer(&mut self) -> Result<(), RiotError> {
-    //     match self.reg.timer_flag.read()? {
+    //     match self.timer_flag.read()? {
     //         false => {
-    //             self.reg.sub_timer.decrement()?;
+    //             self.sub_timer.decrement()?;
 
-    //             if self.reg.sub_timer.read()? == 0 {
-    //                 if self.reg.timer.read()? == 0 {
+    //             if self.sub_timer.read()? == 0 {
+    //                 if self.timer.read()? == 0 {
     //                     //
     //                 } else {
-    //                     self.reg.timer.decrement()?;
+    //                     self.timer.decrement()?;
     //                 }
 
-    //                 self.reg.sub_timer.write(self.reg.timer_inc.read()?)?;
+    //                 self.sub_timer.write(self.timer_inc.read()?)?;
     //             }
     //         }
     //         true => {

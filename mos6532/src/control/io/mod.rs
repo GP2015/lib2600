@@ -1,61 +1,12 @@
-mod ab;
 mod instructions;
 
-use crate::{
-    Riot, RiotError,
-    control::io::{ab::AB, instructions::PossibleIoInstructions},
-    pins::RiotLineRefs,
-};
+use crate::{Riot, RiotError, RiotLineRefs, control::io::instructions::PossibleIoInstructions};
 use itertools::izip;
 
-fn possible_io_instructions(lines: &mut RiotLineRefs) -> Result<PossibleIoInstructions, RiotError> {
-    let mut instructions = PossibleIoInstructions::default();
-
-    if lines.a.pin(0)?.could_read_low() {
-        if lines.a.pin(1)?.could_read_low() {
-            if lines.rw.could_read_low() {
-                instructions.write_ora = true;
-            }
-
-            if lines.rw.could_read_high() {
-                instructions.read_ora = true;
-            }
-        }
-
-        if lines.a.pin(1)?.could_read_high() {
-            if lines.rw.could_read_low() {
-                instructions.write_orb = true;
-            }
-
-            if lines.rw.could_read_high() {
-                instructions.read_orb = true;
-            }
-        }
-    }
-
-    if lines.a.pin(0)?.could_read_high() {
-        if lines.a.pin(1)?.could_read_low() {
-            if lines.rw.could_read_low() {
-                instructions.write_ddra = true;
-            }
-
-            if lines.rw.could_read_high() {
-                instructions.read_ddra = true;
-            }
-        }
-
-        if lines.a.pin(1)?.could_read_high() {
-            if lines.rw.could_read_low() {
-                instructions.write_ddrb = true;
-            }
-
-            if lines.rw.could_read_high() {
-                instructions.read_ddrb = true;
-            }
-        }
-    }
-
-    Ok(instructions)
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AB {
+    A,
+    B,
 }
 
 impl Riot {
@@ -64,7 +15,7 @@ impl Riot {
         lines: &mut RiotLineRefs,
         mut only_possible: bool,
     ) -> Result<(), RiotError> {
-        let instructions = possible_io_instructions(lines)?;
+        let instructions = PossibleIoInstructions::from(lines)?;
         only_possible &= instructions.only_possible();
         self.execute_possible_io_instructions(lines, &instructions, only_possible)?;
 
@@ -127,8 +78,8 @@ impl Riot {
         only_possible: bool,
     ) -> Result<(), RiotError> {
         match ab {
-            AB::A => &mut self.reg.ddra,
-            AB::B => &mut self.reg.ddrb,
+            AB::A => &mut self.ddra,
+            AB::B => &mut self.ddrb,
         }
         .copy_from_bus(lines.db, only_possible)
         .map_err(Into::into)
@@ -143,10 +94,10 @@ impl Riot {
         lines
             .db
             .copy_from_reg(
-                self.connections.db,
+                self.db_con,
                 match ab {
-                    AB::A => &self.reg.ddra,
-                    AB::B => &self.reg.ddrb,
+                    AB::A => &self.ddra,
+                    AB::B => &self.ddrb,
                 },
                 only_possible,
             )
@@ -160,8 +111,8 @@ impl Riot {
         only_possible: bool,
     ) -> Result<(), RiotError> {
         match ab {
-            AB::A => &mut self.reg.ora,
-            AB::B => &mut self.reg.orb,
+            AB::A => &mut self.ora,
+            AB::B => &mut self.orb,
         }
         .copy_from_bus(lines.db, only_possible)
         .map_err(Into::into)
@@ -170,15 +121,15 @@ impl Riot {
     fn read_ora(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         lines
             .db
-            .copy_from_bus(self.connections.db, lines.pa, only_possible)
+            .copy_from_bus(self.db_con, lines.pa, only_possible)
             .map_err(Into::into)
     }
 
     fn read_orb(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         for (bit, ((line, line_con), reg)) in lines
             .db
-            .iter_mut(self.connections.db)
-            .zip(self.reg.ddrb.iter())
+            .iter_mut(self.db_con)
+            .zip(self.ddrb.iter())
             .enumerate()
         {
             let reg_could_read_high = reg.high_possible();
@@ -195,7 +146,7 @@ impl Riot {
             if reg_could_read_high {
                 line.copy_from_reg(
                     line_con,
-                    self.reg.orb.bit(bit).expect("valid bit"),
+                    self.orb.bit(bit).expect("valid bit"),
                     only_possible && !reg_could_read_low,
                 )?;
             }
@@ -211,18 +162,8 @@ impl Riot {
         only_possible: bool,
     ) -> Result<(), RiotError> {
         let (p, bus_con, ddr, or) = match ab {
-            AB::A => (
-                &mut lines.pa,
-                self.connections.pa,
-                &self.reg.ddra,
-                &self.reg.ora,
-            ),
-            AB::B => (
-                &mut lines.pb,
-                self.connections.pb,
-                &self.reg.ddrb,
-                &self.reg.orb,
-            ),
+            AB::A => (&mut lines.pa, self.pa_con, &self.ddra, &self.ora),
+            AB::B => (&mut lines.pb, self.pb_con, &self.ddrb, &self.orb),
         };
 
         for ((p_pin, line_con), ddr_bit, or_bit) in
