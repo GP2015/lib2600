@@ -7,7 +7,6 @@ edition.workspace = true
 delegate.workspace = true
 getset.workspace = true
 itertools.workspace = true
-num-traits.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
 
