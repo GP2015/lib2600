@@ -1,4 +1,4 @@
-use crate::{RiotLineRefs, error::RiotError};
+use crate::RiotLineRefs;
 
 #[derive(Debug, Default)]
 pub struct PossibleIoInstructions {
@@ -30,11 +30,11 @@ impl PossibleIoInstructions {
             < 2
     }
 
-    pub fn from(lines: &mut RiotLineRefs) -> Result<Self, RiotError> {
+    pub fn from(lines: &mut RiotLineRefs) -> Self {
         let mut instructions = Self::default();
 
-        if lines.a.pin(0)?.could_read_low() {
-            if lines.a.pin(1)?.could_read_low() {
+        if lines.a.pin(0).expect("already checked").could_read_low() {
+            if lines.a.pin(1).expect("already checked").could_read_low() {
                 if lines.rw.could_read_low() {
                     instructions.write_ora = true;
                 }
@@ -44,7 +44,7 @@ impl PossibleIoInstructions {
                 }
             }
 
-            if lines.a.pin(1)?.could_read_high() {
+            if lines.a.pin(1).expect("already checked").could_read_high() {
                 if lines.rw.could_read_low() {
                     instructions.write_orb = true;
                 }
@@ -55,8 +55,8 @@ impl PossibleIoInstructions {
             }
         }
 
-        if lines.a.pin(0)?.could_read_high() {
-            if lines.a.pin(1)?.could_read_low() {
+        if lines.a.pin(0).expect("already checked").could_read_high() {
+            if lines.a.pin(1).expect("already checked").could_read_low() {
                 if lines.rw.could_read_low() {
                     instructions.write_ddra = true;
                 }
@@ -66,7 +66,7 @@ impl PossibleIoInstructions {
                 }
             }
 
-            if lines.a.pin(1)?.could_read_high() {
+            if lines.a.pin(1).expect("already checked").could_read_high() {
                 if lines.rw.could_read_low() {
                     instructions.write_ddrb = true;
                 }
@@ -77,6 +77,6 @@ impl PossibleIoInstructions {
             }
         }
 
-        Ok(instructions)
+        instructions
     }
 }

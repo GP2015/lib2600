@@ -3,13 +3,18 @@ mod ram;
 
 use crate::{
     RiotError,
-    refs::RiotLineRefs,
+    line_refs::RiotLineRefs,
     riot::{instructions::PossibleInstructions, ram::Ram},
 };
 use emutils::{
     line::{BusConnection, LineConnection},
     reg::MBitRegister,
 };
+
+const A_SIZE: usize = 7;
+const DB_SIZE: usize = 8;
+const PA_SIZE: usize = 8;
+const PB_SIZE: usize = 8;
 
 #[derive(Default)]
 enum ClkCycle {
@@ -63,9 +68,25 @@ impl Riot {
     }
 
     pub fn tick(&mut self, lines: &mut RiotLineRefs) -> Result<(), RiotError> {
+        for (bus, required_size) in [
+            (lines.a, A_SIZE),
+            (lines.db, DB_SIZE),
+            (lines.pa, PA_SIZE),
+            (lines.pb, PB_SIZE),
+        ] {
+            let actual_size = bus.size();
+            if actual_size != required_size {
+                return Err(RiotError::InvalidBusSize {
+                    name: bus.name().to_string(),
+                    required_size,
+                    actual_size,
+                });
+            }
+        }
+
         self.clk_cycle.step();
 
-        let instructions = PossibleInstructions::from(lines)?;
+        let instructions = PossibleInstructions::from(lines);
         self.execute_possible_instructions(lines, &instructions)
     }
 

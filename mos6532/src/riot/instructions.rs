@@ -1,4 +1,4 @@
-use crate::{error::RiotError, refs::RiotLineRefs};
+use crate::line_refs::RiotLineRefs;
 
 #[derive(Debug, Default)]
 pub struct PossibleInstructions {
@@ -30,7 +30,7 @@ impl PossibleInstructions {
             < 2
     }
 
-    pub fn from(lines: &mut RiotLineRefs) -> Result<Self, RiotError> {
+    pub fn from(lines: &mut RiotLineRefs) -> Self {
         let mut instructions = Self::default();
 
         if lines.cs1.could_read_low() || lines.cs2.could_read_high() {
@@ -43,27 +43,27 @@ impl PossibleInstructions {
             }
 
             if lines.rs.could_read_high() {
-                if lines.a.pin(2)?.could_read_low() {
+                if lines.a.pin(2).expect("already checked").could_read_low() {
                     instructions.io = true;
                 }
 
-                if lines.a.pin(2)?.could_read_high() {
+                if lines.a.pin(2).expect("already checked").could_read_high() {
                     if lines.rw.could_read_low() {
-                        if lines.a.pin(4)?.could_read_low() {
+                        if lines.a.pin(4).expect("already checked").could_read_low() {
                             instructions.write_edc = true;
                         }
 
-                        if lines.a.pin(4)?.could_read_high() {
+                        if lines.a.pin(4).expect("already checked").could_read_high() {
                             instructions.write_timer = true;
                         }
                     }
 
                     if lines.rw.could_read_high() {
-                        if lines.a.pin(0)?.could_read_low() {
+                        if lines.a.pin(0).expect("already checked").could_read_low() {
                             instructions.read_timer = true;
                         }
 
-                        if lines.a.pin(0)?.could_read_high() {
+                        if lines.a.pin(0).expect("already checked").could_read_high() {
                             instructions.read_interrupt_flag = true;
                         }
                     }
@@ -71,6 +71,6 @@ impl PossibleInstructions {
             }
         }
 
-        Ok(instructions)
+        instructions
     }
 }

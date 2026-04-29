@@ -9,7 +9,7 @@
 
 mod control;
 mod error;
-mod refs;
+mod line_refs;
 mod riot;
 
-pub use crate::{error::RiotError, refs::RiotLineRefs, riot::Riot};
+pub use crate::{error::RiotError, line_refs::RiotLineRefs, riot::Riot};

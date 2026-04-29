@@ -15,7 +15,7 @@ impl Riot {
         lines: &mut RiotLineRefs,
         mut only_possible: bool,
     ) -> Result<(), RiotError> {
-        let instructions = PossibleIoInstructions::from(lines)?;
+        let instructions = PossibleIoInstructions::from(lines);
         only_possible &= instructions.only_possible();
         self.execute_possible_io_instructions(lines, &instructions, only_possible)?;
 
@@ -37,7 +37,7 @@ impl Riot {
         only_possible: bool,
     ) -> Result<(), RiotError> {
         if instructions.write_ora {
-            self.write_or(lines, AB::A, only_possible)?;
+            self.write_or(lines, AB::A, only_possible);
         }
 
         if instructions.read_ora {
@@ -45,7 +45,7 @@ impl Riot {
         }
 
         if instructions.write_orb {
-            self.write_or(lines, AB::B, only_possible)?;
+            self.write_or(lines, AB::B, only_possible);
         }
 
         if instructions.read_orb {
@@ -53,7 +53,7 @@ impl Riot {
         }
 
         if instructions.write_ddra {
-            self.write_ddr(lines, AB::A, only_possible)?;
+            self.write_ddr(lines, AB::A, only_possible);
         }
 
         if instructions.read_ddra {
@@ -61,7 +61,7 @@ impl Riot {
         }
 
         if instructions.write_ddrb {
-            self.write_ddr(lines, AB::B, only_possible)?;
+            self.write_ddr(lines, AB::B, only_possible);
         }
 
         if instructions.read_ddrb {
@@ -71,18 +71,13 @@ impl Riot {
         Ok(())
     }
 
-    fn write_ddr(
-        &mut self,
-        lines: &mut RiotLineRefs,
-        ab: AB,
-        only_possible: bool,
-    ) -> Result<(), RiotError> {
+    fn write_ddr(&mut self, lines: &mut RiotLineRefs, ab: AB, only_possible: bool) {
         match ab {
             AB::A => &mut self.ddra,
             AB::B => &mut self.ddrb,
         }
         .copy_from_bus(lines.db, only_possible)
-        .map_err(Into::into)
+        .expect("already checked");
     }
 
     fn read_ddr(
@@ -94,7 +89,7 @@ impl Riot {
         lines
             .db
             .copy_from_reg(
-                self.db_con,
+                &self.db_con,
                 match ab {
                     AB::A => &self.ddra,
                     AB::B => &self.ddrb,
@@ -104,31 +99,26 @@ impl Riot {
             .map_err(Into::into)
     }
 
-    fn write_or(
-        &mut self,
-        lines: &mut RiotLineRefs,
-        ab: AB,
-        only_possible: bool,
-    ) -> Result<(), RiotError> {
+    fn write_or(&mut self, lines: &mut RiotLineRefs, ab: AB, only_possible: bool) {
         match ab {
             AB::A => &mut self.ora,
             AB::B => &mut self.orb,
         }
         .copy_from_bus(lines.db, only_possible)
-        .map_err(Into::into)
+        .expect("already checked");
     }
 
     fn read_ora(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         lines
             .db
-            .copy_from_bus(self.db_con, lines.pa, only_possible)
+            .copy_from_bus(&self.db_con, lines.pa, only_possible)
             .map_err(Into::into)
     }
 
     fn read_orb(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         for (bit, ((line, line_con), reg)) in lines
             .db
-            .iter_mut(self.db_con)
+            .iter_mut(&self.db_con)
             .zip(self.ddrb.iter())
             .enumerate()
         {
@@ -138,7 +128,7 @@ impl Riot {
             if reg_could_read_low {
                 line.copy_from_line(
                     line_con,
-                    lines.pb.pin(bit)?,
+                    lines.pb.pin(bit).expect("already checked"),
                     only_possible && !reg_could_read_high,
                 )?;
             }
@@ -146,7 +136,7 @@ impl Riot {
             if reg_could_read_high {
                 line.copy_from_reg(
                     line_con,
-                    self.orb.bit(bit).expect("valid bit"),
+                    self.orb.bit(bit).expect("must be valid"),
                     only_possible && !reg_could_read_low,
                 )?;
             }
@@ -162,8 +152,8 @@ impl Riot {
         only_possible: bool,
     ) -> Result<(), RiotError> {
         let (p, bus_con, ddr, or) = match ab {
-            AB::A => (&mut lines.pa, self.pa_con, &self.ddra, &self.ora),
-            AB::B => (&mut lines.pb, self.pb_con, &self.ddrb, &self.orb),
+            AB::A => (&mut lines.pa, &self.pa_con, &self.ddra, &self.ora),
+            AB::B => (&mut lines.pb, &self.pb_con, &self.ddrb, &self.orb),
         };
 
         for ((p_pin, line_con), ddr_bit, or_bit) in

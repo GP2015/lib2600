@@ -44,7 +44,7 @@ mod tests {
     #[rstest]
     fn read_uninitialised_byte(ram: Ram) {
         for bit in ram.byte(67).iter() {
-            assert!(bit.possible_reads().len() == 2);
+            assert_eq!(bit.possible_reads(), [true, false]);
         }
     }
 
@@ -55,11 +55,11 @@ mod tests {
         ram.reset();
 
         for bit in ram.byte(23).iter() {
-            assert!(bit.possible_reads().len() == 2);
+            assert_eq!(bit.possible_reads(), [true, false]);
         }
 
         for bit in ram.byte(67).iter() {
-            assert!(bit.possible_reads().len() == 2);
+            assert_eq!(bit.possible_reads(), [true, false]);
         }
     }
 }
