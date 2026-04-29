@@ -1,4 +1,4 @@
-use crate::{RiotLineRefs, error::RiotError};
+use crate::{error::RiotError, refs::RiotLineRefs};
 
 #[derive(Debug, Default)]
 pub struct PossibleInstructions {
