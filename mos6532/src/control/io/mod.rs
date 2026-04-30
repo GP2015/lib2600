@@ -128,7 +128,7 @@ impl Riot {
             if reg_could_read_low {
                 line.copy_from_line(
                     line_con,
-                    lines.pb.pin(bit).expect("already checked"),
+                    lines.pb.line(bit).expect("already checked"),
                     only_possible && !reg_could_read_high,
                 )?;
             }
@@ -156,11 +156,11 @@ impl Riot {
             AB::B => (&mut lines.pb, &self.pb_con, &self.ddrb, &self.orb),
         };
 
-        for ((p_pin, line_con), ddr_bit, or_bit) in
+        for ((p_line, line_con), ddr_bit, or_bit) in
             izip!(p.iter_mut(bus_con), ddr.iter(), or.iter())
         {
             if ddr_bit.high_possible() {
-                p_pin.copy_from_reg(line_con, or_bit, only_possible && !ddr_bit.low_possible())?;
+                p_line.copy_from_reg(line_con, or_bit, only_possible && !ddr_bit.low_possible())?;
             }
         }
 

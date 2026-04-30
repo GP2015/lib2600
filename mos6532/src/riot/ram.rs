@@ -24,8 +24,8 @@ impl Ram {
 
     pub fn reset(&mut self) {
         for byte in &mut self.bytes {
-            for bitreg in byte.iter_mut() {
-                bitreg.set_all(true, true);
+            for reg in byte.iter_mut() {
+                reg.set_all(true, true);
             }
         }
     }

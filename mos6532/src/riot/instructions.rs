@@ -48,27 +48,27 @@ impl PossibleInstructions {
                 }
 
                 if lines.rs.could_read_high() {
-                    if lines.a.pin(2).expect("already checked").could_read_low() {
+                    if lines.a.line(2).expect("already checked").could_read_low() {
                         instructions.io = true;
                     }
 
-                    if lines.a.pin(2).expect("already checked").could_read_high() {
+                    if lines.a.line(2).expect("already checked").could_read_high() {
                         if lines.rw.could_read_low() {
-                            if lines.a.pin(4).expect("already checked").could_read_low() {
+                            if lines.a.line(4).expect("already checked").could_read_low() {
                                 instructions.write_edc = true;
                             }
 
-                            if lines.a.pin(4).expect("already checked").could_read_high() {
+                            if lines.a.line(4).expect("already checked").could_read_high() {
                                 instructions.write_timer = true;
                             }
                         }
 
                         if lines.rw.could_read_high() {
-                            if lines.a.pin(0).expect("already checked").could_read_low() {
+                            if lines.a.line(0).expect("already checked").could_read_low() {
                                 instructions.read_timer = true;
                             }
 
-                            if lines.a.pin(0).expect("already checked").could_read_high() {
+                            if lines.a.line(0).expect("already checked").could_read_high() {
                                 instructions.read_interrupt_flag = true;
                             }
                         }
