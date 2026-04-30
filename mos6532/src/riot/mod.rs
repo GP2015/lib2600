@@ -7,7 +7,7 @@ use crate::{
 };
 use emutils::{
     line::{BusConnection, LineConnection},
-    reg::MBitRegister,
+    reg::{BitRegister, MBitRegister},
 };
 
 #[allow(dead_code)]
@@ -22,6 +22,10 @@ pub struct Riot {
     pub(crate) ddrb: MBitRegister,
     pub(crate) ora: MBitRegister,
     pub(crate) orb: MBitRegister,
+    pub(crate) edc_enables_irq: BitRegister,
+    pub(crate) edc_edge_type: BitRegister,
+    pub(crate) edc_interrupt_flag: BitRegister,
+    pub(crate) timer_interrupt_flag: BitRegister,
 }
 
 impl Riot {
@@ -43,6 +47,10 @@ impl Riot {
             ddrb: MBitRegister::new("DDRB", 8),
             ora: MBitRegister::new("ORA", 8),
             orb: MBitRegister::new("ORB", 8),
+            edc_enables_irq: BitRegister::new("EDC Enables IRQ"),
+            edc_edge_type: BitRegister::new("EDC Edge Type"),
+            edc_interrupt_flag: BitRegister::new("EDC Interrupt Flag"),
+            timer_interrupt_flag: BitRegister::new("Timer Interrupt Flag"),
         }
     }
 

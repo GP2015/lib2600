@@ -7,18 +7,21 @@ impl Riot {
         lines: &mut RiotLineRefs,
         only_possible: bool,
     ) -> Result<(), RiotError> {
-        todo!()
+        for line_index in 0..8 {
+            let (line, con) = lines
+                .db
+                .line_mut(&self.db_con, line_index)
+                .expect("already checked");
+
+            match line_index {
+                7 => line.copy_from_reg(con, &self.timer_interrupt_flag, only_possible)?,
+                6 => line.copy_from_reg(con, &self.edc_interrupt_flag, only_possible)?,
+                _ => line.add_low(con, only_possible)?,
+            }
+        }
+
+        self.edc_interrupt_flag.add(false, only_possible);
+
+        Ok(())
     }
-
-    // pub(super) fn read_interrupt_flag(&mut self) -> Result<(), RiotError> {
-    //     let edc_interrupt_flag_usize = self.edc_interrupt_flag.read()? as usize;
-    //     let timer_flag_usize = self.timer_flag.read()? as usize;
-    //     let interrupt_reg = (edc_interrupt_flag_usize << 7) | (timer_flag_usize << 6);
-
-    //     self.db_out().drive_out(interrupt_reg)?;
-
-    //     self.edc_interrupt_flag.write(false);
-
-    //     Ok(())
-    // }
 }

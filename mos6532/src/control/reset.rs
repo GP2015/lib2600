@@ -17,7 +17,8 @@ impl Riot {
             .iter_mut(&self.pb_con)
             .for_each(|(line, connection)| line.add_high_z(connection, only_possible));
 
-        // self.edc_enable_irq.add(false, only_possible);
-        // self.edc_use_pos_edge.add(false, only_possible);
+        self.edc_enables_irq.add(false, only_possible);
+        self.edc_edge_type.add(false, only_possible);
+        self.edc_interrupt_flag.set_all(true, true);
     }
 }
