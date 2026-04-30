@@ -2,8 +2,7 @@ mod instructions;
 mod ram;
 
 use crate::{
-    RiotError,
-    line_refs::RiotLineRefs,
+    ClkCycle, RiotError, RiotLineRefs,
     riot::{instructions::PossibleInstructions, ram::Ram},
 };
 use emutils::{
@@ -11,27 +10,7 @@ use emutils::{
     reg::MBitRegister,
 };
 
-const A_SIZE: usize = 7;
-const DB_SIZE: usize = 8;
-const PA_SIZE: usize = 8;
-const PB_SIZE: usize = 8;
-
-#[derive(Default)]
-enum ClkCycle {
-    #[default]
-    ClkLow,
-    ClkHigh,
-}
-
-impl ClkCycle {
-    pub fn step(&mut self) {
-        *self = match self {
-            Self::ClkLow => Self::ClkHigh,
-            Self::ClkHigh => Self::ClkLow,
-        }
-    }
-}
-
+#[allow(dead_code)]
 pub struct Riot {
     clk_cycle: ClkCycle,
     pub(crate) ram: Ram,
@@ -67,27 +46,30 @@ impl Riot {
         }
     }
 
+    #[must_use]
+    pub fn clk_cycle(&self) -> ClkCycle {
+        self.clk_cycle
+    }
+
     pub fn tick(&mut self, lines: &mut RiotLineRefs) -> Result<(), RiotError> {
-        for (bus, required_size) in [
-            (lines.a, A_SIZE),
-            (lines.db, DB_SIZE),
-            (lines.pa, PA_SIZE),
-            (lines.pb, PB_SIZE),
-        ] {
-            let actual_size = bus.size();
-            if actual_size != required_size {
-                return Err(RiotError::InvalidBusSize {
-                    name: bus.name().to_string(),
-                    required_size,
-                    actual_size,
-                });
+        lines.check_bus_sizes()?;
+
+        self.clk_cycle = match self.clk_cycle {
+            ClkCycle::ClkLow => {
+                let instructions = PossibleInstructions::from(lines);
+                self.execute_possible_instructions(lines, &instructions)?;
+                ClkCycle::ClkHigh
             }
-        }
+            ClkCycle::ClkHigh => {
+                lines
+                    .db
+                    .iter_mut(&self.db_con)
+                    .for_each(|(line, con)| line.add_high_z(con, true));
+                ClkCycle::ClkLow
+            }
+        };
 
-        self.clk_cycle.step();
-
-        let instructions = PossibleInstructions::from(lines);
-        self.execute_possible_instructions(lines, &instructions)
+        Ok(())
     }
 
     fn execute_possible_instructions(

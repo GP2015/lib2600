@@ -7,9 +7,10 @@
     clippy::similar_names
 )]
 
+mod clk_cycle;
 mod control;
 mod error;
 mod line_refs;
 mod riot;
 
-pub use crate::{error::RiotError, line_refs::RiotLineRefs, riot::Riot};
+pub use crate::{clk_cycle::ClkCycle, error::RiotError, line_refs::RiotLineRefs, riot::Riot};
