@@ -1,12 +1,13 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
+    #[allow(unused_variables)]
     pub(crate) fn handle_read_interrupt_flag(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
     ) -> Result<(), RiotError> {
-        Ok(())
+        todo!()
     }
 
     // pub(super) fn read_interrupt_flag(&mut self) -> Result<(), RiotError> {

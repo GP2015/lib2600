@@ -1,20 +1,22 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
+    #[allow(unused_variables)]
     pub(crate) fn handle_write_timer(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
     ) -> Result<(), RiotError> {
-        Ok(())
+        todo!()
     }
 
+    #[allow(unused_variables)]
     pub(crate) fn handle_read_timer(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
     ) -> Result<(), RiotError> {
-        Ok(())
+        todo!()
     }
 
     // pub(super) fn tick_timer(&mut self) -> Result<(), RiotError> {

@@ -10,6 +10,7 @@ use crate::{Riot, RiotLineRefs};
 #[cfg(test)]
 use emutils::line::{Bus, BusConnection, Line, LineConnection};
 
+#[allow(dead_code)]
 #[cfg(test)]
 struct TestUtils {
     pub a: Bus,
