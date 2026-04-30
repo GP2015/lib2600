@@ -1,7 +1,7 @@
 use strum_macros::Display;
 
 #[derive(Clone, Copy, Debug, Display, PartialEq)]
-pub enum PinSignal {
+pub enum LineSignal {
     #[strum(to_string = "high")]
     High,
 
@@ -12,28 +12,28 @@ pub enum PinSignal {
     HighZ,
 }
 
-impl PinSignal {
+impl LineSignal {
     #[must_use]
     pub fn from_bool(b: bool) -> Self {
-        if b { PinSignal::High } else { PinSignal::Low }
+        if b { LineSignal::High } else { LineSignal::Low }
     }
 
     #[must_use]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
-            PinSignal::High => Some(true),
-            PinSignal::Low => Some(false),
-            PinSignal::HighZ => None,
+            LineSignal::High => Some(true),
+            LineSignal::Low => Some(false),
+            LineSignal::HighZ => None,
         }
     }
 
     #[must_use]
     pub fn contend_with(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (PinSignal::Low, PinSignal::Low) => Some(PinSignal::Low),
-            (PinSignal::High, PinSignal::High) => Some(PinSignal::High),
-            (any, PinSignal::HighZ) | (PinSignal::HighZ, any) => Some(any),
-            (PinSignal::Low, PinSignal::High) | (PinSignal::High, PinSignal::Low) => None,
+            (LineSignal::Low, LineSignal::Low) => Some(LineSignal::Low),
+            (LineSignal::High, LineSignal::High) => Some(LineSignal::High),
+            (any, LineSignal::HighZ) | (LineSignal::HighZ, any) => Some(any),
+            (LineSignal::Low, LineSignal::High) | (LineSignal::High, LineSignal::Low) => None,
         }
     }
 }
@@ -44,44 +44,44 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(false, PinSignal::Low)]
-    #[case(true, PinSignal::High)]
-    fn from_bool(#[case] b: bool, #[case] signal: PinSignal) {
-        assert_eq!(PinSignal::from_bool(b), signal);
+    #[case(false, LineSignal::Low)]
+    #[case(true, LineSignal::High)]
+    fn from_bool(#[case] b: bool, #[case] signal: LineSignal) {
+        assert_eq!(LineSignal::from_bool(b), signal);
     }
 
     #[rstest]
-    #[case(PinSignal::Low, false)]
-    #[case(PinSignal::High, true)]
-    fn as_bool_success(#[case] signal: PinSignal, #[case] b: bool) {
+    #[case(LineSignal::Low, false)]
+    #[case(LineSignal::High, true)]
+    fn as_bool_success(#[case] signal: LineSignal, #[case] b: bool) {
         assert_eq!(signal.as_bool().unwrap(), b);
     }
 
     #[test]
     fn as_bool_failure() {
-        assert!(PinSignal::HighZ.as_bool().is_none());
+        assert!(LineSignal::HighZ.as_bool().is_none());
     }
 
     #[rstest]
-    #[case(PinSignal::Low, PinSignal::Low, PinSignal::Low)]
-    #[case(PinSignal::Low, PinSignal::HighZ, PinSignal::Low)]
-    #[case(PinSignal::High, PinSignal::High, PinSignal::High)]
-    #[case(PinSignal::High, PinSignal::HighZ, PinSignal::High)]
-    #[case(PinSignal::HighZ, PinSignal::Low, PinSignal::Low)]
-    #[case(PinSignal::HighZ, PinSignal::High, PinSignal::High)]
-    #[case(PinSignal::HighZ, PinSignal::HighZ, PinSignal::HighZ)]
+    #[case(LineSignal::Low, LineSignal::Low, LineSignal::Low)]
+    #[case(LineSignal::Low, LineSignal::HighZ, LineSignal::Low)]
+    #[case(LineSignal::High, LineSignal::High, LineSignal::High)]
+    #[case(LineSignal::High, LineSignal::HighZ, LineSignal::High)]
+    #[case(LineSignal::HighZ, LineSignal::Low, LineSignal::Low)]
+    #[case(LineSignal::HighZ, LineSignal::High, LineSignal::High)]
+    #[case(LineSignal::HighZ, LineSignal::HighZ, LineSignal::HighZ)]
     fn contend_together_success(
-        #[case] first: PinSignal,
-        #[case] second: PinSignal,
-        #[case] res: PinSignal,
+        #[case] first: LineSignal,
+        #[case] second: LineSignal,
+        #[case] res: LineSignal,
     ) {
         assert_eq!(first.contend_with(second).unwrap(), res);
     }
 
     #[rstest]
-    #[case(PinSignal::Low, PinSignal::High)]
-    #[case(PinSignal::High, PinSignal::Low)]
-    fn contend_together_failure(#[case] first: PinSignal, #[case] second: PinSignal) {
+    #[case(LineSignal::Low, LineSignal::High)]
+    #[case(LineSignal::High, LineSignal::Low)]
+    fn contend_together_failure(#[case] first: LineSignal, #[case] second: LineSignal) {
         assert!(first.contend_with(second).is_none());
     }
 }

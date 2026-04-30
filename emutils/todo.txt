@@ -1,3 +1,3 @@
 Add remaining MBitRegister unit tests
-Add single pin unit tests
+Add line unit tests
 Add bus unit tests

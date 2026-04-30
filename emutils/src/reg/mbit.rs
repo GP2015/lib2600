@@ -92,8 +92,8 @@ impl MBitRegister {
             });
         }
 
-        for (reg, pin) in self.iter_mut().zip(bus.iter()) {
-            reg.copy_from_line(pin, only_possible);
+        for (reg, line) in self.iter_mut().zip(bus.iter()) {
+            reg.copy_from_line(line, only_possible);
         }
 
         Ok(())

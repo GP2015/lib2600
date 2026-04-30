@@ -1,5 +1,5 @@
 use crate::{
-    line::{LineConnection, LineError, PinSignal, state::DriveState},
+    line::{LineConnection, LineError, LineSignal, state::DriveState},
     reg::BitRegister,
 };
 use delegate::delegate;
@@ -100,7 +100,7 @@ impl Line {
     delegate! {
         #[must_use]
         to self.combined_state{
-            pub fn is_possible(&self, signal: PinSignal) -> bool;
+            pub fn is_possible(&self, signal: LineSignal) -> bool;
 
             pub fn high_possible(&self) -> bool;
             pub fn low_possible(&self) -> bool;
@@ -109,18 +109,18 @@ impl Line {
             pub fn could_read_high(&self) -> bool;
             pub fn could_read_low(&self) -> bool;
 
-            pub fn collapsed(&self) -> Option<PinSignal>;
+            pub fn collapsed(&self) -> Option<LineSignal>;
             pub fn read(&self) -> Option<bool>;
             pub fn possible_reads(&self) -> &'static [bool];
         }
 
         to self.combined_state{
-            pub fn iter_possible(&self) -> impl Iterator<Item = PinSignal>;
+            pub fn iter_possible(&self) -> impl Iterator<Item = LineSignal>;
         }
 
         #[expr($; self.update_combined_state())]
         to |connection: &LineConnection| self.connection_states[connection.id()]{
-            pub fn add(&mut self, signal: PinSignal, only_possible: bool) -> Result<(), LineError>;
+            pub fn add(&mut self, signal: LineSignal, only_possible: bool) -> Result<(), LineError>;
 
             pub fn add_high(&mut self, only_possible: bool) -> Result<(), LineError>;
             pub fn add_low(&mut self, only_possible: bool) -> Result<(), LineError>;
@@ -133,7 +133,7 @@ impl Line {
         to |connection: &LineConnection| self.connection_states[connection.id()]{
             pub fn add_high_z(&mut self, only_possible: bool);
 
-            pub fn remove(&mut self, signal: PinSignal);
+            pub fn remove(&mut self, signal: LineSignal);
 
             pub fn remove_high(&mut self);
             pub fn remove_low(&mut self);

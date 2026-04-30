@@ -27,8 +27,8 @@ impl Bus {
     }
 
     pub fn create_connection(&mut self) -> BusConnection {
-        let pin_connections = self.lines.iter_mut().map(Line::create_connection).collect();
-        self.line_connections.push(pin_connections);
+        let line_connections = self.lines.iter_mut().map(Line::create_connection).collect();
+        self.line_connections.push(line_connections);
         BusConnection::new(self.line_connections.len() - 1)
     }
 
@@ -53,12 +53,12 @@ impl Bus {
         Ok(())
     }
 
-    pub fn pin(&self, bit: usize) -> Result<&Line, LineError> {
+    pub fn line(&self, bit: usize) -> Result<&Line, LineError> {
         self.check_for_bit_out_of_range(bit)?;
         Ok(&self.lines[bit])
     }
 
-    pub fn pin_mut(
+    pub fn line_mut(
         &mut self,
         connection: &BusConnection,
         bit: usize,
@@ -89,7 +89,7 @@ impl Bus {
     pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
         self.lines
             .iter()
-            .map(|pin| pin.possible_reads().iter().copied())
+            .map(|line| line.possible_reads().iter().copied())
             .multi_cartesian_product()
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }
@@ -200,13 +200,13 @@ impl Bus {
 //     }
 
 //     #[rstest]
-//     fn pin_out_of_range(mut bus: BusType) {
+//     fn line_out_of_range(mut bus: BusType) {
 //         assert!(matches!(
-//             bus.pin(8).err().unwrap(),
+//             bus.line(8).err().unwrap(),
 //             LineError::BitOutOfRange { .. }
 //         ));
 //         assert!(matches!(
-//             bus.pin_mut(9).err().unwrap(),
+//             bus.line_mut(9).err().unwrap(),
 //             LineError::BitOutOfRange { .. }
 //         ));
 //     }

@@ -1,4 +1,4 @@
-use crate::line::PinSignal;
+use crate::line::LineSignal;
 use delegate::delegate;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -25,11 +25,11 @@ impl DriveState {
         self.high_z
     }
 
-    pub fn is_possible(self, signal: PinSignal) -> bool {
+    pub fn is_possible(self, signal: LineSignal) -> bool {
         match signal {
-            PinSignal::High => self.high,
-            PinSignal::Low => self.low,
-            PinSignal::HighZ => self.high_z,
+            LineSignal::High => self.high,
+            LineSignal::Low => self.low,
+            LineSignal::HighZ => self.high_z,
         }
     }
 
@@ -41,11 +41,11 @@ impl DriveState {
         self.low | self.high_z
     }
 
-    pub fn collapsed(self) -> Option<PinSignal> {
+    pub fn collapsed(self) -> Option<LineSignal> {
         match (self.high, self.low, self.high_z) {
-            (true, false, false) => Some(PinSignal::High),
-            (false, true, false) => Some(PinSignal::Low),
-            (false, false, true) => Some(PinSignal::HighZ),
+            (true, false, false) => Some(LineSignal::High),
+            (false, true, false) => Some(LineSignal::Low),
+            (false, false, true) => Some(LineSignal::HighZ),
             _ => None,
         }
     }
@@ -54,11 +54,11 @@ impl DriveState {
         self.collapsed().and_then(|signal| signal.as_bool())
     }
 
-    pub fn iter_possible(self) -> impl Iterator<Item = PinSignal> {
+    pub fn iter_possible(self) -> impl Iterator<Item = LineSignal> {
         [
-            (self.high, PinSignal::High),
-            (self.low, PinSignal::Low),
-            (self.high_z, PinSignal::HighZ),
+            (self.high, LineSignal::High),
+            (self.low, LineSignal::Low),
+            (self.high_z, LineSignal::HighZ),
         ]
         .into_iter()
         .filter_map(|(enabled, signal)| enabled.then_some(signal))
@@ -73,23 +73,23 @@ impl DriveState {
         }
     }
 
-    pub fn add(&mut self, signal: PinSignal, only_possible: bool) {
+    pub fn add(&mut self, signal: LineSignal, only_possible: bool) {
         if only_possible {
             self.set_all(false, false, false);
         }
 
         match signal {
-            PinSignal::High => self.high = true,
-            PinSignal::Low => self.low = true,
-            PinSignal::HighZ => self.high_z = true,
+            LineSignal::High => self.high = true,
+            LineSignal::Low => self.low = true,
+            LineSignal::HighZ => self.high_z = true,
         }
     }
 
-    pub fn remove(&mut self, signal: PinSignal) {
+    pub fn remove(&mut self, signal: LineSignal) {
         match signal {
-            PinSignal::High => self.high = false,
-            PinSignal::Low => self.low = false,
-            PinSignal::HighZ => self.high_z = false,
+            LineSignal::High => self.high = false,
+            LineSignal::Low => self.low = false,
+            LineSignal::HighZ => self.high_z = false,
         }
     }
 
@@ -131,18 +131,18 @@ impl DriveState {
     delegate! {
         to self{
             #[call(add)]
-            pub fn add_high(&mut self, [PinSignal::High], only_possible: bool);
+            pub fn add_high(&mut self, [LineSignal::High], only_possible: bool);
             #[call(add)]
-            pub fn add_low(&mut self, [PinSignal::Low], only_possible: bool);
+            pub fn add_low(&mut self, [LineSignal::Low], only_possible: bool);
             #[call(add)]
-            pub fn add_high_z(&mut self, [PinSignal::HighZ], only_possible: bool);
+            pub fn add_high_z(&mut self, [LineSignal::HighZ], only_possible: bool);
 
             #[call(remove)]
-            pub fn remove_high(&mut self, [PinSignal::High]);
+            pub fn remove_high(&mut self, [LineSignal::High]);
             #[call(remove)]
-            pub fn remove_low(&mut self, [PinSignal::Low]);
+            pub fn remove_low(&mut self, [LineSignal::Low]);
             #[call(remove)]
-            pub fn remove_high_z(&mut self, [PinSignal::HighZ]);
+            pub fn remove_high_z(&mut self, [LineSignal::HighZ]);
         }
     }
 }
@@ -171,9 +171,9 @@ mod tests {
         #[values(true, false)] high_z: bool,
     ) {
         let signals = DriveState::from(high, low, high_z);
-        assert_eq!(signals.is_possible(PinSignal::High), high);
-        assert_eq!(signals.is_possible(PinSignal::Low), low);
-        assert_eq!(signals.is_possible(PinSignal::HighZ), high_z);
+        assert_eq!(signals.is_possible(LineSignal::High), high);
+        assert_eq!(signals.is_possible(LineSignal::Low), low);
+        assert_eq!(signals.is_possible(LineSignal::HighZ), high_z);
     }
 
     #[rstest]
@@ -198,14 +198,14 @@ mod tests {
     }
 
     #[rstest]
-    #[case(true, false, false, PinSignal::High)]
-    #[case(false, true, false, PinSignal::Low)]
-    #[case(false, false, true, PinSignal::HighZ)]
+    #[case(true, false, false, LineSignal::High)]
+    #[case(false, true, false, LineSignal::Low)]
+    #[case(false, false, true, LineSignal::HighZ)]
     fn collapsed_success(
         #[case] high: bool,
         #[case] low: bool,
         #[case] high_z: bool,
-        #[case] res: PinSignal,
+        #[case] res: LineSignal,
     ) {
         let state = DriveState::from(high, low, high_z);
         assert_eq!(state.collapsed().unwrap(), res);
@@ -249,20 +249,20 @@ mod tests {
 
     #[rstest]
     #[case(false, false, false, &[])]
-    #[case(false, false, true, &[PinSignal::HighZ])]
-    #[case(false, true, false, &[PinSignal::Low])]
-    #[case(false, true, true, &[PinSignal::Low, PinSignal::HighZ])]
-    #[case(true, false, false, &[PinSignal::High])]
-    #[case(true, false, true, &[PinSignal::High, PinSignal::HighZ])]
-    #[case(true, true, false, &[PinSignal::High, PinSignal::Low])]
-    #[case(true, true, true, &[PinSignal::High, PinSignal::Low, PinSignal::HighZ])]
+    #[case(false, false, true, &[LineSignal::HighZ])]
+    #[case(false, true, false, &[LineSignal::Low])]
+    #[case(false, true, true, &[LineSignal::Low, LineSignal::HighZ])]
+    #[case(true, false, false, &[LineSignal::High])]
+    #[case(true, false, true, &[LineSignal::High, LineSignal::HighZ])]
+    #[case(true, true, false, &[LineSignal::High, LineSignal::Low])]
+    #[case(true, true, true, &[LineSignal::High, LineSignal::Low, LineSignal::HighZ])]
     fn iter_possible(
         #[case] high: bool,
         #[case] low: bool,
         #[case] high_z: bool,
-        #[case] res: &[PinSignal],
+        #[case] res: &[LineSignal],
     ) {
-        let signals: Vec<PinSignal> = DriveState::from(high, low, high_z)
+        let signals: Vec<LineSignal> = DriveState::from(high, low, high_z)
             .iter_possible()
             .collect();
         assert_eq!(signals, res);
@@ -290,11 +290,11 @@ mod tests {
     #[rstest]
     fn add_not_only_possible(
         #[values(true, false)] initial: bool,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
         let mut signals = DriveState::from(initial, initial, initial);
         signals.add(signal, false);
-        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s || initial);
         }
     }
@@ -302,11 +302,11 @@ mod tests {
     #[rstest]
     fn add_only_possible(
         #[values(true, false)] initial: bool,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
         let mut signals = DriveState::from(initial, initial, initial);
         signals.add(signal, true);
-        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s);
         }
     }
@@ -314,11 +314,11 @@ mod tests {
     #[rstest]
     fn remove(
         #[values(true, false)] initial: bool,
-        #[values(PinSignal::High, PinSignal::Low, PinSignal::HighZ)] signal: PinSignal,
+        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
         let mut signals = DriveState::from(initial, initial, initial);
         signals.remove(signal);
-        for s in [PinSignal::High, PinSignal::Low, PinSignal::HighZ] {
+        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal != s && initial);
         }
     }
@@ -327,18 +327,18 @@ mod tests {
     fn add_drive(#[values(true, false)] state: bool) {
         let mut signals = DriveState::from(false, false, false);
         signals.add_drive(state, true);
-        assert_eq!(signals.is_possible(PinSignal::High), state);
-        assert_eq!(signals.is_possible(PinSignal::Low), !state);
-        assert!(!signals.is_possible(PinSignal::HighZ));
+        assert_eq!(signals.is_possible(LineSignal::High), state);
+        assert_eq!(signals.is_possible(LineSignal::Low), !state);
+        assert!(!signals.is_possible(LineSignal::HighZ));
     }
 
     #[rstest]
     fn remove_drive(#[values(true, false)] state: bool) {
         let mut signals = DriveState::from(true, true, true);
         signals.remove_drive(state);
-        assert_eq!(signals.is_possible(PinSignal::High), !state);
-        assert_eq!(signals.is_possible(PinSignal::Low), state);
-        assert!(signals.is_possible(PinSignal::HighZ));
+        assert_eq!(signals.is_possible(LineSignal::High), !state);
+        assert_eq!(signals.is_possible(LineSignal::Low), state);
+        assert!(signals.is_possible(LineSignal::HighZ));
     }
 
     #[rstest]
