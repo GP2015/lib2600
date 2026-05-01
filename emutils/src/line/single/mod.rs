@@ -1,5 +1,7 @@
+pub mod state;
+
 use crate::{
-    line::{LineConnection, LineError, LineSignal, state::DriveState},
+    line::{LineConnection, LineError, LineSignal, LineState},
     reg::BitRegister,
 };
 use delegate::delegate;
@@ -7,8 +9,8 @@ use delegate::delegate;
 #[derive(Debug)]
 pub struct Line {
     name: String,
-    connection_states: Vec<DriveState>,
-    combined_state: DriveState,
+    connection_states: Vec<LineState>,
+    combined_state: LineState,
 }
 
 impl Line {
@@ -16,12 +18,12 @@ impl Line {
         Self {
             name: name.into(),
             connection_states: Vec::new(),
-            combined_state: DriveState::from(false, false, false),
+            combined_state: LineState::from(false, false, false),
         }
     }
 
     pub fn create_connection(&mut self) -> LineConnection {
-        let state = DriveState::from(false, false, false);
+        let state = LineState::from(false, false, false);
         self.connection_states.push(state);
         LineConnection::new(self.connection_states.len() - 1)
     }
@@ -31,13 +33,18 @@ impl Line {
         &self.name
     }
 
+    #[must_use]
+    pub fn state(&self) -> LineState {
+        self.combined_state
+    }
+
     fn update_combined_state(&mut self) -> Result<(), LineError> {
-        let init = DriveState::from(false, false, true);
+        let init = LineState::from(false, false, true);
         self.combined_state = self
             .connection_states
             .iter()
             .copied()
-            .try_fold(init, DriveState::contend_with)
+            .try_fold(init, LineState::contend_with)
             .ok_or(LineError::ShortCircuit {
                 name: self.name().to_string(),
             })?;

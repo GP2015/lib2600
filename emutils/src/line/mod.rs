@@ -3,12 +3,11 @@ mod connection;
 mod error;
 mod signal;
 mod single;
-mod state;
 
 pub use {
-    bus::Bus,
+    bus::{Bus, state::BusState},
     connection::{BusConnection, LineConnection},
     error::LineError,
     signal::LineSignal,
-    single::Line,
+    single::{Line, state::LineState},
 };

@@ -1,6 +1,8 @@
+pub mod state;
+
 use crate::{
     bit,
-    line::{BusConnection, Line, LineConnection, LineError},
+    line::{BusConnection, Line, LineConnection, LineError, bus::state::BusState},
     reg::MBitRegister,
 };
 use itertools::Itertools;
@@ -82,6 +84,11 @@ impl Bus {
     }
 
     #[must_use]
+    pub fn state(&self) -> BusState {
+        BusState::new(self.lines.iter().map(Line::state).collect())
+    }
+
+    #[must_use]
     pub fn read(&self) -> Option<usize> {
         bit::some_bits_to_usize(self.lines.iter().map(Line::read))
     }
@@ -92,6 +99,11 @@ impl Bus {
             .map(|line| line.possible_reads().iter().copied())
             .multi_cartesian_product()
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
+    }
+
+    pub fn add_high_z(&mut self, connection: &BusConnection, only_possible: bool) {
+        self.iter_mut(connection)
+            .for_each(|(line, con)| line.add_high_z(con, only_possible));
     }
 
     pub fn add_drive_wrapping(
