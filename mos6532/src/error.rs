@@ -12,7 +12,6 @@ pub enum RiotError {
         required_size: usize,
         actual_size: usize,
     },
-
-    #[error("non-standard usage not yet implemented: {0}")]
-    NonStandardUsage(String),
+    // #[error("non-standard usage not yet implemented: {0}")]
+    // NonStandardUsage(String),
 }
