@@ -11,6 +11,7 @@ pub struct RiotLineRefs<'a> {
     pub db: &'a mut Bus,
     pub pa: &'a mut Bus,
     pub pb: &'a mut Bus,
+    pub phi2: &'a Line,
     pub res: &'a Line,
     pub cs1: &'a Line,
     pub cs2: &'a Line,

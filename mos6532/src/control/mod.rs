@@ -17,6 +17,7 @@ struct TestUtils {
     pub db: Bus,
     pub pa: Bus,
     pub pb: Bus,
+    pub phi2: Line,
     pub res: Line,
     pub cs1: Line,
     pub cs2: Line,
@@ -27,6 +28,7 @@ struct TestUtils {
     pub db_con: BusConnection,
     pub pa_con: BusConnection,
     pub pb_con: BusConnection,
+    pub phi2_con: LineConnection,
     pub res_con: LineConnection,
     pub cs1_con: LineConnection,
     pub cs2_con: LineConnection,
@@ -42,6 +44,7 @@ impl TestUtils {
         let mut db = Bus::new("db", 8);
         let mut pa = Bus::new("pa", 8);
         let mut pb = Bus::new("pb", 8);
+        let mut phi2 = Line::new("phi2");
         let mut res = Line::new("res");
         let mut cs1 = Line::new("cs1");
         let mut cs2 = Line::new("cs2");
@@ -54,6 +57,7 @@ impl TestUtils {
             db_con: db.create_connection(),
             pa_con: pa.create_connection(),
             pb_con: pb.create_connection(),
+            phi2_con: phi2.create_connection(),
             res_con: res.create_connection(),
             cs1_con: cs1.create_connection(),
             cs2_con: cs2.create_connection(),
@@ -64,6 +68,7 @@ impl TestUtils {
             db,
             pa,
             pb,
+            phi2,
             res,
             cs1,
             cs2,
@@ -92,6 +97,7 @@ impl TestUtils {
             db: &mut self.db,
             pa: &mut self.pa,
             pb: &mut self.pb,
+            phi2: &self.phi2,
             res: &self.res,
             cs1: &self.cs1,
             cs2: &self.cs2,
