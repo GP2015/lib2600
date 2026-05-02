@@ -3,22 +3,23 @@ use std::array;
 
 const RAM_SIZE: usize = 128;
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Ram {
-    bytes: [MBitRegister; RAM_SIZE],
+    bytes: [MBitRegister<8>; RAM_SIZE],
 }
 
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {i:x}"), 8)),
+            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {i:x}"))),
         }
     }
 
-    pub fn byte(&self, address: u8) -> &MBitRegister {
+    pub const fn byte(&self, address: u8) -> &MBitRegister<8> {
         &self.bytes[address as usize]
     }
 
-    pub fn byte_mut(&mut self, address: u8) -> &mut MBitRegister {
+    pub const fn byte_mut(&mut self, address: u8) -> &mut MBitRegister<8> {
         &mut self.bytes[address as usize]
     }
 

@@ -1,6 +1,6 @@
 use crate::line_refs::RiotLineRefs;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct PossibleInstructions {
     pub nop: bool,
     pub reset: bool,
@@ -30,7 +30,7 @@ impl PossibleInstructions {
             < 2
     }
 
-    pub fn from(lines: &mut RiotLineRefs) -> Self {
+    pub fn new(lines: &mut RiotLineRefs) -> Self {
         let mut instructions = Self::default();
 
         if lines.res.could_read_low() {
