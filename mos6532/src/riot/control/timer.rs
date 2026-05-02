@@ -1,8 +1,7 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
-    #[allow(unused_variables)]
-    pub(crate) fn handle_write_timer(
+    pub(crate) fn write_timer(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
@@ -10,8 +9,7 @@ impl Riot {
         todo!()
     }
 
-    #[allow(unused_variables)]
-    pub(crate) fn handle_read_timer(
+    pub(crate) fn read_timer(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,

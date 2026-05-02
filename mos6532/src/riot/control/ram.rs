@@ -1,7 +1,7 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
-    pub(crate) fn handle_ram(
+    pub(crate) fn call_ram(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
@@ -10,17 +10,17 @@ impl Riot {
         let rw_could_read_low = lines.rw.could_read_low();
 
         if rw_could_read_low {
-            self.handle_write_ram(lines, only_possible && !rw_could_read_high);
+            self.write_ram(lines, only_possible && !rw_could_read_high);
         }
 
         if rw_could_read_high {
-            self.handle_read_ram(lines, only_possible && !rw_could_read_low)?;
+            self.read_ram(lines, only_possible && !rw_could_read_low)?;
         }
 
         Ok(())
     }
 
-    fn handle_write_ram(&mut self, lines: &mut RiotLineRefs, mut only_possible: bool) {
+    fn write_ram(&mut self, lines: &mut RiotLineRefs, mut only_possible: bool) {
         only_possible &= lines.a.iter_possible_reads().count() == 1;
 
         for address in lines.a.iter_possible_reads() {
@@ -31,17 +31,13 @@ impl Riot {
         }
     }
 
-    fn handle_read_ram(
-        &mut self,
-        lines: &mut RiotLineRefs,
-        mut only_possible: bool,
-    ) -> Result<(), RiotError> {
+    fn read_ram(&self, lines: &mut RiotLineRefs, mut only_possible: bool) -> Result<(), RiotError> {
         only_possible &= lines.a.iter_possible_reads().count() == 1;
 
         for address in lines.a.iter_possible_reads() {
             lines
                 .db
-                .copy_from_reg(&self.db_con, self.ram.byte(address as u8), only_possible)?;
+                .copy_from_reg(self.db_con, self.ram.byte(address as u8), only_possible)?;
         }
         Ok(())
     }
@@ -49,7 +45,7 @@ impl Riot {
 
 #[cfg(test)]
 mod tests {
-    use crate::control::TestUtils;
+    use crate::riot::control::TestUtils;
     use rstest::{fixture, rstest};
 
     #[fixture]
@@ -72,15 +68,14 @@ mod tests {
         #[case] only_possible: bool,
         #[case] ram_res: &[usize],
     ) {
-        tu.rw.add_drive(&tu.rw_con, false, true).unwrap();
+        tu.rw.add_drive(tu.rw_con, false, true).unwrap();
 
-        for (bus, con, vals) in [
-            (&mut tu.a, &tu.a_con, addrs),
-            (&mut tu.db, &tu.db_con, db_vals),
-        ] {
-            for (i, &val) in vals.iter().enumerate() {
-                bus.add_drive(con, val, i == 0).unwrap();
-            }
+        for (i, &val) in addrs.iter().enumerate() {
+            tu.a.add_drive(tu.a_con, val, i == 0).unwrap();
+        }
+
+        for (i, &val) in db_vals.iter().enumerate() {
+            tu.db.add_drive(tu.db_con, val, i == 0).unwrap();
         }
 
         let (mut riot, mut lines) = tu.riot_and_lines();
@@ -91,7 +86,7 @@ mod tests {
             }
         }
 
-        riot.handle_ram(&mut lines, only_possible).unwrap();
+        riot.call_ram(&mut lines, only_possible).unwrap();
 
         for &addr in addrs {
             let mut reads: Vec<usize> = riot.ram.byte(addr as u8).iter_possible_reads().collect();
@@ -114,14 +109,14 @@ mod tests {
         let ram_val = 0;
         let db_val = 1;
 
-        tu.rw.add_drive(&tu.rw_con, true, true).unwrap();
+        tu.rw.add_drive(tu.rw_con, true, true).unwrap();
 
         for (i, &addr) in addrs.iter().enumerate() {
-            tu.a.add_drive(&tu.a_con, addr, i == 0).unwrap();
+            tu.a.add_drive(tu.a_con, addr, i == 0).unwrap();
         }
 
         tu.db
-            .iter_mut(&tu.db_con)
+            .iter_mut(tu.db_con)
             .for_each(|(line, con)| line.add_high_z(con, true));
 
         let (mut riot, mut lines) = tu.riot_and_lines();
@@ -130,9 +125,9 @@ mod tests {
             riot.ram.byte_mut(addr as u8).add(ram_val, true).unwrap();
         }
 
-        lines.db.add_drive(&riot.db_con, db_val, true).unwrap();
+        lines.db.add_drive(riot.db_con, db_val, true).unwrap();
 
-        riot.handle_ram(&mut lines, only_possible).unwrap();
+        riot.call_ram(&mut lines, only_possible).unwrap();
 
         let mut reads: Vec<usize> = tu.db.iter_possible_reads().collect();
         reads.sort_unstable();

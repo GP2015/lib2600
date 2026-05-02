@@ -1,6 +1,6 @@
 use crate::RiotLineRefs;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct PossibleIoInstructions {
     pub write_ora: bool,
     pub read_ora: bool,
@@ -30,7 +30,7 @@ impl PossibleIoInstructions {
             < 2
     }
 
-    pub fn from(lines: &mut RiotLineRefs) -> Self {
+    pub fn new(lines: &mut RiotLineRefs) -> Self {
         let mut instructions = Self::default();
 
         if lines.a.line(0).expect("already checked").could_read_low() {

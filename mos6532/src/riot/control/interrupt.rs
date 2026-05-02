@@ -1,8 +1,7 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
-    #[allow(unused_variables)]
-    pub(crate) fn handle_read_interrupt_flag(
+    pub(crate) fn read_interrupt_flag(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,
@@ -10,7 +9,7 @@ impl Riot {
         for line_index in 0..8 {
             let (line, con) = lines
                 .db
-                .line_mut(&self.db_con, line_index)
+                .line_mut(self.db_con, line_index)
                 .expect("already checked");
 
             match line_index {

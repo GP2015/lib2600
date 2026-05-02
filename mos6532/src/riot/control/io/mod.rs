@@ -1,21 +1,23 @@
 mod instructions;
 
-use crate::{Riot, RiotError, RiotLineRefs, control::io::instructions::PossibleIoInstructions};
+use crate::{
+    Riot, RiotError, RiotLineRefs, riot::control::io::instructions::PossibleIoInstructions,
+};
 use itertools::izip;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum AB {
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum AB {
     A,
     B,
 }
 
 impl Riot {
-    pub(crate) fn handle_io(
+    pub(crate) fn call_io(
         &mut self,
         lines: &mut RiotLineRefs,
         mut only_possible: bool,
     ) -> Result<(), RiotError> {
-        let instructions = PossibleIoInstructions::from(lines);
+        let instructions = PossibleIoInstructions::new(lines);
         only_possible &= instructions.only_possible();
         self.execute_possible_io_instructions(lines, &instructions, only_possible)?;
 
@@ -81,7 +83,7 @@ impl Riot {
     }
 
     fn read_ddr(
-        &mut self,
+        &self,
         lines: &mut RiotLineRefs,
         ab: AB,
         only_possible: bool,
@@ -89,7 +91,7 @@ impl Riot {
         lines
             .db
             .copy_from_reg(
-                &self.db_con,
+                self.db_con,
                 match ab {
                     AB::A => &self.ddra,
                     AB::B => &self.ddrb,
@@ -108,17 +110,17 @@ impl Riot {
         .expect("already checked");
     }
 
-    fn read_ora(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
+    fn read_ora(&self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         lines
             .db
-            .copy_from_bus(&self.db_con, lines.pa, only_possible)
+            .copy_from_bus(self.db_con, lines.pa, only_possible)
             .map_err(Into::into)
     }
 
-    fn read_orb(&mut self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
+    fn read_orb(&self, lines: &mut RiotLineRefs, only_possible: bool) -> Result<(), RiotError> {
         for (bit, ((line, line_con), reg)) in lines
             .db
-            .iter_mut(&self.db_con)
+            .iter_mut(self.db_con)
             .zip(self.ddrb.iter())
             .enumerate()
         {
@@ -146,12 +148,12 @@ impl Riot {
     }
 
     fn update_peripheral(
-        &mut self,
+        &self,
         lines: &mut RiotLineRefs,
         ab: AB,
         only_possible: bool,
     ) -> Result<(), RiotError> {
-        let (p, bus_con, ddr, or) = match ab {
+        let (p, &bus_con, ddr, or) = match ab {
             AB::A => (&mut lines.pa, &self.pa_con, &self.ddra, &self.ora),
             AB::B => (&mut lines.pb, &self.pb_con, &self.ddrb, &self.orb),
         };

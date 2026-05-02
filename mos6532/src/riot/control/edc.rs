@@ -1,8 +1,7 @@
 use crate::{Riot, RiotError, RiotLineRefs};
 
 impl Riot {
-    #[allow(unused_variables)]
-    pub(crate) fn handle_write_edc(
+    pub(crate) fn write_edc(
         &mut self,
         lines: &mut RiotLineRefs,
         only_possible: bool,

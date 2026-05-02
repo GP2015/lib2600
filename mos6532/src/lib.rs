@@ -1,4 +1,4 @@
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::nursery)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![allow(
     clippy::missing_errors_doc,
@@ -7,7 +7,6 @@
     clippy::similar_names
 )]
 
-mod control;
 mod error;
 mod line_refs;
 mod riot;
