@@ -1,6 +1,6 @@
 use strum_macros::Display;
 
-#[derive(Clone, Copy, Debug, Display, PartialEq)]
+#[derive(Clone, Copy, Debug, Display, Eq, PartialEq)]
 pub enum LineSignal {
     #[strum(to_string = "high")]
     High,
@@ -14,26 +14,26 @@ pub enum LineSignal {
 
 impl LineSignal {
     #[must_use]
-    pub fn from_bool(b: bool) -> Self {
-        if b { LineSignal::High } else { LineSignal::Low }
+    pub const fn from_bool(b: bool) -> Self {
+        if b { Self::High } else { Self::Low }
     }
 
     #[must_use]
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         match self {
-            LineSignal::High => Some(true),
-            LineSignal::Low => Some(false),
-            LineSignal::HighZ => None,
+            Self::High => Some(true),
+            Self::Low => Some(false),
+            Self::HighZ => None,
         }
     }
 
     #[must_use]
-    pub fn contend_with(self, other: Self) -> Option<Self> {
+    pub const fn contend_with(self, other: Self) -> Option<Self> {
         match (self, other) {
-            (LineSignal::Low, LineSignal::Low) => Some(LineSignal::Low),
-            (LineSignal::High, LineSignal::High) => Some(LineSignal::High),
-            (any, LineSignal::HighZ) | (LineSignal::HighZ, any) => Some(any),
-            (LineSignal::Low, LineSignal::High) | (LineSignal::High, LineSignal::Low) => None,
+            (Self::Low, Self::Low) => Some(Self::Low),
+            (Self::High, Self::High) => Some(Self::High),
+            (any, Self::HighZ) | (Self::HighZ, any) => Some(any),
+            (Self::Low, Self::High) | (Self::High, Self::Low) => None,
         }
     }
 }

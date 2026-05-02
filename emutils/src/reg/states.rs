@@ -1,27 +1,27 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct PossibleBitStates {
     pub high: bool,
     pub low: bool,
 }
 
 impl PossibleBitStates {
-    pub fn from(high: bool, low: bool) -> Self {
+    pub const fn new(high: bool, low: bool) -> Self {
         Self { high, low }
     }
 
-    pub fn high_possible(self) -> bool {
+    pub const fn high_possible(self) -> bool {
         self.high
     }
 
-    pub fn low_possible(self) -> bool {
+    pub const fn low_possible(self) -> bool {
         self.low
     }
 
-    pub fn is_possible(self, state: bool) -> bool {
+    pub const fn is_possible(self, state: bool) -> bool {
         if state { self.high } else { self.low }
     }
 
-    pub fn collapsed(self) -> Option<bool> {
+    pub const fn collapsed(self) -> Option<bool> {
         match (self.high, self.low) {
             (false, true) => Some(false),
             (true, false) => Some(true),
@@ -29,7 +29,7 @@ impl PossibleBitStates {
         }
     }
 
-    pub fn possible_reads(self) -> &'static [bool] {
+    pub const fn possible_reads(self) -> &'static [bool] {
         match (self.high, self.low) {
             (false, false) => &[],
             (false, true) => &[false],
@@ -38,7 +38,7 @@ impl PossibleBitStates {
         }
     }
 
-    pub fn add(&mut self, state: bool, only_possible: bool) {
+    pub const fn add(&mut self, state: bool, only_possible: bool) {
         if state {
             self.high = true;
         } else {
@@ -50,7 +50,7 @@ impl PossibleBitStates {
         }
     }
 
-    pub fn remove(&mut self, state: bool) {
+    pub const fn remove(&mut self, state: bool) {
         if state {
             self.high = false;
         } else {
@@ -58,7 +58,7 @@ impl PossibleBitStates {
         }
     }
 
-    pub fn set_all(&mut self, high: bool, low: bool) {
+    pub const fn set_all(&mut self, high: bool, low: bool) {
         self.high = high;
         self.low = low;
     }
@@ -70,15 +70,15 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn from(#[values(true, false)] high: bool, #[values(true, false)] low: bool) {
-        let states = PossibleBitStates::from(high, low);
+    fn new(#[values(true, false)] high: bool, #[values(true, false)] low: bool) {
+        let states = PossibleBitStates::new(high, low);
         assert_eq!(states.high, high);
         assert_eq!(states.low, low);
     }
 
     #[rstest]
     fn is_possible(#[values(true, false)] high: bool, #[values(true, false)] low: bool) {
-        let states = PossibleBitStates::from(high, low);
+        let states = PossibleBitStates::new(high, low);
         assert_eq!(states.is_possible(true), high);
         assert_eq!(states.is_possible(false), low);
     }
@@ -87,7 +87,7 @@ mod tests {
     #[case(true, false, true)]
     #[case(false, true, false)]
     fn collapsed_success(#[case] high: bool, #[case] low: bool, #[case] state: bool) {
-        let states = PossibleBitStates::from(high, low);
+        let states = PossibleBitStates::new(high, low);
         assert_eq!(states.collapsed().unwrap(), state);
     }
 
@@ -95,7 +95,7 @@ mod tests {
     #[case(false, false)]
     #[case(true, true)]
     fn collapsed_failure(#[case] high: bool, #[case] low: bool) {
-        let states = PossibleBitStates::from(high, low);
+        let states = PossibleBitStates::new(high, low);
         assert!(states.collapsed().is_none());
     }
 
@@ -105,7 +105,7 @@ mod tests {
     #[case(true, false, &[true])]
     #[case(true, true, &[true, false])]
     fn possible_reads(#[case] high: bool, #[case] low: bool, #[case] res: &[bool]) {
-        let states = PossibleBitStates::from(high, low).possible_reads();
+        let states = PossibleBitStates::new(high, low).possible_reads();
         assert_eq!(states, res);
     }
 
@@ -114,7 +114,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(true, false)] state: bool,
     ) {
-        let mut states = PossibleBitStates::from(initial, initial);
+        let mut states = PossibleBitStates::new(initial, initial);
         states.add(state, false);
         assert!(states.is_possible(state));
         assert_eq!(states.is_possible(!state), initial);
@@ -122,7 +122,7 @@ mod tests {
 
     #[rstest]
     fn add_only_possible(#[values(true, false)] initial: bool, #[values(true, false)] state: bool) {
-        let mut states = PossibleBitStates::from(initial, initial);
+        let mut states = PossibleBitStates::new(initial, initial);
         states.add(state, true);
         assert!(states.is_possible(state));
         assert!(!states.is_possible(!state));
@@ -130,7 +130,7 @@ mod tests {
 
     #[rstest]
     fn remove(#[values(true, false)] initial: bool, #[values(true, false)] state: bool) {
-        let mut states = PossibleBitStates::from(initial, initial);
+        let mut states = PossibleBitStates::new(initial, initial);
         states.remove(state);
         assert!(!states.is_possible(state));
         assert_eq!(states.is_possible(!state), initial);
@@ -142,8 +142,8 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
     ) {
-        let mut states = PossibleBitStates::from(initial, initial);
+        let mut states = PossibleBitStates::new(initial, initial);
         states.set_all(high, low);
-        assert_eq!(states, PossibleBitStates::from(high, low));
+        assert_eq!(states, PossibleBitStates::new(high, low));
     }
 }

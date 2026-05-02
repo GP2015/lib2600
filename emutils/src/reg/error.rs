@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Eq, Error, PartialEq)]
 pub enum RegisterError {
     #[error("register {name} has no bit {bit}")]
     BitOutOfRange {
@@ -14,13 +14,5 @@ pub enum RegisterError {
         name: String,
         value: usize,
         size: usize,
-    },
-
-    #[error("register {reg_name} and bus {bus_name} have incompatible sizes")]
-    IncompatibleBus {
-        reg_name: String,
-        bus_name: String,
-        reg_size: usize,
-        bus_size: usize,
     },
 }

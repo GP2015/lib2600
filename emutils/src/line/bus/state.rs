@@ -1,20 +1,14 @@
+use crate::{bit, line::LineState};
 use itertools::Itertools;
 
-use crate::{bit, line::LineState};
-
-pub struct BusState {
-    pub line_states: Box<[LineState]>,
+pub struct BusState<const N: usize> {
+    pub line_states: [LineState; N],
 }
 
-impl BusState {
+impl<const N: usize> BusState<N> {
     #[must_use]
-    pub fn new(line_states: Box<[LineState]>) -> Self {
+    pub const fn new(line_states: [LineState; N]) -> Self {
         Self { line_states }
-    }
-
-    #[must_use]
-    pub fn size(&self) -> usize {
-        self.line_states.len()
     }
 
     #[must_use]

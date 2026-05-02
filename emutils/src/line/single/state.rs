@@ -1,7 +1,7 @@
 use crate::line::LineSignal;
 use delegate::delegate;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LineState {
     pub high: bool,
     pub low: bool,
@@ -10,27 +10,27 @@ pub struct LineState {
 
 impl LineState {
     #[must_use]
-    pub fn from(high: bool, low: bool, high_z: bool) -> Self {
+    pub const fn new(high: bool, low: bool, high_z: bool) -> Self {
         Self { high, low, high_z }
     }
 
     #[must_use]
-    pub fn high_possible(self) -> bool {
+    pub const fn high_possible(self) -> bool {
         self.high
     }
 
     #[must_use]
-    pub fn low_possible(self) -> bool {
+    pub const fn low_possible(self) -> bool {
         self.low
     }
 
     #[must_use]
-    pub fn high_z_possible(self) -> bool {
+    pub const fn high_z_possible(self) -> bool {
         self.high_z
     }
 
     #[must_use]
-    pub fn is_possible(self, signal: LineSignal) -> bool {
+    pub const fn is_possible(self, signal: LineSignal) -> bool {
         match signal {
             LineSignal::High => self.high,
             LineSignal::Low => self.low,
@@ -39,17 +39,17 @@ impl LineState {
     }
 
     #[must_use]
-    pub fn could_read_high(self) -> bool {
+    pub const fn could_read_high(self) -> bool {
         self.high | self.high_z
     }
 
     #[must_use]
-    pub fn could_read_low(self) -> bool {
+    pub const fn could_read_low(self) -> bool {
         self.low | self.high_z
     }
 
     #[must_use]
-    pub fn collapsed(self) -> Option<LineSignal> {
+    pub const fn collapsed(self) -> Option<LineSignal> {
         match (self.high, self.low, self.high_z) {
             (true, false, false) => Some(LineSignal::High),
             (false, true, false) => Some(LineSignal::Low),
@@ -74,7 +74,7 @@ impl LineState {
     }
 
     #[must_use]
-    pub fn possible_reads(self) -> &'static [bool] {
+    pub const fn possible_reads(self) -> &'static [bool] {
         match (self.high, self.low, self.high_z) {
             (false, false, false) => &[],
             (false, true, false) => &[false],
@@ -83,7 +83,7 @@ impl LineState {
         }
     }
 
-    pub(crate) fn add(&mut self, signal: LineSignal, only_possible: bool) {
+    pub(crate) const fn add(&mut self, signal: LineSignal, only_possible: bool) {
         if only_possible {
             self.set_all(false, false, false);
         }
@@ -95,7 +95,7 @@ impl LineState {
         }
     }
 
-    pub(crate) fn remove(&mut self, signal: LineSignal) {
+    pub(crate) const fn remove(&mut self, signal: LineSignal) {
         match signal {
             LineSignal::High => self.high = false,
             LineSignal::Low => self.low = false,
@@ -103,7 +103,7 @@ impl LineState {
         }
     }
 
-    pub(crate) fn add_drive(&mut self, val: bool, only_possible: bool) {
+    pub(crate) const fn add_drive(&mut self, val: bool, only_possible: bool) {
         if val {
             self.add_high(only_possible);
         } else {
@@ -111,7 +111,7 @@ impl LineState {
         }
     }
 
-    pub(crate) fn remove_drive(&mut self, val: bool) {
+    pub(crate) const fn remove_drive(&mut self, val: bool) {
         if val {
             self.remove_high();
         } else {
@@ -119,7 +119,7 @@ impl LineState {
         }
     }
 
-    pub(crate) fn set_all(&mut self, high: bool, low: bool, high_z: bool) {
+    pub(crate) const fn set_all(&mut self, high: bool, low: bool, high_z: bool) {
         self.high = high;
         self.low = low;
         self.high_z = high_z;
@@ -127,7 +127,7 @@ impl LineState {
 
     #[must_use]
     pub(crate) fn contend_with(self, other: Self) -> Option<Self> {
-        let mut result = Self::from(false, false, false);
+        let mut result = Self::new(false, false, false);
 
         for first_signal in self.iter_possible() {
             for second_signal in other.iter_possible() {
@@ -142,18 +142,18 @@ impl LineState {
     delegate! {
         to self{
             #[call(add)]
-            pub(crate) fn add_high(&mut self, [LineSignal::High], only_possible: bool);
+            pub(crate) const fn add_high(&mut self, [LineSignal::High], only_possible: bool);
             #[call(add)]
-            pub(crate) fn add_low(&mut self, [LineSignal::Low], only_possible: bool);
+            pub(crate) const fn add_low(&mut self, [LineSignal::Low], only_possible: bool);
             #[call(add)]
-            pub(crate) fn add_high_z(&mut self, [LineSignal::HighZ], only_possible: bool);
+            pub(crate) const fn add_high_z(&mut self, [LineSignal::HighZ], only_possible: bool);
 
             #[call(remove)]
-            pub(crate) fn remove_high(&mut self, [LineSignal::High]);
+            pub(crate) const fn remove_high(&mut self, [LineSignal::High]);
             #[call(remove)]
-            pub(crate) fn remove_low(&mut self, [LineSignal::Low]);
+            pub(crate) const fn remove_low(&mut self, [LineSignal::Low]);
             #[call(remove)]
-            pub(crate) fn remove_high_z(&mut self, [LineSignal::HighZ]);
+            pub(crate) const fn remove_high_z(&mut self, [LineSignal::HighZ]);
         }
     }
 }
@@ -164,12 +164,12 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn from(
+    fn new(
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = LineState::from(high, low, high_z);
+        let signals = LineState::new(high, low, high_z);
         assert_eq!(signals.high, high);
         assert_eq!(signals.low, low);
         assert_eq!(signals.high_z, high_z);
@@ -181,7 +181,7 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = LineState::from(high, low, high_z);
+        let signals = LineState::new(high, low, high_z);
         assert_eq!(signals.is_possible(LineSignal::High), high);
         assert_eq!(signals.is_possible(LineSignal::Low), low);
         assert_eq!(signals.is_possible(LineSignal::HighZ), high_z);
@@ -203,7 +203,7 @@ mod tests {
         #[case] could_read_high: bool,
         #[case] could_read_low: bool,
     ) {
-        let signals = LineState::from(high, low, high_z);
+        let signals = LineState::new(high, low, high_z);
         assert_eq!(signals.could_read_high(), could_read_high);
         assert_eq!(signals.could_read_low(), could_read_low);
     }
@@ -218,7 +218,7 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: LineSignal,
     ) {
-        let state = LineState::from(high, low, high_z);
+        let state = LineState::new(high, low, high_z);
         assert_eq!(state.collapsed().unwrap(), res);
     }
 
@@ -229,7 +229,7 @@ mod tests {
     #[case(true, true, false)]
     #[case(true, true, true)]
     fn collapsed_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
-        let state = LineState::from(high, low, high_z);
+        let state = LineState::new(high, low, high_z);
         assert!(state.collapsed().is_none());
     }
 
@@ -242,7 +242,7 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: bool,
     ) {
-        let signals = LineState::from(high, low, high_z);
+        let signals = LineState::new(high, low, high_z);
         assert_eq!(signals.read().unwrap(), res);
     }
 
@@ -254,7 +254,7 @@ mod tests {
     #[case(true, true, false)]
     #[case(true, true, true)]
     fn read_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
-        let signals = LineState::from(high, low, high_z);
+        let signals = LineState::new(high, low, high_z);
         assert!(signals.read().is_none());
     }
 
@@ -273,7 +273,7 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: &[LineSignal],
     ) {
-        let signals: Vec<LineSignal> = LineState::from(high, low, high_z).iter_possible().collect();
+        let signals: Vec<LineSignal> = LineState::new(high, low, high_z).iter_possible().collect();
         assert_eq!(signals, res);
     }
 
@@ -292,7 +292,7 @@ mod tests {
         #[case] high_z: bool,
         #[case] res: &[bool],
     ) {
-        let signals = LineState::from(high, low, high_z).possible_reads();
+        let signals = LineState::new(high, low, high_z).possible_reads();
         assert_eq!(signals, res);
     }
 
@@ -301,7 +301,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
-        let mut signals = LineState::from(initial, initial, initial);
+        let mut signals = LineState::new(initial, initial, initial);
         signals.add(signal, false);
         for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s || initial);
@@ -313,7 +313,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
-        let mut signals = LineState::from(initial, initial, initial);
+        let mut signals = LineState::new(initial, initial, initial);
         signals.add(signal, true);
         for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal == s);
@@ -325,7 +325,7 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
     ) {
-        let mut signals = LineState::from(initial, initial, initial);
+        let mut signals = LineState::new(initial, initial, initial);
         signals.remove(signal);
         for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
             assert_eq!(signals.is_possible(s), signal != s && initial);
@@ -334,7 +334,7 @@ mod tests {
 
     #[rstest]
     fn add_drive(#[values(true, false)] state: bool) {
-        let mut signals = LineState::from(false, false, false);
+        let mut signals = LineState::new(false, false, false);
         signals.add_drive(state, true);
         assert_eq!(signals.is_possible(LineSignal::High), state);
         assert_eq!(signals.is_possible(LineSignal::Low), !state);
@@ -343,7 +343,7 @@ mod tests {
 
     #[rstest]
     fn remove_drive(#[values(true, false)] state: bool) {
-        let mut signals = LineState::from(true, true, true);
+        let mut signals = LineState::new(true, true, true);
         signals.remove_drive(state);
         assert_eq!(signals.is_possible(LineSignal::High), !state);
         assert_eq!(signals.is_possible(LineSignal::Low), state);
@@ -357,9 +357,9 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let mut signals = LineState::from(initial, initial, initial);
+        let mut signals = LineState::new(initial, initial, initial);
         signals.set_all(high, low, high_z);
-        assert_eq!(signals, LineState::from(high, low, high_z));
+        assert_eq!(signals, LineState::new(high, low, high_z));
     }
 
     #[rstest]
@@ -368,8 +368,8 @@ mod tests {
         #[values(true, false)] low: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let non_empty = LineState::from(high, low, high_z);
-        let empty = LineState::from(false, false, false);
+        let non_empty = LineState::new(high, low, high_z);
+        let empty = LineState::new(false, false, false);
         assert_eq!(non_empty.contend_with(empty).unwrap(), empty);
         assert_eq!(empty.contend_with(non_empty).unwrap(), empty);
     }
@@ -387,8 +387,8 @@ mod tests {
         #[case] first_low: bool,
         #[case] first_high_z: bool,
     ) {
-        let first = LineState::from(first_high, first_low, first_high_z);
-        let second = LineState::from(false, false, true);
+        let first = LineState::new(first_high, first_low, first_high_z);
+        let second = LineState::new(false, false, true);
         assert_eq!(first.contend_with(second).unwrap(), first);
     }
 
@@ -398,9 +398,9 @@ mod tests {
         #[values(true, false)] first_high_z: bool,
         #[values(true, false)] second_high_z: bool,
     ) {
-        let first = LineState::from(bool_state, !bool_state, first_high_z);
-        let second = LineState::from(bool_state, !bool_state, second_high_z);
-        let res = LineState::from(bool_state, !bool_state, first_high_z & second_high_z);
+        let first = LineState::new(bool_state, !bool_state, first_high_z);
+        let second = LineState::new(bool_state, !bool_state, second_high_z);
+        let res = LineState::new(bool_state, !bool_state, first_high_z & second_high_z);
         assert_eq!(first.contend_with(second).unwrap(), res);
     }
 
@@ -420,8 +420,8 @@ mod tests {
         #[values(true, false)] first_high_z: bool,
         #[values(true, false)] second_high_z: bool,
     ) {
-        let first = LineState::from(first_high, first_low, first_high_z);
-        let second = LineState::from(second_high, second_low, second_high_z);
+        let first = LineState::new(first_high, first_low, first_high_z);
+        let second = LineState::new(second_high, second_low, second_high_z);
         assert!(first.contend_with(second).is_none());
     }
 }

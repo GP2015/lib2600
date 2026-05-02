@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Eq, Error, PartialEq)]
 pub enum LineError {
     #[error("line {name}{bit} does not exist")]
     BitOutOfRange {
@@ -18,20 +18,4 @@ pub enum LineError {
 
     #[error("cannot perform operation on line {name} without causing a short circuit")]
     ShortCircuit { name: String },
-
-    #[error("bus {bus_name} and register {reg_name} have incompatible sizes")]
-    IncompatibleRegister {
-        bus_name: String,
-        reg_name: String,
-        bus_size: usize,
-        reg_size: usize,
-    },
-
-    #[error("buses {out_name} and {source_name} have incompatible sizes")]
-    IncompatibleBus {
-        out_name: String,
-        source_name: String,
-        out_size: usize,
-        source_size: usize,
-    },
 }

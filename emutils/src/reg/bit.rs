@@ -12,7 +12,7 @@ impl BitRegister {
     pub fn new<S: Into<String>>(name: S) -> Self {
         Self {
             name: name.into(),
-            states: PossibleBitStates::from(true, true),
+            states: PossibleBitStates::new(true, true),
         }
     }
 
@@ -21,7 +21,7 @@ impl BitRegister {
         &self.name
     }
 
-    pub fn copy_from_line(&mut self, line: &Line, only_possible: bool) {
+    pub const fn copy_from_line(&mut self, line: &Line, only_possible: bool) {
         if only_possible {
             self.states.high = line.could_read_high();
             self.states.low = line.could_read_low();
@@ -39,17 +39,17 @@ impl BitRegister {
     delegate! {
         #[must_use]
         to self.states {
-            pub fn is_possible(&self, state: bool) -> bool;
-            pub fn high_possible(&self) -> bool;
-            pub fn low_possible(&self) -> bool;
-            pub fn collapsed(&self) -> Option<bool>;
-            pub fn possible_reads(&self) -> &'static [bool];
+            pub const fn is_possible(&self, state: bool) -> bool;
+            pub const fn high_possible(&self) -> bool;
+            pub const fn low_possible(&self) -> bool;
+            pub const fn collapsed(&self) -> Option<bool>;
+            pub const fn possible_reads(&self) -> &'static [bool];
         }
 
         to self.states {
-            pub fn add(&mut self, state: bool, only_possible: bool);
-            pub fn remove(&mut self, state: bool);
-            pub fn set_all(&mut self, high: bool, low: bool);
+            pub const fn add(&mut self, state: bool, only_possible: bool);
+            pub const fn remove(&mut self, state: bool);
+            pub const fn set_all(&mut self, high: bool, low: bool);
         }
     }
 }
@@ -57,13 +57,12 @@ impl BitRegister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::line::LineConnection;
     use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
 
     #[fixture]
-    fn line_and_connection() -> (Line, LineConnection) {
+    fn line_and_connection() -> (Line, usize) {
         let mut line = Line::new("");
         let connection = line.create_connection();
         (line, connection)
@@ -91,10 +90,10 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
+        #[from(line_and_connection)] (mut line, connection): (Line, usize),
     ) {
         reg.set_all(initial, initial);
-        line.set_all(&connection, high, low, false).unwrap();
+        line.set_all(connection, high, low, false).unwrap();
         reg.copy_from_line(&line, true);
         assert_eq!(reg.high_possible(), high);
         assert_eq!(reg.low_possible(), low);
@@ -106,10 +105,10 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, LineConnection),
+        #[from(line_and_connection)] (mut line, connection): (Line, usize),
     ) {
         reg.set_all(initial, initial);
-        line.set_all(&connection, high, low, false).unwrap();
+        line.set_all(connection, high, low, false).unwrap();
         reg.copy_from_line(&line, false);
         assert_eq!(reg.high_possible(), high | initial);
         assert_eq!(reg.low_possible(), low | initial);

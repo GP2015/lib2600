@@ -2,24 +2,23 @@ pub mod state;
 
 use crate::{
     bit,
-    line::{BusConnection, Line, LineConnection, LineError, bus::state::BusState},
+    line::{Line, LineError, bus::state::BusState},
     reg::MBitRegister,
 };
 use itertools::Itertools;
+use std::array;
 
 #[derive(Debug)]
-pub struct Bus {
+pub struct Bus<const N: usize> {
     name: String,
-    lines: Box<[Line]>,
-    line_connections: Vec<Box<[LineConnection]>>,
+    lines: [Line; N],
+    line_connections: Vec<[usize; N]>,
 }
 
-impl Bus {
-    pub fn new<S: Into<String>>(name: S, size: usize) -> Self {
+impl<const N: usize> Bus<N> {
+    pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
-        let lines = (0..size)
-            .map(|bit| Line::new(format!("{name}{bit}")))
-            .collect();
+        let lines = array::from_fn(|bit| Line::new(format!("{name}{bit}")));
 
         Self {
             name,
@@ -28,19 +27,19 @@ impl Bus {
         }
     }
 
-    pub fn create_connection(&mut self) -> BusConnection {
-        let line_connections = self.lines.iter_mut().map(Line::create_connection).collect();
-        self.line_connections.push(line_connections);
-        BusConnection::new(self.line_connections.len() - 1)
+    pub fn create_connection(&mut self) -> usize {
+        let connection_row = array::from_fn(|bit| self.lines[bit].create_connection());
+        self.line_connections.push(connection_row);
+        self.line_connections.len() - 1
     }
 
     #[must_use]
-    pub fn name(&self) -> &str {
+    pub const fn name(&self) -> &str {
         self.name.as_str()
     }
 
     #[must_use]
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         self.lines.len()
     }
 
@@ -62,11 +61,11 @@ impl Bus {
 
     pub fn line_mut(
         &mut self,
-        connection: &BusConnection,
+        connection: usize,
         bit: usize,
-    ) -> Result<(&mut Line, &LineConnection), LineError> {
+    ) -> Result<(&mut Line, usize), LineError> {
         self.check_for_bit_out_of_range(bit)?;
-        let connection = &self.line_connections[connection.id()][bit];
+        let connection = self.line_connections[connection][bit];
         Ok((&mut self.lines[bit], connection))
     }
 
@@ -74,18 +73,15 @@ impl Bus {
         self.lines.iter()
     }
 
-    pub fn iter_mut(
-        &mut self,
-        connection: &BusConnection,
-    ) -> impl Iterator<Item = (&mut Line, &LineConnection)> {
+    pub fn iter_mut(&mut self, connection: usize) -> impl Iterator<Item = (&mut Line, usize)> {
         self.lines
             .iter_mut()
-            .zip(self.line_connections[connection.id()].iter())
+            .zip(self.line_connections[connection].iter().copied())
     }
 
     #[must_use]
-    pub fn state(&self) -> BusState {
-        BusState::new(self.lines.iter().map(Line::state).collect())
+    pub fn state(&self) -> BusState<N> {
+        BusState::new(array::from_fn(|bit| self.lines[bit].state()))
     }
 
     #[must_use]
@@ -101,21 +97,21 @@ impl Bus {
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }
 
-    pub fn add_high_z(&mut self, connection: &BusConnection, only_possible: bool) {
+    pub fn add_high_z(&mut self, connection: usize, only_possible: bool) {
         self.iter_mut(connection)
             .for_each(|(line, con)| line.add_high_z(con, only_possible));
     }
 
     pub fn add_drive_wrapping(
         &mut self,
-        connection: &BusConnection,
+        connection: usize,
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
         for (bit, (line, connection)) in self
             .lines
             .iter_mut()
-            .zip(self.line_connections[connection.id()].iter())
+            .zip(self.line_connections[connection].iter().copied())
             .enumerate()
         {
             line.add_drive(connection, bit::bit_of_usize(val, bit), only_possible)?;
@@ -125,7 +121,7 @@ impl Bus {
 
     pub fn add_drive(
         &mut self,
-        connection: &BusConnection,
+        connection: usize,
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
@@ -146,19 +142,10 @@ impl Bus {
 
     pub fn copy_from_bus(
         &mut self,
-        connection: &BusConnection,
-        bus: &Bus,
+        connection: usize,
+        bus: &Self,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        if self.size() != bus.size() {
-            return Err(LineError::IncompatibleBus {
-                out_name: self.name.clone(),
-                out_size: self.size(),
-                source_name: bus.name().to_string(),
-                source_size: bus.size(),
-            });
-        }
-
         for ((this_line, line_connection), other_line) in self.iter_mut(connection).zip(bus.iter())
         {
             this_line.copy_from_line(line_connection, other_line, only_possible)?;
@@ -169,19 +156,10 @@ impl Bus {
 
     pub fn copy_from_reg(
         &mut self,
-        connection: &BusConnection,
-        reg: &MBitRegister,
+        connection: usize,
+        reg: &MBitRegister<N>,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        if self.size() != reg.size() {
-            return Err(LineError::IncompatibleRegister {
-                bus_name: self.name.clone(),
-                bus_size: self.size(),
-                reg_name: reg.name().to_string(),
-                reg_size: reg.size(),
-            });
-        }
-
         for ((this_line, line_connection), bit_reg) in self.iter_mut(connection).zip(reg.iter()) {
             this_line.copy_from_reg(line_connection, bit_reg, only_possible)?;
         }

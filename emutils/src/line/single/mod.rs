@@ -1,7 +1,7 @@
 pub mod state;
 
 use crate::{
-    line::{LineConnection, LineError, LineSignal, LineState},
+    line::{LineError, LineSignal, LineState},
     reg::BitRegister,
 };
 use delegate::delegate;
@@ -18,14 +18,14 @@ impl Line {
         Self {
             name: name.into(),
             connection_states: Vec::new(),
-            combined_state: LineState::from(false, false, false),
+            combined_state: LineState::new(false, false, false),
         }
     }
 
-    pub fn create_connection(&mut self) -> LineConnection {
-        let state = LineState::from(false, false, false);
+    pub fn create_connection(&mut self) -> usize {
+        let state = LineState::new(false, false, false);
         self.connection_states.push(state);
-        LineConnection::new(self.connection_states.len() - 1)
+        self.connection_states.len() - 1
     }
 
     #[must_use]
@@ -34,18 +34,18 @@ impl Line {
     }
 
     #[must_use]
-    pub fn state(&self) -> LineState {
+    pub const fn state(&self) -> LineState {
         self.combined_state
     }
 
     fn update_combined_state(&mut self) -> Result<(), LineError> {
-        let init = LineState::from(false, false, true);
+        let init = LineState::new(false, false, true);
         self.combined_state = self
             .connection_states
             .iter()
             .copied()
             .try_fold(init, LineState::contend_with)
-            .ok_or(LineError::ShortCircuit {
+            .ok_or_else(|| LineError::ShortCircuit {
                 name: self.name().to_string(),
             })?;
         Ok(())
@@ -53,11 +53,11 @@ impl Line {
 
     pub fn copy_from_line(
         &mut self,
-        connection: &LineConnection,
-        line: &Line,
+        connection: usize,
+        line: &Self,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection.id()];
+        let state = &mut self.connection_states[connection];
 
         if only_possible {
             state.set_all(
@@ -84,11 +84,11 @@ impl Line {
 
     pub fn copy_from_reg(
         &mut self,
-        connection: &LineConnection,
+        connection: usize,
         reg: &BitRegister,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection.id()];
+        let state = &mut self.connection_states[connection];
 
         if only_possible {
             state.set_all(reg.high_possible(), reg.low_possible(), false);
@@ -107,18 +107,18 @@ impl Line {
     delegate! {
         #[must_use]
         to self.combined_state{
-            pub fn is_possible(&self, signal: LineSignal) -> bool;
+            pub const fn is_possible(&self, signal: LineSignal) -> bool;
 
-            pub fn high_possible(&self) -> bool;
-            pub fn low_possible(&self) -> bool;
-            pub fn high_z_possible(&self) -> bool;
+            pub const fn high_possible(&self) -> bool;
+            pub const fn low_possible(&self) -> bool;
+            pub const fn high_z_possible(&self) -> bool;
 
-            pub fn could_read_high(&self) -> bool;
-            pub fn could_read_low(&self) -> bool;
+            pub const fn could_read_high(&self) -> bool;
+            pub const fn could_read_low(&self) -> bool;
 
-            pub fn collapsed(&self) -> Option<LineSignal>;
+            pub const fn collapsed(&self) -> Option<LineSignal>;
             pub fn read(&self) -> Option<bool>;
-            pub fn possible_reads(&self) -> &'static [bool];
+            pub const fn possible_reads(&self) -> &'static [bool];
         }
 
         to self.combined_state{
@@ -126,7 +126,7 @@ impl Line {
         }
 
         #[expr($; self.update_combined_state())]
-        to |connection: &LineConnection| self.connection_states[connection.id()]{
+        to |connection: usize| self.connection_states[connection]{
             pub fn add(&mut self, signal: LineSignal, only_possible: bool) -> Result<(), LineError>;
 
             pub fn add_high(&mut self, only_possible: bool) -> Result<(), LineError>;
@@ -137,7 +137,7 @@ impl Line {
         }
 
         #[expr($self.update_combined_state().expect("valid");)]
-        to |connection: &LineConnection| self.connection_states[connection.id()]{
+        to |connection: usize| self.connection_states[connection]{
             pub fn add_high_z(&mut self, only_possible: bool);
 
             pub fn remove(&mut self, signal: LineSignal);
@@ -171,9 +171,9 @@ mod tests {
     #[rstest]
     fn single_connection(mut line: Line) {
         let connection = line.create_connection();
-        line.add_high(&connection, true).unwrap();
+        line.add_high(connection, true).unwrap();
         assert!(line.read().unwrap());
-        line.add_low(&connection, true).unwrap();
+        line.add_low(connection, true).unwrap();
         assert!(!line.read().unwrap());
     }
 
@@ -181,18 +181,18 @@ mod tests {
     fn double_connection(mut line: Line) {
         let connection1 = line.create_connection();
         let connection2 = line.create_connection();
-        line.add_high(&connection1, true).unwrap();
-        line.add_high_z(&connection2, true);
+        line.add_high(connection1, true).unwrap();
+        line.add_high_z(connection2, true);
         assert!(line.could_read_high());
         assert!(!line.could_read_low());
-        line.add_high(&connection2, false).unwrap();
+        line.add_high(connection2, false).unwrap();
         assert!(line.could_read_high());
         assert!(!line.could_read_low());
-        line.add_high_z(&connection1, true);
-        line.remove_high(&connection2);
+        line.add_high_z(connection1, true);
+        line.remove_high(connection2);
         assert!(line.could_read_high());
         assert!(line.could_read_low());
-        line.add_low(&connection1, true).unwrap();
+        line.add_low(connection1, true).unwrap();
         assert!(!line.could_read_high());
         assert!(line.could_read_low());
     }

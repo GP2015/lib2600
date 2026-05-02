@@ -5,21 +5,20 @@ use crate::{
 };
 use delegate::delegate;
 use itertools::Itertools;
+use std::array;
 
 #[derive(Clone, Debug)]
-pub struct MBitRegister {
+pub struct MBitRegister<const N: usize> {
     name: String,
-    bits: Box<[BitRegister]>,
+    bits: [BitRegister; N],
 }
 
-impl MBitRegister {
+impl<const N: usize> MBitRegister<N> {
     #[must_use]
-    pub fn new<S: Into<String>>(name: S, size: usize) -> Self {
+    pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
         Self {
-            bits: (0..size)
-                .map(|bit| BitRegister::new(format!("{name} bit {bit}")))
-                .collect(),
+            bits: array::from_fn(|bit| BitRegister::new(format!("{name} bit {bit}"))),
             name,
         }
     }
@@ -82,16 +81,11 @@ impl MBitRegister {
         Ok(())
     }
 
-    pub fn copy_from_bus(&mut self, bus: &Bus, only_possible: bool) -> Result<(), RegisterError> {
-        if self.size() != bus.size() {
-            return Err(RegisterError::IncompatibleBus {
-                reg_name: self.name.clone(),
-                reg_size: self.size(),
-                bus_name: bus.name().to_string(),
-                bus_size: bus.size(),
-            });
-        }
-
+    pub fn copy_from_bus(
+        &mut self,
+        bus: &Bus<N>,
+        only_possible: bool,
+    ) -> Result<(), RegisterError> {
         for (reg, line) in self.iter_mut().zip(bus.iter()) {
             reg.copy_from_line(line, only_possible);
         }
@@ -103,7 +97,7 @@ impl MBitRegister {
         to self.bits {
             #[must_use]
             #[call(len)]
-            pub fn size(&self) -> usize;
+            pub const fn size(&self) -> usize;
             pub fn iter(&self) -> impl Iterator<Item = &BitRegister>;
             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut BitRegister>;
         }
@@ -119,17 +113,17 @@ mod tests {
     const REG_SIZE: usize = 4;
 
     #[fixture]
-    fn reg() -> MBitRegister {
-        MBitRegister::new(REG_NAME, REG_SIZE)
+    fn reg() -> MBitRegister<REG_SIZE> {
+        MBitRegister::new(REG_NAME)
     }
 
     #[rstest]
-    fn new_correct_size(reg: MBitRegister) {
+    fn new_correct_size(reg: MBitRegister<REG_SIZE>) {
         assert_eq!(reg.size(), REG_SIZE);
     }
 
     #[rstest]
-    fn new_correct_names(reg: MBitRegister) {
+    fn new_correct_names(reg: MBitRegister<REG_SIZE>) {
         for bit in 0..REG_SIZE {
             assert_eq!(
                 reg.bit(bit).unwrap().name(),
@@ -139,12 +133,12 @@ mod tests {
     }
 
     #[rstest]
-    fn name(reg: MBitRegister) {
+    fn name(reg: MBitRegister<REG_SIZE>) {
         assert_eq!(reg.name(), REG_NAME);
     }
 
     #[rstest]
-    fn valid_bit(mut reg: MBitRegister) {
+    fn valid_bit(mut reg: MBitRegister<REG_SIZE>) {
         for bit in 0..REG_SIZE {
             assert!(reg.bit(bit).is_ok());
             assert!(reg.bit_mut(bit).is_ok());
@@ -152,7 +146,7 @@ mod tests {
     }
 
     #[rstest]
-    fn invalid_bit(mut reg: MBitRegister, #[values(REG_SIZE, REG_SIZE + 1)] bit: usize) {
+    fn invalid_bit(mut reg: MBitRegister<REG_SIZE>, #[values(REG_SIZE, REG_SIZE + 1)] bit: usize) {
         let e = RegisterError::BitOutOfRange {
             name: reg.name().to_string(),
             bit,
@@ -167,7 +161,11 @@ mod tests {
     #[case([false, false, false, false], 0)]
     #[case([false, true, false, false], 0b10)]
     #[case([true, true, false, true], 0b1011)]
-    fn read_success(mut reg: MBitRegister, #[case] bits: [bool; REG_SIZE], #[case] val: usize) {
+    fn read_success(
+        mut reg: MBitRegister<REG_SIZE>,
+        #[case] bits: [bool; REG_SIZE],
+        #[case] val: usize,
+    ) {
         for (bit_reg, &b) in reg.iter_mut().zip(bits.iter()) {
             bit_reg.add(b, true);
         }
@@ -175,7 +173,7 @@ mod tests {
     }
 
     #[rstest]
-    fn read_failure(mut reg: MBitRegister, #[values(true, false)] initial: bool) {
+    fn read_failure(mut reg: MBitRegister<REG_SIZE>, #[values(true, false)] initial: bool) {
         reg.iter_mut().for_each(|r| r.add(initial, true));
         reg.bit_mut(2).unwrap().add(!initial, false);
         assert_eq!(reg.read(), None);
@@ -193,7 +191,7 @@ mod tests {
     #[case(0b1011, [true, true, false, true])]
     #[case(0b11011, [true, true, false, true])]
     fn add_wrapping_only_possible(
-        mut reg: MBitRegister,
+        mut reg: MBitRegister<REG_SIZE>,
         #[values(true, false)] initial: bool,
         #[case] val: usize,
         #[case] bits: [bool; REG_SIZE],
@@ -211,7 +209,7 @@ mod tests {
     #[case(0b1011, [true, true, false, true])]
     #[case(0b11011, [true, true, false, true])]
     fn add_wrapping_not_only_possible(
-        mut reg: MBitRegister,
+        mut reg: MBitRegister<REG_SIZE>,
         #[values(true, false)] initial: bool,
         #[case] val: usize,
         #[case] bits: [bool; REG_SIZE],
@@ -226,7 +224,7 @@ mod tests {
 
     #[rstest]
     fn add_success(
-        mut reg: MBitRegister,
+        mut reg: MBitRegister<REG_SIZE>,
         #[values(0, 0b100, 0b1011)] val: usize,
         #[values(true, false)] only_possible: bool,
     ) {
@@ -235,7 +233,7 @@ mod tests {
 
     #[rstest]
     fn add_failure(
-        mut reg: MBitRegister,
+        mut reg: MBitRegister<REG_SIZE>,
         #[values(0b10000, 0b11011)] val: usize,
         #[values(true, false)] only_possible: bool,
     ) {
