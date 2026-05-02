@@ -7,7 +7,7 @@ use delegate::delegate;
 use itertools::Itertools;
 use std::array;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct MBitRegister<const N: usize> {
     name: String,
     bits: [BitRegister; N],

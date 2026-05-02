@@ -1,6 +1,6 @@
 use strum_macros::Display;
 
-#[derive(Clone, Copy, Debug, Display, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq)]
 pub enum LineSignal {
     #[strum(to_string = "high")]
     High,

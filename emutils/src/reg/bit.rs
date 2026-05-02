@@ -1,7 +1,7 @@
 use crate::{line::Line, reg::states::PossibleBitStates};
 use delegate::delegate;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct BitRegister {
     name: String,
     states: PossibleBitStates,
@@ -56,13 +56,15 @@ impl BitRegister {
 
 #[cfg(test)]
 mod tests {
+    use crate::line::LineConnectionId;
+
     use super::*;
     use rstest::{fixture, rstest};
 
     const REG_NAME: &str = "reg";
 
     #[fixture]
-    fn line_and_connection() -> (Line, usize) {
+    fn line_and_connection() -> (Line, LineConnectionId) {
         let mut line = Line::new("");
         let connection = line.create_connection();
         (line, connection)
@@ -90,7 +92,7 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, usize),
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConnectionId),
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();
@@ -105,7 +107,7 @@ mod tests {
         #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
         mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, usize),
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConnectionId),
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();

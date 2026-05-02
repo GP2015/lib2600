@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Debug, Eq, Error, PartialEq)]
+#[derive(Clone, Debug, Eq, Error, Hash, PartialEq)]
 pub enum LineError {
     #[error("line {name}{bit} does not exist")]
     BitOutOfRange {

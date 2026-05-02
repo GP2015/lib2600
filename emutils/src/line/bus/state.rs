@@ -1,6 +1,7 @@
 use crate::{bit, line::LineState};
 use itertools::Itertools;
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct BusState<const N: usize> {
     pub line_states: [LineState; N],
 }
