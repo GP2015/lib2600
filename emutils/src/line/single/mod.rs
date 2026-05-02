@@ -6,7 +6,10 @@ use crate::{
 };
 use delegate::delegate;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct LineConnectionId(usize);
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Line {
     name: String,
     connection_states: Vec<LineState>,
@@ -22,10 +25,10 @@ impl Line {
         }
     }
 
-    pub fn create_connection(&mut self) -> usize {
+    pub fn create_connection(&mut self) -> LineConnectionId {
         let state = LineState::new(false, false, false);
         self.connection_states.push(state);
-        self.connection_states.len() - 1
+        LineConnectionId(self.connection_states.len() - 1)
     }
 
     #[must_use]
@@ -53,11 +56,11 @@ impl Line {
 
     pub fn copy_from_line(
         &mut self,
-        connection: usize,
+        connection: LineConnectionId,
         line: &Self,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection];
+        let state = &mut self.connection_states[connection.0];
 
         if only_possible {
             state.set_all(
@@ -84,11 +87,11 @@ impl Line {
 
     pub fn copy_from_reg(
         &mut self,
-        connection: usize,
+        connection: LineConnectionId,
         reg: &BitRegister,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection];
+        let state = &mut self.connection_states[connection.0];
 
         if only_possible {
             state.set_all(reg.high_possible(), reg.low_possible(), false);
@@ -126,7 +129,7 @@ impl Line {
         }
 
         #[expr($; self.update_combined_state())]
-        to |connection: usize| self.connection_states[connection]{
+        to |connection: LineConnectionId| self.connection_states[connection.0]{
             pub fn add(&mut self, signal: LineSignal, only_possible: bool) -> Result<(), LineError>;
 
             pub fn add_high(&mut self, only_possible: bool) -> Result<(), LineError>;
@@ -137,7 +140,7 @@ impl Line {
         }
 
         #[expr($self.update_combined_state().expect("valid");)]
-        to |connection: usize| self.connection_states[connection]{
+        to |connection: LineConnectionId| self.connection_states[connection.0]{
             pub fn add_high_z(&mut self, only_possible: bool);
 
             pub fn remove(&mut self, signal: LineSignal);
