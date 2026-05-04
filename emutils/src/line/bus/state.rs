@@ -22,6 +22,11 @@ impl<const SIZE: usize> BusState<SIZE> {
     }
 
     #[must_use]
+    pub fn is_defined(&self) -> bool {
+        self.iter().all(LineState::is_defined)
+    }
+
+    #[must_use]
     pub fn read(&self) -> Option<usize> {
         bit::some_bits_to_usize(self.line_states.iter().copied().map(LineState::read))
     }

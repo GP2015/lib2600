@@ -85,6 +85,18 @@ impl<const SIZE: usize> Bus<SIZE> {
             .zip(self.line_connections[connection.0].iter().copied())
     }
 
+    pub fn check_possible(&self) -> Result<(), LineError> {
+        for line in self.iter() {
+            line.check_possible()?;
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn is_defined(&self) -> bool {
+        self.iter().all(Line::is_defined)
+    }
+
     #[must_use]
     pub fn state(&self) -> BusState<SIZE> {
         BusState::new(array::from_fn(|bit| self.lines[bit].state()))
@@ -144,6 +156,12 @@ impl<const SIZE: usize> Bus<SIZE> {
             bit::low_bits_of_usize(val, self.lines.len()),
             only_possible,
         )
+    }
+
+    pub fn clear_only_possible(&mut self, connection: BusConnectionId) {
+        self.iter_mut(connection).for_each(|(line, con)| {
+            line.clear_only_possible(con);
+        });
     }
 
     pub fn copy_from_bus_state(

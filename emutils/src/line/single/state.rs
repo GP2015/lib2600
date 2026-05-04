@@ -49,6 +49,18 @@ impl LineState {
     }
 
     #[must_use]
+    pub const fn could_read_low_high(self) -> (bool, bool) {
+        (self.could_read_low(), self.could_read_high())
+    }
+
+    #[must_use]
+    pub const fn is_defined(self) -> bool {
+        matches!((self.high, self.low, self.high_z), (true, false, false))
+            || matches!((self.high, self.low, self.high_z), (false, true, false))
+            || matches!((self.high, self.low, self.high_z), (false, false, true))
+    }
+
+    #[must_use]
     pub const fn collapsed(self) -> Option<LineSignal> {
         match (self.high, self.low, self.high_z) {
             (true, false, false) => Some(LineSignal::High),
@@ -61,6 +73,11 @@ impl LineState {
     #[must_use]
     pub fn read(self) -> Option<bool> {
         self.collapsed().and_then(|signal| signal.as_bool())
+    }
+
+    #[must_use]
+    pub const fn can_be_read(self) -> bool {
+        self.high | self.low | self.high_z
     }
 
     pub fn iter_possible(self) -> impl Iterator<Item = LineSignal> {

@@ -18,4 +18,7 @@ pub enum LineError {
 
     #[error("cannot perform operation on line {name} without causing a short circuit")]
     ShortCircuit { name: String },
+
+    #[error("cannot read line {name} as it has no possible signal through it")]
+    ImpossibleLineSignal { name: String },
 }

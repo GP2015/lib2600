@@ -54,6 +54,22 @@ impl Line {
         Ok(())
     }
 
+    pub fn check_possible(&self) -> Result<(), LineError> {
+        if !self.combined_state.can_be_read() {
+            return Err(LineError::ImpossibleLineSignal {
+                name: self.name.clone(),
+            });
+        }
+        Ok(())
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn clear_only_possible(&mut self, connection: LineConnectionId) {
+        self.connection_states[connection.0].set_all(false, false, false);
+        self.update_combined_state()
+            .expect("will not cause contention");
+    }
+
     pub fn copy_from_line_state(
         &mut self,
         connection: LineConnectionId,
@@ -119,6 +135,8 @@ impl Line {
             pub const fn could_read_high(&self) -> bool;
             pub const fn could_read_low(&self) -> bool;
 
+            pub const fn is_defined(&self) -> bool;
+
             pub const fn collapsed(&self) -> Option<LineSignal>;
             pub fn read(&self) -> Option<bool>;
             pub const fn possible_reads(&self) -> &'static [bool];
@@ -139,7 +157,7 @@ impl Line {
             pub fn set_all(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), LineError>;
         }
 
-        #[expr($self.update_combined_state().expect("valid");)]
+        #[expr($self.update_combined_state().expect("will not cause contention");)]
         to |connection: LineConnectionId| self.connection_states[connection.0]{
             pub fn add_high_z(&mut self, only_possible: bool);
 
