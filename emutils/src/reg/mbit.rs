@@ -86,16 +86,10 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
         Ok(())
     }
 
-    pub fn copy_from_bus_state(
-        &mut self,
-        bus: &BusState<SIZE>,
-        only_possible: bool,
-    ) -> Result<(), RegisterError> {
+    pub fn copy_from_bus_state(&mut self, bus: &BusState<SIZE>, only_possible: bool) {
         for (reg, line) in self.iter_mut().zip(bus.iter()) {
             reg.copy_from_line_state(&line, only_possible);
         }
-
-        Ok(())
     }
 
     delegate! {
