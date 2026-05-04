@@ -9,7 +9,7 @@ impl Riot {
         &mut self,
         lines: &mut RiotOutputLines,
         states: &RiotLineStates,
-        only_possible: bool,
+        only_instruction: bool,
     ) -> Result<(), LineError> {
         todo!()
     }

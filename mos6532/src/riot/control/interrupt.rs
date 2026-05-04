@@ -5,7 +5,7 @@ impl Riot {
     pub(crate) fn read_ir_flag(
         &mut self,
         lines: &mut RiotOutputLines,
-        only_possible: bool,
+        only_instruction: bool,
     ) -> Result<(), LineError> {
         for line_index in 0..8 {
             let (line, con) = lines
@@ -14,13 +14,13 @@ impl Riot {
                 .expect("already checked");
 
             match line_index {
-                7 => line.copy_from_reg(con, &self.timer_interrupt_flag, only_possible)?,
-                6 => line.copy_from_reg(con, &self.edc_interrupt_flag, only_possible)?,
-                _ => line.add_low(con, only_possible)?,
+                7 => line.copy_from_reg(con, &self.timer_interrupt_flag, only_instruction)?,
+                6 => line.copy_from_reg(con, &self.edc_interrupt_flag, only_instruction)?,
+                _ => line.add_low(con, only_instruction)?,
             }
         }
 
-        self.edc_interrupt_flag.add(false, only_possible);
+        self.edc_interrupt_flag.add(false, only_instruction);
 
         Ok(())
     }

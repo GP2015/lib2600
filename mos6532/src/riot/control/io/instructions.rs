@@ -2,27 +2,20 @@ use crate::riot::states::RiotLineStates;
 
 #[derive(Clone, Debug, Default)]
 pub struct PossibleIoInstructions {
-    pub write_ora: bool,
-    pub read_ora: bool,
-    pub write_orb: bool,
-    pub read_orb: bool,
-    pub write_ddra: bool,
-    pub read_ddra: bool,
-    pub write_ddrb: bool,
-    pub read_ddrb: bool,
+    pub woa: bool,
+    pub roa: bool,
+    pub wob: bool,
+    pub rob: bool,
+    pub wda: bool,
+    pub rda: bool,
+    pub wdb: bool,
+    pub rdb: bool,
 }
 
 impl PossibleIoInstructions {
-    pub fn only_possible(&self) -> bool {
+    pub fn only_instruction(&self) -> bool {
         [
-            self.write_ora,
-            self.read_ora,
-            self.write_orb,
-            self.read_orb,
-            self.write_ddra,
-            self.read_ddra,
-            self.write_ddrb,
-            self.read_ddrb,
+            self.woa, self.roa, self.wob, self.rob, self.wda, self.rda, self.wdb, self.rdb,
         ]
         .into_iter()
         .filter(|&b| b)
@@ -55,16 +48,8 @@ impl From<&RiotLineStates> for PossibleIoInstructions {
 
         instr_branch!(
             a0,
-            instr_branch!(
-                a1,
-                instr_branch!(rw, write_ora, read_ora),
-                instr_branch!(rw, write_orb, read_orb),
-            ),
-            instr_branch!(
-                a1,
-                instr_branch!(rw, write_ddra, read_ddra),
-                instr_branch!(rw, write_ddrb, read_ddrb),
-            ),
+            instr_branch!(a1, instr_branch!(rw, woa, roa), instr_branch!(rw, wob, rob),),
+            instr_branch!(a1, instr_branch!(rw, wda, rda), instr_branch!(rw, wdb, rdb),),
         );
 
         instructions

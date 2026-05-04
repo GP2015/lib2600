@@ -9,30 +9,28 @@ impl Riot {
         &mut self,
         lines: &mut RiotOutputLines,
         states: &RiotLineStates,
-        only_possible: bool,
+        only_instruction: bool,
     ) -> Result<(), LineError> {
-        let rw_could_read_high = states.rw.could_read_high();
-        let rw_could_read_low = states.rw.could_read_low();
+        let (rw_low, rw_high) = states.rw.could_read_low_high();
 
-        if rw_could_read_low {
-            self.write_ram(states, only_possible && !rw_could_read_high);
+        if rw_low {
+            self.write_ram(states, only_instruction && !rw_high);
         }
 
-        if rw_could_read_high {
-            self.read_ram(lines, states, only_possible && !rw_could_read_low)?;
+        if rw_high {
+            self.read_ram(lines, states, only_instruction && !rw_low)?;
         }
 
         Ok(())
     }
 
-    fn write_ram(&mut self, states: &RiotLineStates, mut only_possible: bool) {
-        only_possible &= states.a.iter_possible_reads().count() == 1;
+    fn write_ram(&mut self, states: &RiotLineStates, only_ram: bool) {
+        let only_addr = only_ram && states.a.is_defined();
 
         for address in states.a.iter_possible_reads() {
             self.ram
                 .byte_mut(address as u8)
-                .copy_from_bus_state(&states.db, only_possible)
-                .expect("already checked");
+                .copy_from_bus_state(&states.db, only_addr);
         }
     }
 
@@ -40,14 +38,14 @@ impl Riot {
         &self,
         lines: &mut RiotOutputLines,
         states: &RiotLineStates,
-        mut only_possible: bool,
+        only_ram: bool,
     ) -> Result<(), LineError> {
-        only_possible &= states.a.iter_possible_reads().count() == 1;
+        let only_addr = only_ram && states.a.is_defined();
 
         for address in states.a.iter_possible_reads() {
             lines
                 .db
-                .copy_from_reg(self.con.db, self.ram.byte(address as u8), only_possible)?;
+                .copy_from_reg(self.con.db, self.ram.byte(address as u8), only_addr)?;
         }
         Ok(())
     }
@@ -75,7 +73,7 @@ mod tests {
         #[case] addrs: &[usize],
         #[case] db_vals: &[usize],
         #[case] ram_vals: &[usize],
-        #[case] only_possible: bool,
+        #[case] only_instruction: bool,
         #[case] ram_res: &[usize],
     ) {
         tu.rw.add_drive(tu.rw_con, false, true).unwrap();
@@ -96,7 +94,8 @@ mod tests {
             }
         }
 
-        riot.call_ram(&mut lines, &states, only_possible).unwrap();
+        riot.call_ram(&mut lines, &states, only_instruction)
+            .unwrap();
 
         for &addr in addrs {
             let mut reads: Vec<usize> = riot.ram.byte(addr as u8).iter_possible_reads().collect();
@@ -113,7 +112,7 @@ mod tests {
     fn read_ram(
         mut tu: TestUtils,
         #[case] addrs: &[usize],
-        #[case] only_possible: bool,
+        #[case] only_instruction: bool,
         #[case] db_res: &[usize],
     ) {
         let ram_val = 0;
@@ -137,7 +136,8 @@ mod tests {
 
         lines.db.add_drive(riot.con.db, db_val, true).unwrap();
 
-        riot.call_ram(&mut lines, &states, only_possible).unwrap();
+        riot.call_ram(&mut lines, &states, only_instruction)
+            .unwrap();
 
         let mut reads: Vec<usize> = tu.db.iter_possible_reads().collect();
         reads.sort_unstable();

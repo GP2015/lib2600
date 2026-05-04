@@ -22,14 +22,6 @@ impl Ram {
     pub const fn byte_mut(&mut self, address: u8) -> &mut MBitRegister<8> {
         &mut self.bytes[address as usize]
     }
-
-    pub fn reset(&mut self) {
-        for byte in &mut self.bytes {
-            for reg in byte.iter_mut() {
-                reg.set_all(true, true);
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -44,21 +36,6 @@ mod tests {
 
     #[rstest]
     fn read_uninitialised_byte(ram: Ram) {
-        for bit in ram.byte(67).iter() {
-            assert_eq!(bit.possible_reads(), [true, false]);
-        }
-    }
-
-    #[rstest]
-    fn reset(mut ram: Ram) {
-        ram.byte_mut(23).add(0x45, true).unwrap();
-        ram.byte_mut(67).add(0x89, true).unwrap();
-        ram.reset();
-
-        for bit in ram.byte(23).iter() {
-            assert_eq!(bit.possible_reads(), [true, false]);
-        }
-
         for bit in ram.byte(67).iter() {
             assert_eq!(bit.possible_reads(), [true, false]);
         }

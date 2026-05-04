@@ -20,7 +20,8 @@ use emutils::{
 pub struct Riot {
     ram: Ram,
     con: RiotConnectionIds,
-    prev_phi2_state: LineState,
+    phi2_signal: bool,
+    pa7_prev_cycle: LineState,
 
     ddra: MBitRegister<8>,
     ddrb: MBitRegister<8>,
@@ -34,11 +35,14 @@ pub struct Riot {
 
 impl Riot {
     #[must_use]
+    #[allow(clippy::missing_panics_doc)]
     pub fn new(connections: RiotConnectionIds) -> Self {
-        Self {
+        let mut riot = Self {
             ram: Ram::new(),
             con: connections,
-            prev_phi2_state: LineState::new(false, false, true),
+            phi2_signal: false,
+
+            pa7_prev_cycle: LineState::new(false, false, true),
 
             ddra: MBitRegister::new("DDRA"),
             ddrb: MBitRegister::new("DDRB"),
@@ -48,86 +52,82 @@ impl Riot {
             edc_edge_type: BitRegister::new("EDC Edge Type"),
             edc_interrupt_flag: BitRegister::new("EDC Interrupt Flag"),
             timer_interrupt_flag: BitRegister::new("Timer Interrupt Flag"),
-        }
+        };
+
+        riot.ddra.add(0, true).expect("must fit");
+        riot.ddrb.add(0, true).expect("must fit");
+        riot.ora.add(0, true).expect("must fit");
+        riot.orb.add(0, true).expect("must fit");
+
+        riot.edc_enables_irq.add(false, true);
+        riot.edc_edge_type.add(false, true);
+
+        riot
     }
 
-    pub fn tick(&mut self, lines: RiotLines) -> Result<(), LineError> {
+    pub fn drive_phi2(&mut self, lines: RiotLines, bool_signal: bool) -> Result<(), LineError> {
+        lines.check_possible()?;
         let states = RiotLineStates::from(&lines);
         let mut lines = RiotOutputLines::from(lines);
 
-        let phi2_prev_low = self.prev_phi2_state.could_read_low();
-        let phi2_prev_high = self.prev_phi2_state.could_read_high();
-        let phi2_low = states.phi2.could_read_low();
-        let phi2_high = states.phi2.could_read_high();
-
-        let phi2_keep_low = phi2_prev_low && phi2_low;
-        let phi2_keep_high = phi2_prev_high && phi2_high;
-        let phi2_rising_edge = phi2_prev_low && phi2_high;
-        let phi2_falling_edge = phi2_prev_high && phi2_low;
-
-        let only_possible = [
-            phi2_keep_low,
-            phi2_keep_high,
-            phi2_rising_edge,
-            phi2_falling_edge,
-        ]
-        .into_iter()
-        .filter(|&b| b)
-        .count()
-            == 1;
-
-        let mut execute_instr = |only_possible: bool| {
-            let instructions = PossibleInstructions::from(&states);
-            self.execute_possible_instructions(
-                &mut lines,
-                &states,
-                &instructions,
-                only_possible & instructions.only_possible(),
-            )
-        };
-
-        if phi2_rising_edge {
-            execute_instr(only_possible)?;
+        match (self.phi2_signal, bool_signal) {
+            (false, true) => self.handle_rising_edge(&mut lines, &states)?,
+            (true, false) => lines.db.add_high_z(self.con.db, true),
+            _ => return Ok(()),
         }
 
-        if phi2_keep_high {
-            execute_instr(false)?;
-        }
-
-        if phi2_falling_edge {
-            lines.db.add_high_z(self.con.db, only_possible);
-        }
-
-        self.prev_phi2_state = states.phi2;
-
+        self.phi2_signal = bool_signal;
         Ok(())
     }
 
-    fn execute_possible_instructions(
+    fn handle_rising_edge(
         &mut self,
         lines: &mut RiotOutputLines,
         states: &RiotLineStates,
-        instructions: &PossibleInstructions,
-        only_possible: bool,
     ) -> Result<(), LineError> {
+        let (cs1_low, cs1_high) = states.cs1.could_read_low_high();
+        let (cs2_low, cs2_high) = states.cs2.could_read_low_high();
+
+        if cs1_high && cs2_low {
+            let only_selected = !(cs1_low || cs2_high);
+            self.call_chip(lines, states, only_selected)?;
+        } else {
+            lines.db.add_high_z(self.con.db, true);
+        }
+
+        self.update_peripherals(lines)
+    }
+
+    fn call_chip(
+        &mut self,
+        lines: &mut RiotOutputLines,
+        states: &RiotLineStates,
+        only_selected: bool,
+    ) -> Result<(), LineError> {
+        if states.rw.could_read_high() {
+            lines.db.clear_only_possible(self.con.db);
+        } else {
+            lines.db.add_high_z(self.con.db, true);
+        }
+
+        let instructions = PossibleInstructions::from(states);
+        let only_instruction = only_selected & instructions.only_instruction();
+
         macro_rules! call_instr_fns {
-            ($(($instr:ident, $action:expr)),+ $(,)?) => {
-                $(
-                    if instructions.$instr{
-                        $action;
-                    }
-                )+
-            };
+            ($(($instr:ident, $action:expr)),+ $(,)?) => {$(
+                if instructions.$instr {
+                    $action;
+                }
+            )+};
         }
 
         call_instr_fns!(
-            (reset, self.call_reset(lines, only_possible)),
-            (ram, self.call_ram(lines, states, only_possible)?),
-            (io, self.call_io(lines, states, only_possible)?),
-            (write_timer, self.write_timer(lines, states, only_possible)?),
-            (read_timer, self.read_timer(lines, states, only_possible)?),
-            (read_ir_flag, self.read_ir_flag(lines, only_possible)?),
-            (write_edc, self.write_edc(lines, states, only_possible)?),
+            (ram, self.call_ram(lines, states, only_instruction)?),
+            (io, self.call_io(lines, states, only_instruction)?),
+            (wt, self.write_timer(lines, states, only_instruction)?),
+            (rt, self.read_timer(lines, states, only_instruction)?),
+            (rirf, self.read_ir_flag(lines, only_instruction)?),
+            (wedc, self.write_edc(lines, states, only_instruction)?),
         );
 
         Ok(())
