@@ -37,51 +37,35 @@ impl From<&RiotLineStates> for PossibleIoInstructions {
 
         let rw = states.rw;
         let a0 = states.a.line_state(0).expect("already checked");
-        let a1 = states.a.line_state(0).expect("already checked");
+        let a1 = states.a.line_state(1).expect("already checked");
 
-        if a0.could_read_low() {
-            if a1.could_read_low() {
-                if rw.could_read_low() {
-                    instructions.write_ora = true;
+        macro_rules! check_logic {
+            ($state:expr, $low:ident, $high:ident $(,)?) => {
+                check_logic!($state, instructions.$low = true, instructions.$high = true)
+            };
+            ($state:expr, $low_branch:expr, $high_branch:expr $(,)?) => {{
+                if $state.could_read_low() {
+                    $low_branch
                 }
-
-                if rw.could_read_high() {
-                    instructions.read_ora = true;
+                if $state.could_read_high() {
+                    $high_branch
                 }
-            }
-
-            if a1.could_read_high() {
-                if rw.could_read_low() {
-                    instructions.write_orb = true;
-                }
-
-                if rw.could_read_high() {
-                    instructions.read_orb = true;
-                }
-            }
+            }};
         }
 
-        if a0.could_read_high() {
-            if a1.could_read_low() {
-                if rw.could_read_low() {
-                    instructions.write_ddra = true;
-                }
-
-                if rw.could_read_high() {
-                    instructions.read_ddra = true;
-                }
-            }
-
-            if a1.could_read_high() {
-                if rw.could_read_low() {
-                    instructions.write_ddrb = true;
-                }
-
-                if rw.could_read_high() {
-                    instructions.read_ddrb = true;
-                }
-            }
-        }
+        check_logic!(
+            a0,
+            check_logic!(
+                a1,
+                check_logic!(rw, write_ora, read_ora),
+                check_logic!(rw, write_orb, read_orb),
+            ),
+            check_logic!(
+                a1,
+                check_logic!(rw, write_ddra, read_ddra),
+                check_logic!(rw, write_ddrb, read_ddrb),
+            ),
+        );
 
         instructions
     }

@@ -44,49 +44,44 @@ impl From<&RiotLineStates> for PossibleInstructions {
         let a2 = states.a.line_state(2).expect("already checked");
         let a4 = states.a.line_state(4).expect("already checked");
 
-        if res.could_read_low() {
-            instructions.reset = true;
+        macro_rules! check_logic {
+            ($state:expr, $low:ident, $high:ident $(,)?) => {
+                check_logic!($state, instructions.$low = true, instructions.$high = true)
+            };
+            ($state:expr, $low:ident, $high_branch:expr $(,)?) => {
+                check_logic!($state, instructions.$low = true, $high_branch)
+            };
+            ($state:expr, $low_branch:expr, $high_branch:expr $(,)?) => {{
+                if $state.could_read_low() {
+                    $low_branch
+                }
+                if $state.could_read_high() {
+                    $high_branch
+                }
+            }};
         }
 
-        if res.could_read_high() {
+        check_logic!(res, reset, {
             if cs1.could_read_low() || cs2.could_read_high() {
                 instructions.nop = true;
             }
 
             if cs1.could_read_high() && cs2.could_read_low() {
-                if rs.could_read_low() {
-                    instructions.ram = true;
-                }
-
-                if rs.could_read_high() {
-                    if a2.could_read_low() {
-                        instructions.io = true;
-                    }
-
-                    if a2.could_read_high() {
-                        if rw.could_read_low() {
-                            if a4.could_read_low() {
-                                instructions.write_edc = true;
-                            }
-
-                            if a4.could_read_high() {
-                                instructions.write_timer = true;
-                            }
-                        }
-
-                        if rw.could_read_high() {
-                            if a0.could_read_low() {
-                                instructions.read_timer = true;
-                            }
-
-                            if a0.could_read_high() {
-                                instructions.read_ir_flag = true;
-                            }
-                        }
-                    }
-                }
+                check_logic!(
+                    rs,
+                    ram,
+                    check_logic!(
+                        a2,
+                        io,
+                        check_logic!(
+                            rw,
+                            check_logic!(a4, write_edc, write_timer),
+                            check_logic!(a0, read_timer, read_ir_flag)
+                        )
+                    )
+                );
             }
-        }
+        });
 
         instructions
     }
