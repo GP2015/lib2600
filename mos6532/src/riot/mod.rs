@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use emutils::{
-    line::LineError,
+    line::{LineError, LineState},
     reg::{BitRegister, MBitRegister},
 };
 
@@ -20,7 +20,7 @@ use emutils::{
 pub struct Riot {
     ram: Ram,
     con: RiotConnectionIds,
-    prev: RiotLineStates,
+    prev_phi2_state: LineState,
 
     ddra: MBitRegister<8>,
     ddrb: MBitRegister<8>,
@@ -38,7 +38,7 @@ impl Riot {
         Self {
             ram: Ram::new(),
             con: connections,
-            prev: RiotLineStates::new_prev(),
+            prev_phi2_state: LineState::new(false, false, true),
 
             ddra: MBitRegister::new("DDRA"),
             ddrb: MBitRegister::new("DDRB"),
@@ -52,13 +52,13 @@ impl Riot {
     }
 
     pub fn tick(&mut self, lines: RiotLines) -> Result<(), LineError> {
-        let line_states = RiotLineStates::from(&lines);
+        let states = RiotLineStates::from(&lines);
         let mut lines = RiotOutputLines::from(lines);
 
-        let phi2_prev_low = self.prev.phi2.could_read_low();
-        let phi2_prev_high = self.prev.phi2.could_read_high();
-        let phi2_low = line_states.phi2.could_read_low();
-        let phi2_high = line_states.phi2.could_read_high();
+        let phi2_prev_low = self.prev_phi2_state.could_read_low();
+        let phi2_prev_high = self.prev_phi2_state.could_read_high();
+        let phi2_low = states.phi2.could_read_low();
+        let phi2_high = states.phi2.could_read_high();
 
         let phi2_keep_low = phi2_prev_low && phi2_low;
         let phi2_keep_high = phi2_prev_high && phi2_high;
@@ -76,21 +76,29 @@ impl Riot {
         .count()
             == 1;
 
-        if phi2_rising_edge {
-            let instructions = PossibleInstructions::from(&line_states);
+        let mut execute_instr = |only_possible: bool| {
+            let instructions = PossibleInstructions::from(&states);
             self.execute_possible_instructions(
                 &mut lines,
-                &line_states,
+                &states,
                 &instructions,
                 only_possible & instructions.only_possible(),
-            )?;
+            )
+        };
+
+        if phi2_rising_edge {
+            execute_instr(only_possible)?;
+        }
+
+        if phi2_keep_high {
+            execute_instr(false)?;
         }
 
         if phi2_falling_edge {
             lines.db.add_high_z(self.con.db, only_possible);
         }
 
-        self.prev = line_states;
+        self.prev_phi2_state = states.phi2;
 
         Ok(())
     }
