@@ -155,7 +155,7 @@ impl Riot {
         ab: AB,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        macro_rules! code_dupe {
+        macro_rules! reg_to_p {
             ($p:expr, $bus_con:expr, $ddr:expr, $or:expr) => {
                 for ((p_line, line_con), ddr_bit, or_bit) in
                     izip!($p.iter_mut($bus_con), $ddr.iter(), $or.iter())
@@ -172,8 +172,8 @@ impl Riot {
         }
 
         match ab {
-            AB::A => code_dupe!(lines.pa, self.con.pa, self.ddra, self.ora),
-            AB::B => code_dupe!(lines.pb, self.con.pb, self.ddrb, self.orb),
+            AB::A => reg_to_p!(lines.pa, self.con.pa, self.ddra, self.ora),
+            AB::B => reg_to_p!(lines.pb, self.con.pb, self.ddrb, self.orb),
         }
 
         Ok(())

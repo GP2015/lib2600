@@ -39,9 +39,9 @@ impl From<&RiotLineStates> for PossibleIoInstructions {
         let a0 = states.a.line_state(0).expect("already checked");
         let a1 = states.a.line_state(1).expect("already checked");
 
-        macro_rules! check_logic {
+        macro_rules! instr_branch {
             ($state:expr, $low:ident, $high:ident $(,)?) => {
-                check_logic!($state, instructions.$low = true, instructions.$high = true)
+                instr_branch!($state, instructions.$low = true, instructions.$high = true)
             };
             ($state:expr, $low_branch:expr, $high_branch:expr $(,)?) => {{
                 if $state.could_read_low() {
@@ -53,17 +53,17 @@ impl From<&RiotLineStates> for PossibleIoInstructions {
             }};
         }
 
-        check_logic!(
+        instr_branch!(
             a0,
-            check_logic!(
+            instr_branch!(
                 a1,
-                check_logic!(rw, write_ora, read_ora),
-                check_logic!(rw, write_orb, read_orb),
+                instr_branch!(rw, write_ora, read_ora),
+                instr_branch!(rw, write_orb, read_orb),
             ),
-            check_logic!(
+            instr_branch!(
                 a1,
-                check_logic!(rw, write_ddra, read_ddra),
-                check_logic!(rw, write_ddrb, read_ddrb),
+                instr_branch!(rw, write_ddra, read_ddra),
+                instr_branch!(rw, write_ddrb, read_ddrb),
             ),
         );
 

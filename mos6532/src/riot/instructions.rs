@@ -44,12 +44,12 @@ impl From<&RiotLineStates> for PossibleInstructions {
         let a2 = states.a.line_state(2).expect("already checked");
         let a4 = states.a.line_state(4).expect("already checked");
 
-        macro_rules! check_logic {
+        macro_rules! instr_branch {
             ($state:expr, $low:ident, $high:ident $(,)?) => {
-                check_logic!($state, instructions.$low = true, instructions.$high = true)
+                instr_branch!($state, instructions.$low = true, instructions.$high = true)
             };
             ($state:expr, $low:ident, $high_branch:expr $(,)?) => {
-                check_logic!($state, instructions.$low = true, $high_branch)
+                instr_branch!($state, instructions.$low = true, $high_branch)
             };
             ($state:expr, $low_branch:expr, $high_branch:expr $(,)?) => {{
                 if $state.could_read_low() {
@@ -61,22 +61,22 @@ impl From<&RiotLineStates> for PossibleInstructions {
             }};
         }
 
-        check_logic!(res, reset, {
+        instr_branch!(res, reset, {
             if cs1.could_read_low() || cs2.could_read_high() {
                 instructions.nop = true;
             }
 
             if cs1.could_read_high() && cs2.could_read_low() {
-                check_logic!(
+                instr_branch!(
                     rs,
                     ram,
-                    check_logic!(
+                    instr_branch!(
                         a2,
                         io,
-                        check_logic!(
+                        instr_branch!(
                             rw,
-                            check_logic!(a4, write_edc, write_timer),
-                            check_logic!(a0, read_timer, read_ir_flag)
+                            instr_branch!(a4, write_edc, write_timer),
+                            instr_branch!(a0, read_timer, read_ir_flag)
                         )
                     )
                 );
