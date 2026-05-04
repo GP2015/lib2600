@@ -12,13 +12,13 @@ use std::array;
 pub struct BusConnectionId(usize);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Bus<const N: usize> {
+pub struct Bus<const SIZE: usize> {
     name: String,
-    lines: [Line; N],
-    line_connections: Vec<[LineConnectionId; N]>,
+    lines: [Line; SIZE],
+    line_connections: Vec<[LineConnectionId; SIZE]>,
 }
 
-impl<const N: usize> Bus<N> {
+impl<const SIZE: usize> Bus<SIZE> {
     pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
         let lines = array::from_fn(|bit| Line::new(format!("{name}{bit}")));
@@ -43,7 +43,7 @@ impl<const N: usize> Bus<N> {
 
     #[must_use]
     pub const fn size(&self) -> usize {
-        self.lines.len()
+        SIZE
     }
 
     fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), LineError> {
@@ -86,7 +86,7 @@ impl<const N: usize> Bus<N> {
     }
 
     #[must_use]
-    pub fn state(&self) -> BusState<N> {
+    pub fn state(&self) -> BusState<SIZE> {
         BusState::new(array::from_fn(|bit| self.lines[bit].state()))
     }
 
@@ -146,15 +146,15 @@ impl<const N: usize> Bus<N> {
         )
     }
 
-    pub fn copy_from_bus(
+    pub fn copy_from_bus_state(
         &mut self,
         connection: BusConnectionId,
-        bus: &Self,
+        bus: &BusState<SIZE>,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), other_line) in self.iter_mut(connection).zip(bus.iter())
+        for ((this_line, line_connection), line_state) in self.iter_mut(connection).zip(bus.iter())
         {
-            this_line.copy_from_line(line_connection, other_line, only_possible)?;
+            this_line.copy_from_line_state(line_connection, &line_state, only_possible)?;
         }
 
         Ok(())
@@ -163,7 +163,7 @@ impl<const N: usize> Bus<N> {
     pub fn copy_from_reg(
         &mut self,
         connection: BusConnectionId,
-        reg: &MBitRegister<N>,
+        reg: &MBitRegister<SIZE>,
         only_possible: bool,
     ) -> Result<(), LineError> {
         for ((this_line, line_connection), bit_reg) in self.iter_mut(connection).zip(reg.iter()) {

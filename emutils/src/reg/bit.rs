@@ -1,4 +1,4 @@
-use crate::{line::Line, reg::states::PossibleBitStates};
+use crate::{line::LineState, reg::states::PossibleBitStates};
 use delegate::delegate;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -21,7 +21,7 @@ impl BitRegister {
         &self.name
     }
 
-    pub const fn copy_from_line(&mut self, line: &Line, only_possible: bool) {
+    pub const fn copy_from_line_state(&mut self, line: &LineState, only_possible: bool) {
         if only_possible {
             self.states.high = line.could_read_high();
             self.states.low = line.could_read_low();
@@ -56,7 +56,7 @@ impl BitRegister {
 
 #[cfg(test)]
 mod tests {
-    use crate::line::LineConnectionId;
+    use crate::line::{Line, LineConnectionId};
 
     use super::*;
     use rstest::{fixture, rstest};
@@ -96,7 +96,7 @@ mod tests {
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();
-        reg.copy_from_line(&line, true);
+        reg.copy_from_line_state(&line.state(), true);
         assert_eq!(reg.high_possible(), high);
         assert_eq!(reg.low_possible(), low);
     }
@@ -111,7 +111,7 @@ mod tests {
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();
-        reg.copy_from_line(&line, false);
+        reg.copy_from_line_state(&line.state(), false);
         assert_eq!(reg.high_possible(), high | initial);
         assert_eq!(reg.low_possible(), low | initial);
     }

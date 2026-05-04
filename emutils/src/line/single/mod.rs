@@ -54,10 +54,10 @@ impl Line {
         Ok(())
     }
 
-    pub fn copy_from_line(
+    pub fn copy_from_line_state(
         &mut self,
         connection: LineConnectionId,
-        line: &Self,
+        line: &LineState,
         only_possible: bool,
     ) -> Result<(), LineError> {
         let state = &mut self.connection_states[connection.0];

@@ -2,13 +2,13 @@ use crate::{bit, line::LineState};
 use itertools::Itertools;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct BusState<const N: usize> {
-    pub line_states: [LineState; N],
+pub struct BusState<const SIZE: usize> {
+    pub line_states: [LineState; SIZE],
 }
 
-impl<const N: usize> BusState<N> {
+impl<const SIZE: usize> BusState<SIZE> {
     #[must_use]
-    pub const fn new(line_states: [LineState; N]) -> Self {
+    pub const fn new(line_states: [LineState; SIZE]) -> Self {
         Self { line_states }
     }
 

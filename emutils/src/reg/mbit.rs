@@ -1,6 +1,6 @@
 use crate::{
     bit,
-    line::Bus,
+    line::BusState,
     reg::{BitRegister, RegisterError},
 };
 use delegate::delegate;
@@ -8,12 +8,12 @@ use itertools::Itertools;
 use std::array;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct MBitRegister<const N: usize> {
+pub struct MBitRegister<const SIZE: usize> {
     name: String,
-    bits: [BitRegister; N],
+    bits: [BitRegister; SIZE],
 }
 
-impl<const N: usize> MBitRegister<N> {
+impl<const SIZE: usize> MBitRegister<SIZE> {
     #[must_use]
     pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
@@ -26,6 +26,11 @@ impl<const N: usize> MBitRegister<N> {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    #[must_use]
+    pub const fn size(&self) -> usize {
+        SIZE
     }
 
     fn check_bit_in_range(&self, bit: usize) -> Result<(), RegisterError> {
@@ -81,13 +86,13 @@ impl<const N: usize> MBitRegister<N> {
         Ok(())
     }
 
-    pub fn copy_from_bus(
+    pub fn copy_from_bus_state(
         &mut self,
-        bus: &Bus<N>,
+        bus: &BusState<SIZE>,
         only_possible: bool,
     ) -> Result<(), RegisterError> {
         for (reg, line) in self.iter_mut().zip(bus.iter()) {
-            reg.copy_from_line(line, only_possible);
+            reg.copy_from_line_state(&line, only_possible);
         }
 
         Ok(())
@@ -95,9 +100,6 @@ impl<const N: usize> MBitRegister<N> {
 
     delegate! {
         to self.bits {
-            #[must_use]
-            #[call(len)]
-            pub const fn size(&self) -> usize;
             pub fn iter(&self) -> impl Iterator<Item = &BitRegister>;
             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut BitRegister>;
         }
