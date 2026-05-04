@@ -6,7 +6,10 @@ mod reset;
 mod timer;
 
 #[cfg(test)]
-use crate::{Riot, RiotLineRefs};
+use crate::{
+    Riot, RiotConnectionIds, RiotLines,
+    riot::{lines::RiotOutputLines, states::RiotLineStates},
+};
 #[cfg(test)]
 use emutils::line::{Bus, BusConnectionId, Line, LineConnectionId};
 
@@ -77,21 +80,27 @@ impl TestUtils {
         }
     }
 
-    pub fn riot_and_lines(&mut self) -> (Riot, RiotLineRefs<'_>) {
+    pub fn internals(&mut self) -> (Riot, RiotOutputLines<'_>, RiotLineStates) {
+        let (riot, lines) = self.externals();
+        let states = RiotLineStates::from(&lines);
+        (riot, RiotOutputLines::from(lines), states)
+    }
+
+    pub fn externals(&mut self) -> (Riot, RiotLines<'_>) {
         (self.riot(), self.lines())
     }
 
     pub fn riot(&mut self) -> Riot {
-        Riot::new(
-            self.db.create_connection(),
-            self.pa.create_connection(),
-            self.pb.create_connection(),
-            self.irq.create_connection(),
-        )
+        Riot::new(RiotConnectionIds {
+            db: self.db.create_connection(),
+            pa: self.pa.create_connection(),
+            pb: self.pb.create_connection(),
+            irq: self.irq.create_connection(),
+        })
     }
 
-    pub fn lines(&mut self) -> RiotLineRefs<'_> {
-        RiotLineRefs {
+    pub fn lines(&mut self) -> RiotLines<'_> {
+        RiotLines {
             a: &self.a,
             db: &mut self.db,
             pa: &mut self.pa,

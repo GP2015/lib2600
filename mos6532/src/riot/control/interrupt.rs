@@ -1,15 +1,16 @@
-use crate::{Riot, RiotError, RiotLineRefs};
+use crate::{Riot, riot::lines::RiotOutputLines};
+use emutils::line::LineError;
 
 impl Riot {
-    pub(crate) fn read_interrupt_flag(
+    pub(crate) fn read_ir_flag(
         &mut self,
-        lines: &mut RiotLineRefs,
+        lines: &mut RiotOutputLines,
         only_possible: bool,
-    ) -> Result<(), RiotError> {
+    ) -> Result<(), LineError> {
         for line_index in 0..8 {
             let (line, con) = lines
                 .db
-                .line_mut(self.db_con, line_index)
+                .line_mut(self.con.db, line_index)
                 .expect("already checked");
 
             match line_index {

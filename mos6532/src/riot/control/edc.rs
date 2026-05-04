@@ -1,11 +1,16 @@
-use crate::{Riot, RiotError, RiotLineRefs};
+use crate::{
+    Riot,
+    riot::{lines::RiotOutputLines, states::RiotLineStates},
+};
+use emutils::line::LineError;
 
 impl Riot {
     pub(crate) fn write_edc(
         &mut self,
-        lines: &mut RiotLineRefs,
+        lines: &mut RiotOutputLines,
+        states: &RiotLineStates,
         only_possible: bool,
-    ) -> Result<(), RiotError> {
+    ) -> Result<(), LineError> {
         todo!()
     }
 
@@ -14,7 +19,7 @@ impl Riot {
     //     self.edc_use_pos_edge.write(use_pos_edge);
     // }
 
-    // pub(super) fn update_edc(&mut self) -> Result<(), RiotError> {
+    // pub(super) fn update_edc(&mut self) -> Result<(), LineError> {
     //     let new_pa7 = self.pa().bit_state(7)?;
 
     //     if new_pa7 != self.old_pa7 && new_pa7 == self.edc_use_pos_edge.read()? {

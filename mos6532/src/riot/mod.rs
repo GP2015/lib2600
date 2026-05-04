@@ -1,38 +1,26 @@
 mod control;
 mod instructions;
+mod lines;
 mod ram;
+mod states;
 
 use crate::{
-    RiotError, RiotLineRefs,
-    riot::{instructions::PossibleInstructions, ram::Ram},
+    RiotConnectionIds, RiotLines,
+    riot::{
+        instructions::PossibleInstructions, lines::RiotOutputLines, ram::Ram,
+        states::RiotLineStates,
+    },
 };
 use emutils::{
-    line::{BusConnectionId, BusState, LineConnectionId, LineState},
+    line::LineError,
     reg::{BitRegister, MBitRegister},
 };
-
-const INITIAL_PREV_LINE_STATE: LineState = LineState::new(false, false, true);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Riot {
     ram: Ram,
-
-    db_con: BusConnectionId,
-    pa_con: BusConnectionId,
-    pb_con: BusConnectionId,
-    irq_con: LineConnectionId,
-
-    a_prev: BusState<7>,
-    db_prev: BusState<8>,
-    pa_prev: BusState<8>,
-    pb_prev: BusState<8>,
-    phi2_prev: LineState,
-    res_prev: LineState,
-    cs1_prev: LineState,
-    cs2_prev: LineState,
-    rs_prev: LineState,
-    rw_prev: LineState,
-    irq_prev: LineState,
+    con: RiotConnectionIds,
+    prev: RiotLineStates,
 
     ddra: MBitRegister<8>,
     ddrb: MBitRegister<8>,
@@ -46,31 +34,11 @@ pub struct Riot {
 
 impl Riot {
     #[must_use]
-    pub fn new(
-        db_con: BusConnectionId,
-        pa_con: BusConnectionId,
-        pb_con: BusConnectionId,
-        irq_con: LineConnectionId,
-    ) -> Self {
+    pub fn new(connections: RiotConnectionIds) -> Self {
         Self {
             ram: Ram::new(),
-
-            db_con,
-            pa_con,
-            pb_con,
-            irq_con,
-
-            a_prev: BusState::new([INITIAL_PREV_LINE_STATE; 7]),
-            db_prev: BusState::new([INITIAL_PREV_LINE_STATE; 8]),
-            pa_prev: BusState::new([INITIAL_PREV_LINE_STATE; 8]),
-            pb_prev: BusState::new([INITIAL_PREV_LINE_STATE; 8]),
-            phi2_prev: INITIAL_PREV_LINE_STATE,
-            res_prev: INITIAL_PREV_LINE_STATE,
-            cs1_prev: INITIAL_PREV_LINE_STATE,
-            cs2_prev: INITIAL_PREV_LINE_STATE,
-            rs_prev: INITIAL_PREV_LINE_STATE,
-            rw_prev: INITIAL_PREV_LINE_STATE,
-            irq_prev: INITIAL_PREV_LINE_STATE,
+            con: connections,
+            prev: RiotLineStates::new_prev(),
 
             ddra: MBitRegister::new("DDRA"),
             ddrb: MBitRegister::new("DDRB"),
@@ -83,11 +51,14 @@ impl Riot {
         }
     }
 
-    pub fn tick(&mut self, lines: &mut RiotLineRefs) -> Result<(), RiotError> {
-        let phi2_prev_low = self.phi2_prev.could_read_low();
-        let phi2_prev_high = self.phi2_prev.could_read_high();
-        let phi2_low = lines.phi2.could_read_low();
-        let phi2_high = lines.phi2.could_read_high();
+    pub fn tick(&mut self, lines: RiotLines) -> Result<(), LineError> {
+        let line_states = RiotLineStates::from(&lines);
+        let mut lines = RiotOutputLines::from(lines);
+
+        let phi2_prev_low = self.prev.phi2.could_read_low();
+        let phi2_prev_high = self.prev.phi2.could_read_high();
+        let phi2_low = line_states.phi2.could_read_low();
+        let phi2_high = line_states.phi2.could_read_high();
 
         let phi2_keep_low = phi2_prev_low && phi2_low;
         let phi2_keep_high = phi2_prev_high && phi2_high;
@@ -106,54 +77,50 @@ impl Riot {
             == 1;
 
         if phi2_rising_edge {
-            let instructions = PossibleInstructions::new(lines);
+            let instructions = PossibleInstructions::from(&line_states);
             self.execute_possible_instructions(
-                lines,
+                &mut lines,
+                &line_states,
                 &instructions,
                 only_possible & instructions.only_possible(),
             )?;
         }
 
         if phi2_falling_edge {
-            lines.db.add_high_z(self.db_con, only_possible);
+            lines.db.add_high_z(self.con.db, only_possible);
         }
+
+        self.prev = line_states;
 
         Ok(())
     }
 
     fn execute_possible_instructions(
         &mut self,
-        lines: &mut RiotLineRefs,
+        lines: &mut RiotOutputLines,
+        states: &RiotLineStates,
         instructions: &PossibleInstructions,
         only_possible: bool,
-    ) -> Result<(), RiotError> {
-        if instructions.reset {
-            self.call_reset(lines, only_possible);
+    ) -> Result<(), LineError> {
+        macro_rules! call_instr_fns {
+            ($(($instr:ident, $action:expr)),+ $(,)?) => {
+                $(
+                    if instructions.$instr{
+                        $action;
+                    }
+                )+
+            };
         }
 
-        if instructions.ram {
-            self.call_ram(lines, only_possible)?;
-        }
-
-        if instructions.io {
-            self.call_io(lines, only_possible)?;
-        }
-
-        if instructions.write_timer {
-            self.write_timer(lines, only_possible)?;
-        }
-
-        if instructions.read_timer {
-            self.read_timer(lines, only_possible)?;
-        }
-
-        if instructions.read_interrupt_flag {
-            self.read_interrupt_flag(lines, only_possible)?;
-        }
-
-        if instructions.write_edc {
-            self.write_edc(lines, only_possible)?;
-        }
+        call_instr_fns!(
+            (reset, self.call_reset(lines, only_possible)),
+            (ram, self.call_ram(lines, states, only_possible)?),
+            (io, self.call_io(lines, states, only_possible)?),
+            (write_timer, self.write_timer(lines, states, only_possible)?),
+            (read_timer, self.read_timer(lines, states, only_possible)?),
+            (read_ir_flag, self.read_ir_flag(lines, only_possible)?),
+            (write_edc, self.write_edc(lines, states, only_possible)?),
+        );
 
         Ok(())
     }

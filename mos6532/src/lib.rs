@@ -7,8 +7,9 @@
     clippy::similar_names
 )]
 
-mod error;
-mod line_refs;
+mod connections;
+mod lines;
 mod riot;
 
-pub use crate::{error::RiotError, line_refs::RiotLineRefs, riot::Riot};
+pub use crate::{connections::RiotConnectionIds, lines::RiotLines, riot::Riot};
+pub use emutils::line::{Bus, BusConnectionId, Line, LineConnectionId, LineError};

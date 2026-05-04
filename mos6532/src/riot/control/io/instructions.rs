@@ -1,6 +1,6 @@
-use crate::RiotLineRefs;
+use crate::riot::states::RiotLineStates;
 
-#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default)]
 pub struct PossibleIoInstructions {
     pub write_ora: bool,
     pub read_ora: bool,
@@ -29,49 +29,55 @@ impl PossibleIoInstructions {
         .count()
             < 2
     }
+}
 
-    pub fn new(lines: &mut RiotLineRefs) -> Self {
+impl From<&RiotLineStates> for PossibleIoInstructions {
+    fn from(states: &RiotLineStates) -> Self {
         let mut instructions = Self::default();
 
-        if lines.a.line(0).expect("already checked").could_read_low() {
-            if lines.a.line(1).expect("already checked").could_read_low() {
-                if lines.rw.could_read_low() {
+        let rw = states.rw;
+        let a0 = states.a.line_state(0).expect("already checked");
+        let a1 = states.a.line_state(0).expect("already checked");
+
+        if a0.could_read_low() {
+            if a1.could_read_low() {
+                if rw.could_read_low() {
                     instructions.write_ora = true;
                 }
 
-                if lines.rw.could_read_high() {
+                if rw.could_read_high() {
                     instructions.read_ora = true;
                 }
             }
 
-            if lines.a.line(1).expect("already checked").could_read_high() {
-                if lines.rw.could_read_low() {
+            if a1.could_read_high() {
+                if rw.could_read_low() {
                     instructions.write_orb = true;
                 }
 
-                if lines.rw.could_read_high() {
+                if rw.could_read_high() {
                     instructions.read_orb = true;
                 }
             }
         }
 
-        if lines.a.line(0).expect("already checked").could_read_high() {
-            if lines.a.line(1).expect("already checked").could_read_low() {
-                if lines.rw.could_read_low() {
+        if a0.could_read_high() {
+            if a1.could_read_low() {
+                if rw.could_read_low() {
                     instructions.write_ddra = true;
                 }
 
-                if lines.rw.could_read_high() {
+                if rw.could_read_high() {
                     instructions.read_ddra = true;
                 }
             }
 
-            if lines.a.line(1).expect("already checked").could_read_high() {
-                if lines.rw.could_read_low() {
+            if a1.could_read_high() {
+                if rw.could_read_low() {
                     instructions.write_ddrb = true;
                 }
 
-                if lines.rw.could_read_high() {
+                if rw.could_read_high() {
                     instructions.read_ddrb = true;
                 }
             }
