@@ -63,11 +63,26 @@ impl Line {
         Ok(())
     }
 
+    fn connection_state_mut(
+        &mut self,
+        connection: LineConnectionId,
+    ) -> Result<&mut LineState, LineError> {
+        self.connection_states.get_mut(connection.0).ok_or_else(|| {
+            LineError::ConnectionIdOutOfBounds {
+                name: self.name.clone(),
+            }
+        })
+    }
+
     #[allow(clippy::missing_panics_doc)]
-    pub fn clear_only_possible(&mut self, connection: LineConnectionId) {
-        self.connection_states[connection.0].set_all(false, false, false);
-        self.update_combined_state()
-            .expect("will not cause contention");
+    pub fn clear_only_possible(&mut self, connection: LineConnectionId) -> Result<(), LineError> {
+        self.connection_state_mut(connection)?
+            .set_all(false, false, false);
+
+        #[allow(clippy::unwrap_used)]
+        self.update_combined_state().unwrap();
+
+        Ok(())
     }
 
     pub fn copy_from_line_state(
@@ -76,7 +91,7 @@ impl Line {
         line: &LineState,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection.0];
+        let state = self.connection_state_mut(connection)?;
 
         if only_possible {
             state.set_all(
@@ -107,7 +122,7 @@ impl Line {
         reg: &BitRegister,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        let state = &mut self.connection_states[connection.0];
+        let state = self.connection_state_mut(connection)?;
 
         if only_possible {
             state.set_all(reg.high_possible(), reg.low_possible(), false);
@@ -147,28 +162,25 @@ impl Line {
         }
 
         #[expr($; self.update_combined_state())]
-        to |connection: LineConnectionId| self.connection_states[connection.0]{
+        to |connection: LineConnectionId| self.connection_state_mut(connection)?{
             pub fn add(&mut self, signal: LineSignal, only_possible: bool) -> Result<(), LineError>;
 
             pub fn add_high(&mut self, only_possible: bool) -> Result<(), LineError>;
             pub fn add_low(&mut self, only_possible: bool) -> Result<(), LineError>;
 
             pub fn add_drive(&mut self, val: bool, only_possible: bool) -> Result<(), LineError>;
+            pub fn add_high_z(&mut self, only_possible: bool) -> Result<(), LineError>;
             pub fn set_all(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), LineError>;
+
+            pub fn remove(&mut self, signal: LineSignal) -> Result<(), LineError>;
+
+            pub fn remove_high(&mut self) -> Result<(), LineError>;
+            pub fn remove_low(&mut self) -> Result<(), LineError>;
+            pub fn remove_high_z(&mut self) -> Result<(), LineError>;
+
+            pub fn remove_drive(&mut self, val: bool) -> Result<(), LineError>;
         }
 
-        #[expr($self.update_combined_state().expect("will not cause contention");)]
-        to |connection: LineConnectionId| self.connection_states[connection.0]{
-            pub fn add_high_z(&mut self, only_possible: bool);
-
-            pub fn remove(&mut self, signal: LineSignal);
-
-            pub fn remove_high(&mut self);
-            pub fn remove_low(&mut self);
-            pub fn remove_high_z(&mut self);
-
-            pub fn remove_drive(&mut self, val: bool);
-        }
     }
 }
 
@@ -203,14 +215,14 @@ mod tests {
         let connection1 = line.create_connection();
         let connection2 = line.create_connection();
         line.add_high(connection1, true).unwrap();
-        line.add_high_z(connection2, true);
+        line.add_high_z(connection2, true).unwrap();
         assert!(line.could_read_high());
         assert!(!line.could_read_low());
         line.add_high(connection2, false).unwrap();
         assert!(line.could_read_high());
         assert!(!line.could_read_low());
-        line.add_high_z(connection1, true);
-        line.remove_high(connection2);
+        line.add_high_z(connection1, true).unwrap();
+        line.remove_high(connection2).unwrap();
         assert!(line.could_read_high());
         assert!(line.could_read_low());
         line.add_low(connection1, true).unwrap();

@@ -18,6 +18,18 @@ pub struct Bus<const SIZE: usize> {
     line_connections: Vec<[LineConnectionId; SIZE]>,
 }
 
+macro_rules! line_con_row_iter {
+    ($bus:ident, $bus_con:ident) => {
+        $bus.line_connections
+            .get($bus_con.0)
+            .ok_or_else(|| LineError::ConnectionIdOutOfBounds {
+                name: $bus.name.clone(),
+            })?
+            .iter()
+            .copied()
+    };
+}
+
 impl<const SIZE: usize> Bus<SIZE> {
     pub fn new<S: Into<String>>(name: S) -> Self {
         let name = name.into();
@@ -31,7 +43,9 @@ impl<const SIZE: usize> Bus<SIZE> {
     }
 
     pub fn create_connection(&mut self) -> BusConnectionId {
+        #[allow(clippy::indexing_slicing)]
         let connection_row = array::from_fn(|bit| self.lines[bit].create_connection());
+
         self.line_connections.push(connection_row);
         BusConnectionId(self.line_connections.len() - 1)
     }
@@ -46,20 +60,23 @@ impl<const SIZE: usize> Bus<SIZE> {
         SIZE
     }
 
-    fn check_for_bit_out_of_range(&self, bit: usize) -> Result<(), LineError> {
-        if bit >= self.lines.len() {
-            return Err(LineError::BitOutOfRange {
-                name: self.name.clone(),
-                bit,
-                size: self.lines.len(),
-            });
-        }
-        Ok(())
+    pub fn line(&self, bit: usize) -> Result<&Line, LineError> {
+        self.lines.get(bit).ok_or_else(|| LineError::BitOutOfRange {
+            name: self.name.clone(),
+            bit,
+            size: SIZE,
+        })
     }
 
-    pub fn line(&self, bit: usize) -> Result<&Line, LineError> {
-        self.check_for_bit_out_of_range(bit)?;
-        Ok(&self.lines[bit])
+    fn line_connection_row(
+        &self,
+        connection: BusConnectionId,
+    ) -> Result<&[LineConnectionId; SIZE], LineError> {
+        self.line_connections
+            .get(connection.0)
+            .ok_or_else(|| LineError::ConnectionIdOutOfBounds {
+                name: self.name.clone(),
+            })
     }
 
     pub fn line_mut(
@@ -67,8 +84,18 @@ impl<const SIZE: usize> Bus<SIZE> {
         connection: BusConnectionId,
         bit: usize,
     ) -> Result<(&mut Line, LineConnectionId), LineError> {
-        self.check_for_bit_out_of_range(bit)?;
-        let connection = self.line_connections[connection.0][bit];
+        if bit >= SIZE {
+            return Err(LineError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: SIZE,
+            });
+        }
+
+        #[allow(clippy::indexing_slicing)]
+        let connection = self.line_connection_row(connection)?[bit];
+
+        #[allow(clippy::indexing_slicing)]
         Ok((&mut self.lines[bit], connection))
     }
 
@@ -76,13 +103,13 @@ impl<const SIZE: usize> Bus<SIZE> {
         self.lines.iter()
     }
 
+    #[allow(clippy::iter_not_returning_iterator)]
     pub fn iter_mut(
         &mut self,
         connection: BusConnectionId,
-    ) -> impl Iterator<Item = (&mut Line, LineConnectionId)> {
-        self.lines
-            .iter_mut()
-            .zip(self.line_connections[connection.0].iter().copied())
+    ) -> Result<impl Iterator<Item = (&mut Line, LineConnectionId)>, LineError> {
+        let con_iter = line_con_row_iter!(self, connection);
+        Ok(self.lines.iter_mut().zip(con_iter))
     }
 
     pub fn check_possible(&self) -> Result<(), LineError> {
@@ -99,6 +126,7 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     #[must_use]
     pub fn state(&self) -> BusState<SIZE> {
+        #[allow(clippy::indexing_slicing)]
         BusState::new(array::from_fn(|bit| self.lines[bit].state()))
     }
 
@@ -115,9 +143,15 @@ impl<const SIZE: usize> Bus<SIZE> {
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }
 
-    pub fn add_high_z(&mut self, connection: BusConnectionId, only_possible: bool) {
-        self.iter_mut(connection)
-            .for_each(|(line, con)| line.add_high_z(con, only_possible));
+    pub fn add_high_z(
+        &mut self,
+        connection: BusConnectionId,
+        only_possible: bool,
+    ) -> Result<(), LineError> {
+        for (line, con) in self.iter_mut(connection)? {
+            line.add_high_z(con, only_possible)?;
+        }
+        Ok(())
     }
 
     pub fn add_drive_wrapping(
@@ -126,12 +160,8 @@ impl<const SIZE: usize> Bus<SIZE> {
         val: usize,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for (bit, (line, connection)) in self
-            .lines
-            .iter_mut()
-            .zip(self.line_connections[connection.0].iter().copied())
-            .enumerate()
-        {
+        let con_iter = line_con_row_iter!(self, connection);
+        for (bit, (line, connection)) in self.lines.iter_mut().zip(con_iter).enumerate() {
             line.add_drive(connection, bit::bit_of_usize(val, bit), only_possible)?;
         }
         Ok(())
@@ -158,10 +188,11 @@ impl<const SIZE: usize> Bus<SIZE> {
         )
     }
 
-    pub fn clear_only_possible(&mut self, connection: BusConnectionId) {
-        self.iter_mut(connection).for_each(|(line, con)| {
-            line.clear_only_possible(con);
-        });
+    pub fn clear_only_possible(&mut self, connection: BusConnectionId) -> Result<(), LineError> {
+        for (line, con) in self.iter_mut(connection)? {
+            line.clear_only_possible(con)?;
+        }
+        Ok(())
     }
 
     pub fn copy_from_bus_state(
@@ -170,7 +201,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         bus: &BusState<SIZE>,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), line_state) in self.iter_mut(connection).zip(bus.iter())
+        for ((this_line, line_connection), line_state) in self.iter_mut(connection)?.zip(bus.iter())
         {
             this_line.copy_from_line_state(line_connection, &line_state, only_possible)?;
         }
@@ -184,7 +215,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         reg: &MBitRegister<SIZE>,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), bit_reg) in self.iter_mut(connection).zip(reg.iter()) {
+        for ((this_line, line_connection), bit_reg) in self.iter_mut(connection)?.zip(reg.iter()) {
             this_line.copy_from_reg(line_connection, bit_reg, only_possible)?;
         }
 

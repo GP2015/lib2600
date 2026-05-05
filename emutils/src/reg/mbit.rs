@@ -33,25 +33,24 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
         SIZE
     }
 
-    fn check_bit_in_range(&self, bit: usize) -> Result<(), RegisterError> {
-        if bit >= self.size() {
-            return Err(RegisterError::BitOutOfRange {
+    pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
+        self.bits
+            .get(bit)
+            .ok_or_else(|| RegisterError::BitOutOfRange {
                 name: self.name.clone(),
                 bit,
-                size: self.size(),
-            });
-        }
-        Ok(())
-    }
-
-    pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
-        self.check_bit_in_range(bit)?;
-        Ok(&self.bits[bit])
+                size: SIZE,
+            })
     }
 
     pub fn bit_mut(&mut self, bit: usize) -> Result<&mut BitRegister, RegisterError> {
-        self.check_bit_in_range(bit)?;
-        Ok(&mut self.bits[bit])
+        self.bits
+            .get_mut(bit)
+            .ok_or_else(|| RegisterError::BitOutOfRange {
+                name: self.name.clone(),
+                bit,
+                size: SIZE,
+            })
     }
 
     #[must_use]

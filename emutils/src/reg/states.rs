@@ -17,6 +17,10 @@ impl PossibleBitStates {
         self.low
     }
 
+    pub const fn low_high_possible(self) -> (bool, bool) {
+        (self.low, self.high)
+    }
+
     pub const fn is_possible(self, state: bool) -> bool {
         if state { self.high } else { self.low }
     }

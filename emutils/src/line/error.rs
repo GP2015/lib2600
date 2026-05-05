@@ -21,4 +21,7 @@ pub enum LineError {
 
     #[error("cannot read line {name} as it has no possible signal through it")]
     ImpossibleLineSignal { name: String },
+
+    #[error("cannot access connection on line {name} with non-existant ID")]
+    ConnectionIdOutOfBounds { name: String },
 }

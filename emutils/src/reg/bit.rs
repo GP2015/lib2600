@@ -42,6 +42,7 @@ impl BitRegister {
             pub const fn is_possible(&self, state: bool) -> bool;
             pub const fn high_possible(&self) -> bool;
             pub const fn low_possible(&self) -> bool;
+            pub const fn low_high_possible(&self) -> (bool, bool);
             pub const fn collapsed(&self) -> Option<bool>;
             pub const fn possible_reads(&self) -> &'static [bool];
         }
