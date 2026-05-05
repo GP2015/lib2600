@@ -16,10 +16,12 @@ impl Ram {
     }
 
     pub const fn byte(&self, address: u8) -> &MBitRegister<8> {
+        #[allow(clippy::indexing_slicing)]
         &self.bytes[address as usize]
     }
 
     pub const fn byte_mut(&mut self, address: u8) -> &mut MBitRegister<8> {
+        #[allow(clippy::indexing_slicing)]
         &mut self.bytes[address as usize]
     }
 }
