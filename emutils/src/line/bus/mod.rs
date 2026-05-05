@@ -60,14 +60,6 @@ impl<const SIZE: usize> Bus<SIZE> {
         SIZE
     }
 
-    pub fn line(&self, bit: usize) -> Result<&Line, LineError> {
-        self.lines.get(bit).ok_or_else(|| LineError::BitOutOfRange {
-            name: self.name.clone(),
-            bit,
-            size: SIZE,
-        })
-    }
-
     fn line_connection_row(
         &self,
         connection: BusConnectionId,
@@ -79,7 +71,36 @@ impl<const SIZE: usize> Bus<SIZE> {
             })
     }
 
-    pub fn line_mut(
+    #[must_use]
+    pub const fn line<const BIT: usize>(&self) -> &Line {
+        const { assert!(BIT < SIZE) }
+
+        #[allow(clippy::indexing_slicing)]
+        &self.lines[BIT]
+    }
+
+    pub fn line_mut<const BIT: usize>(
+        &mut self,
+        connection: BusConnectionId,
+    ) -> Result<(&mut Line, LineConnectionId), LineError> {
+        const { assert!(BIT < SIZE) }
+
+        #[allow(clippy::indexing_slicing)]
+        let connection = self.line_connection_row(connection)?[BIT];
+
+        #[allow(clippy::indexing_slicing)]
+        Ok((&mut self.lines[BIT], connection))
+    }
+
+    pub fn try_line(&self, bit: usize) -> Result<&Line, LineError> {
+        self.lines.get(bit).ok_or_else(|| LineError::BitOutOfRange {
+            name: self.name.clone(),
+            bit,
+            size: SIZE,
+        })
+    }
+
+    pub fn try_line_mut(
         &mut self,
         connection: BusConnectionId,
         bit: usize,

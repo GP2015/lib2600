@@ -13,8 +13,15 @@ impl<const SIZE: usize> BusState<SIZE> {
     }
 
     #[must_use]
-    pub fn line_state(&self, bit: usize) -> Option<LineState> {
+    pub fn try_line_state(&self, bit: usize) -> Option<LineState> {
         self.line_states.get(bit).copied()
+    }
+
+    #[must_use]
+    pub const fn line_state<const BIT: usize>(&self) -> LineState {
+        const { assert!(BIT < SIZE) }
+        #[allow(clippy::indexing_slicing)]
+        self.line_states[BIT]
     }
 
     pub fn iter(&self) -> impl Iterator<Item = LineState> {

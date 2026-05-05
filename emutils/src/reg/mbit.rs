@@ -33,7 +33,23 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
         SIZE
     }
 
-    pub fn bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
+    #[must_use]
+    pub const fn bit<const BIT: usize>(&self) -> &BitRegister {
+        const { assert!(BIT < SIZE) }
+
+        #[allow(clippy::indexing_slicing)]
+        &self.bits[BIT]
+    }
+
+    #[must_use]
+    pub const fn bit_mut<const BIT: usize>(&mut self) -> &mut BitRegister {
+        const { assert!(BIT < SIZE) }
+
+        #[allow(clippy::indexing_slicing)]
+        &mut self.bits[BIT]
+    }
+
+    pub fn try_bit(&self, bit: usize) -> Result<&BitRegister, RegisterError> {
         self.bits
             .get(bit)
             .ok_or_else(|| RegisterError::BitOutOfRange {
@@ -43,7 +59,7 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
             })
     }
 
-    pub fn bit_mut(&mut self, bit: usize) -> Result<&mut BitRegister, RegisterError> {
+    pub fn try_bit_mut(&mut self, bit: usize) -> Result<&mut BitRegister, RegisterError> {
         self.bits
             .get_mut(bit)
             .ok_or_else(|| RegisterError::BitOutOfRange {
@@ -119,37 +135,14 @@ mod tests {
 
     #[rstest]
     fn new_correct_names(reg: MBitRegister<REG_SIZE>) {
-        for bit in 0..REG_SIZE {
-            assert_eq!(
-                reg.bit(bit).unwrap().name(),
-                format!("{REG_NAME} bit {bit}")
-            );
+        for (bit, bit_reg) in reg.iter().enumerate() {
+            assert_eq!(bit_reg.name(), format!("{REG_NAME} bit {bit}"));
         }
     }
 
     #[rstest]
     fn name(reg: MBitRegister<REG_SIZE>) {
         assert_eq!(reg.name(), REG_NAME);
-    }
-
-    #[rstest]
-    fn valid_bit(mut reg: MBitRegister<REG_SIZE>) {
-        for bit in 0..REG_SIZE {
-            assert!(reg.bit(bit).is_ok());
-            assert!(reg.bit_mut(bit).is_ok());
-        }
-    }
-
-    #[rstest]
-    fn invalid_bit(mut reg: MBitRegister<REG_SIZE>, #[values(REG_SIZE, REG_SIZE + 1)] bit: usize) {
-        let e = RegisterError::BitOutOfRange {
-            name: reg.name().to_string(),
-            bit,
-            size: REG_SIZE,
-        };
-
-        assert_eq!(reg.bit(bit).err().unwrap(), e);
-        assert_eq!(reg.bit_mut(bit).err().unwrap(), e);
     }
 
     #[rstest]
@@ -170,7 +163,7 @@ mod tests {
     #[rstest]
     fn read_failure(mut reg: MBitRegister<REG_SIZE>, #[values(true, false)] initial: bool) {
         reg.iter_mut().for_each(|r| r.add(initial, true));
-        reg.bit_mut(2).unwrap().add(!initial, false);
+        reg.bit_mut::<2>().add(!initial, false);
         assert_eq!(reg.read(), None);
     }
 
