@@ -18,27 +18,26 @@ enum AB {
 
 impl Riot {
     pub(crate) fn update_peripherals(&self, lines: &mut RiotOutputLines) -> Result<(), LineError> {
-        macro_rules! reg_to_p {
-            ($p:expr, $bus_con:expr, $ddr:expr, $or:expr) => {
-                for ((p_line, line_con), ddr_bit, or_bit) in
-                    izip!($p.iter_mut($bus_con), $ddr.iter(), $or.iter())
-                {
-                    let ddr_high_possible = ddr_bit.high_possible();
-                    let ddr_low_possible = ddr_bit.low_possible();
+        for (p, bus_con, ddr, or) in [
+            (&mut lines.pa, self.con.pa, &self.ddra, &self.ora),
+            (&mut lines.pb, self.con.pb, &self.ddrb, &self.orb),
+        ] {
+            for ((p_line, line_con), ddr_bit, or_bit) in
+                izip!(p.iter_mut(bus_con)?, ddr.iter(), or.iter())
+            {
+                let ddr_high_possible = ddr_bit.high_possible();
+                let ddr_low_possible = ddr_bit.low_possible();
 
-                    if ddr_high_possible {
-                        p_line.copy_from_reg(line_con, or_bit, !ddr_low_possible)?;
-                    }
-
-                    if ddr_low_possible {
-                        p_line.add_high_z(line_con, !ddr_high_possible);
-                    }
+                if ddr_high_possible {
+                    p_line.copy_from_reg(line_con, or_bit, !ddr_low_possible)?;
                 }
-            };
+
+                if ddr_low_possible {
+                    p_line.add_high_z(line_con, !ddr_high_possible)?;
+                }
+            }
         }
 
-        reg_to_p!(lines.pa, self.con.pa, self.ddra, self.ora);
-        reg_to_p!(lines.pb, self.con.pb, self.ddrb, self.orb);
         Ok(())
     }
 
@@ -126,7 +125,7 @@ impl Riot {
     ) -> Result<(), LineError> {
         for (bit, ((line, line_con), reg)) in lines
             .db
-            .iter_mut(self.con.db)
+            .iter_mut(self.con.db)?
             .zip(self.ddrb.iter())
             .enumerate()
         {
@@ -134,17 +133,19 @@ impl Riot {
             let reg_could_read_low = reg.low_possible();
 
             if reg_could_read_low {
+                #[allow(clippy::unwrap_used)]
                 line.copy_from_line_state(
                     line_con,
-                    &states.pb.line_state(bit).expect("already checked"),
+                    &states.pb.try_line_state(bit).unwrap(),
                     only_io && !reg_could_read_high,
                 )?;
             }
 
             if reg_could_read_high {
+                #[allow(clippy::unwrap_used)]
                 line.copy_from_reg(
                     line_con,
-                    self.orb.bit(bit).expect("must be valid"),
+                    self.orb.try_bit(bit).unwrap(),
                     only_io && !reg_could_read_low,
                 )?;
             }

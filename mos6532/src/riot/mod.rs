@@ -21,7 +21,7 @@ pub struct Riot {
     ram: Ram,
     con: RiotConnectionIds,
     phi2_signal: bool,
-    pa7_prev_cycle: LineState,
+    old_pa7_state: LineState,
 
     ddra: MBitRegister<8>,
     ddrb: MBitRegister<8>,
@@ -29,8 +29,8 @@ pub struct Riot {
     orb: MBitRegister<8>,
     edc_enables_irq: BitRegister,
     edc_edge_type: BitRegister,
-    edc_interrupt_flag: BitRegister,
-    timer_interrupt_flag: BitRegister,
+    edc_ir_flag: BitRegister,
+    timer_ir_flag: BitRegister,
 }
 
 impl Riot {
@@ -42,7 +42,7 @@ impl Riot {
             con: connections,
             phi2_signal: false,
 
-            pa7_prev_cycle: LineState::new(false, false, true),
+            old_pa7_state: LineState::new(false, false, true),
 
             ddra: MBitRegister::new("DDRA"),
             ddrb: MBitRegister::new("DDRB"),
@@ -50,14 +50,18 @@ impl Riot {
             orb: MBitRegister::new("ORB"),
             edc_enables_irq: BitRegister::new("EDC Enables IRQ"),
             edc_edge_type: BitRegister::new("EDC Edge Type"),
-            edc_interrupt_flag: BitRegister::new("EDC Interrupt Flag"),
-            timer_interrupt_flag: BitRegister::new("Timer Interrupt Flag"),
+            edc_ir_flag: BitRegister::new("EDC Interrupt Flag"),
+            timer_ir_flag: BitRegister::new("Timer Interrupt Flag"),
         };
 
-        riot.ddra.add(0, true).expect("must fit");
-        riot.ddrb.add(0, true).expect("must fit");
-        riot.ora.add(0, true).expect("must fit");
-        riot.orb.add(0, true).expect("must fit");
+        #[allow(clippy::unwrap_used)]
+        riot.ddra.add(0, true).unwrap();
+        #[allow(clippy::unwrap_used)]
+        riot.ddrb.add(0, true).unwrap();
+        #[allow(clippy::unwrap_used)]
+        riot.ora.add(0, true).unwrap();
+        #[allow(clippy::unwrap_used)]
+        riot.orb.add(0, true).unwrap();
 
         riot.edc_enables_irq.add(false, true);
         riot.edc_edge_type.add(false, true);
@@ -72,7 +76,7 @@ impl Riot {
 
         match (self.phi2_signal, bool_signal) {
             (false, true) => self.handle_rising_edge(&mut lines, &states)?,
-            (true, false) => lines.db.add_high_z(self.con.db, true),
+            (true, false) => lines.db.add_high_z(self.con.db, true)?,
             _ => return Ok(()),
         }
 
@@ -92,10 +96,13 @@ impl Riot {
             let only_selected = !(cs1_low || cs2_high);
             self.call_chip(lines, states, only_selected)?;
         } else {
-            lines.db.add_high_z(self.con.db, true);
+            lines.db.add_high_z(self.con.db, true)?;
         }
 
-        self.update_peripherals(lines)
+        self.update_peripherals(lines)?;
+        self.update_edc(states);
+
+        Ok(())
     }
 
     fn call_chip(
@@ -105,9 +112,9 @@ impl Riot {
         only_selected: bool,
     ) -> Result<(), LineError> {
         if states.rw.could_read_high() {
-            lines.db.clear_only_possible(self.con.db);
+            lines.db.clear_only_possible(self.con.db)?;
         } else {
-            lines.db.add_high_z(self.con.db, true);
+            lines.db.add_high_z(self.con.db, true)?;
         }
 
         let instructions = PossibleInstructions::from(states);
@@ -127,7 +134,7 @@ impl Riot {
             (wt, self.write_timer(lines, states, only_instruction)?),
             (rt, self.read_timer(lines, states, only_instruction)?),
             (rirf, self.read_ir_flag(lines, only_instruction)?),
-            (wedc, self.write_edc(lines, states, only_instruction)?),
+            (wedc, self.write_edc(states, only_instruction)),
         );
 
         Ok(())

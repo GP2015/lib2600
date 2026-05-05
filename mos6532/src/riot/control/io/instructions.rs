@@ -29,8 +29,8 @@ impl From<&RiotLineStates> for PossibleIoInstructions {
         let mut instructions = Self::default();
 
         let rw = states.rw;
-        let a0 = states.a.line_state(0).expect("already checked");
-        let a1 = states.a.line_state(1).expect("already checked");
+        let a0 = states.a.line_state::<0>();
+        let a1 = states.a.line_state::<1>();
 
         macro_rules! instr_branch {
             ($state:expr, $low:ident, $high:ident $(,)?) => {

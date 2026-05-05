@@ -124,9 +124,9 @@ mod tests {
             tu.a.add_drive(tu.a_con, addr, i == 0).unwrap();
         }
 
-        tu.db
-            .iter_mut(tu.db_con)
-            .for_each(|(line, con)| line.add_high_z(con, true));
+        for (line, con) in tu.db.iter_mut(tu.db_con).unwrap() {
+            line.add_high_z(con, true).unwrap();
+        }
 
         let (mut riot, mut lines, states) = tu.internals();
 

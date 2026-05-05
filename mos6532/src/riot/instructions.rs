@@ -26,9 +26,10 @@ impl From<&RiotLineStates> for PossibleInstructions {
 
         let rs = states.rs;
         let rw = states.rw;
-        let a0 = states.a.line_state(0).expect("already checked");
-        let a2 = states.a.line_state(2).expect("already checked");
-        let a4 = states.a.line_state(4).expect("already checked");
+
+        let a0 = states.a.line_state::<0>();
+        let a2 = states.a.line_state::<2>();
+        let a4 = states.a.line_state::<4>();
 
         macro_rules! instr_branch {
             ($state:expr, $low:ident, $high:ident $(,)?) => {
