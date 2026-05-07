@@ -1,4 +1,4 @@
-use crate::riot::states::RiotLineStates;
+use crate::riot::lines::RiotLineStates;
 
 #[derive(Clone, Debug, Default)]
 pub struct PossibleIoInstructions {
@@ -10,18 +10,6 @@ pub struct PossibleIoInstructions {
     pub rda: bool,
     pub wdb: bool,
     pub rdb: bool,
-}
-
-impl PossibleIoInstructions {
-    pub fn only_instruction(&self) -> bool {
-        [
-            self.woa, self.roa, self.wob, self.rob, self.wda, self.rda, self.wdb, self.rdb,
-        ]
-        .into_iter()
-        .filter(|&b| b)
-        .count()
-            < 2
-    }
 }
 
 impl From<&RiotLineStates> for PossibleIoInstructions {

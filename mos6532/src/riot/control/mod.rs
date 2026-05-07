@@ -3,11 +3,12 @@ mod interrupt;
 mod io;
 mod ram;
 mod timer;
+mod update;
 
 #[cfg(test)]
 use crate::{
     Riot, RiotConnectionIds, RiotLines,
-    riot::{lines::RiotOutputLines, states::RiotLineStates},
+    riot::lines::{RiotLineStates, RiotOutputLines},
 };
 #[cfg(test)]
 use emutils::line::{Bus, BusConnectionId, Line, LineConnectionId};

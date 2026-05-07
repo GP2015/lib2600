@@ -3,12 +3,11 @@ mod instructions;
 use crate::{
     Riot,
     riot::{
-        control::io::instructions::PossibleIoInstructions, lines::RiotOutputLines,
-        states::RiotLineStates,
+        control::io::instructions::PossibleIoInstructions,
+        lines::{RiotLineStates, RiotOutputLines},
     },
 };
 use emutils::line::LineError;
-use itertools::izip;
 
 #[derive(Clone, Copy)]
 enum AB {
@@ -17,38 +16,12 @@ enum AB {
 }
 
 impl Riot {
-    pub(crate) fn update_peripherals(&self, lines: &mut RiotOutputLines) -> Result<(), LineError> {
-        for (p, bus_con, ddr, or) in [
-            (&mut lines.pa, self.con.pa, &self.ddra, &self.ora),
-            (&mut lines.pb, self.con.pb, &self.ddrb, &self.orb),
-        ] {
-            for ((p_line, line_con), ddr_bit, or_bit) in
-                izip!(p.iter_mut(bus_con)?, ddr.iter(), or.iter())
-            {
-                let ddr_high_possible = ddr_bit.high_possible();
-                let ddr_low_possible = ddr_bit.low_possible();
-
-                if ddr_high_possible {
-                    p_line.copy_from_reg(line_con, or_bit, !ddr_low_possible)?;
-                }
-
-                if ddr_low_possible {
-                    p_line.add_high_z(line_con, !ddr_high_possible)?;
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     pub(crate) fn call_io(
         &mut self,
         lines: &mut RiotOutputLines,
         states: &RiotLineStates,
-        only_instruction: bool,
     ) -> Result<(), LineError> {
         let io_instructions = PossibleIoInstructions::from(states);
-        let only_io = only_instruction & io_instructions.only_instruction();
 
         macro_rules! call_instr_fns {
             ($(($instr:ident, $action:expr)),+ $(,)?) => {
@@ -61,25 +34,25 @@ impl Riot {
         }
 
         call_instr_fns!(
-            (woa, self.write_or(states, AB::A, only_io)),
-            (roa, self.read_ora(lines, states, only_io)?),
-            (wob, self.write_or(states, AB::B, only_io)),
-            (rob, self.read_orb(lines, states, only_io)?),
-            (wda, self.write_ddr(states, AB::A, only_io)),
-            (rda, self.read_ddr(lines, AB::A, only_io)?),
-            (wdb, self.write_ddr(states, AB::B, only_io)),
-            (rdb, self.read_ddr(lines, AB::B, only_io)?),
+            (woa, self.write_or(states, AB::A)),
+            (roa, self.read_ora(lines, states)?),
+            (wob, self.write_or(states, AB::B)),
+            (rob, self.read_orb(lines, states)?),
+            (wda, self.write_ddr(states, AB::A)),
+            (rda, self.read_ddr(lines, AB::A)?),
+            (wdb, self.write_ddr(states, AB::B)),
+            (rdb, self.read_ddr(lines, AB::B)?),
         );
 
         Ok(())
     }
 
-    fn write_ddr(&mut self, states: &RiotLineStates, ab: AB, only_io: bool) {
+    fn write_ddr(&mut self, states: &RiotLineStates, ab: AB) {
         match ab {
             AB::A => &mut self.ddra,
             AB::B => &mut self.ddrb,
         }
-        .copy_from_bus_state(&states.db, only_io);
+        .copy_from_bus_state(&states.db, false);
     }
 
     fn read_ddr(
@@ -98,7 +71,7 @@ impl Riot {
         )
     }
 
-    fn write_or(&mut self, states: &RiotLineStates, ab: AB, only_io: bool) {
+    fn write_or(&mut self, states: &RiotLineStates, ab: AB) {
         match ab {
             AB::A => &mut self.ora,
             AB::B => &mut self.orb,
@@ -129,24 +102,23 @@ impl Riot {
             .zip(self.ddrb.iter())
             .enumerate()
         {
-            let reg_could_read_high = reg.high_possible();
-            let reg_could_read_low = reg.low_possible();
+            let (reg_low, reg_high) = reg.low_high_possible();
 
-            if reg_could_read_low {
+            if reg_low {
                 #[allow(clippy::unwrap_used)]
                 line.copy_from_line_state(
                     line_con,
                     &states.pb.try_line_state(bit).unwrap(),
-                    only_io && !reg_could_read_high,
+                    only_io && !reg_high,
                 )?;
             }
 
-            if reg_could_read_high {
+            if reg_high {
                 #[allow(clippy::unwrap_used)]
                 line.copy_from_reg(
                     line_con,
                     self.orb.try_bit(bit).unwrap(),
-                    only_io && !reg_could_read_low,
+                    only_io && !reg_low,
                 )?;
             }
         }

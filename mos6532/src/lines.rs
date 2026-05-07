@@ -14,15 +14,15 @@ pub struct RiotLines<'a> {
 }
 
 impl RiotLines<'_> {
-    pub(crate) fn check_possible(&self) -> Result<(), LineError> {
-        self.db.check_possible()?;
-        self.pa.check_possible()?;
-        self.pb.check_possible()?;
+    pub(crate) fn check_valid(&self) -> Result<(), LineError> {
+        self.db.check_valid()?;
+        self.pa.check_valid()?;
+        self.pb.check_valid()?;
 
-        self.a.check_possible()?;
-        self.cs1.check_possible()?;
-        self.cs2.check_possible()?;
-        self.rs.check_possible()?;
-        self.rw.check_possible()
+        self.a.check_valid()?;
+        self.cs1.check_valid()?;
+        self.cs2.check_valid()?;
+        self.rs.check_valid()?;
+        self.rw.check_valid()
     }
 }

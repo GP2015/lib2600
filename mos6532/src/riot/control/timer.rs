@@ -1,68 +1,40 @@
 use crate::{
     Riot,
-    riot::{lines::RiotOutputLines, states::RiotLineStates},
+    riot::lines::{RiotLineStates, RiotOutputLines},
 };
 use emutils::line::LineError;
 
 impl Riot {
-    pub(crate) fn write_timer(
-        &mut self,
-        lines: &mut RiotOutputLines,
-        states: &RiotLineStates,
-        only_instruction: bool,
-    ) -> Result<(), LineError> {
-        todo!()
+    pub(crate) fn read_timer(&mut self, lines: &mut RiotOutputLines) -> Result<(), LineError> {
+        lines.db.copy_from_reg(self.con.db, &self.timer)?;
+        self.timer_ir_flag.add(false, false);
+        Ok(())
     }
 
-    pub(crate) fn read_timer(
-        &mut self,
-        lines: &mut RiotOutputLines,
-        states: &RiotLineStates,
-        only_instruction: bool,
-    ) -> Result<(), LineError> {
-        todo!()
+    pub(crate) fn write_timer(&mut self, states: &RiotLineStates) {
+        self.timer.copy_from_bus_state(&states.db, false);
+        self.timer_ir_flag.add(false, false);
+
+        self.timer_interval
+            .bit_mut::<0>()
+            .copy_from_line_state(&states.a.line_state::<0>(), false);
+
+        self.timer_interval
+            .bit_mut::<1>()
+            .copy_from_line_state(&states.a.line_state::<1>(), false);
+
+        let mut first_iter = true;
+
+        #[allow(clippy::indexing_slicing)]
+        for interval in self
+            .timer_interval
+            .iter_possible_reads()
+            .map(|val| TIMER_INTERVALS[val] - 1)
+        {
+            #[allow(clippy::unwrap_used)]
+            self.sub_timer.add(interval, false && first_iter).unwrap();
+
+            first_iter = false;
+        }
     }
-
-    // pub(super) fn tick_timer(&mut self) -> Result<(), LineError> {
-    //     match self.timer_flag.read()? {
-    //         false => {
-    //             self.sub_timer.decrement()?;
-
-    //             if self.sub_timer.read()? == 0 {
-    //                 if self.timer.read()? == 0 {
-    //                     //
-    //                 } else {
-    //                     self.timer.decrement()?;
-    //                 }
-
-    //                 self.sub_timer.write(self.timer_inc.read()?)?;
-    //             }
-    //         }
-    //         true => {
-    //             //
-    //         }
-    //     }
-
-    //     Ok(())
-    // }
-
-    // pub(super) fn read_timer(&mut self, enable_irq: bool) -> Result<(), LineError> {
-    //     Ok(())
-    // }
-
-    // pub(super) fn write_timer_1t(&mut self, enable_irq: bool) -> Result<(), LineError> {
-    //     Ok(())
-    // }
-
-    // pub(super) fn write_timer_8t(&mut self, enable_irq: bool) -> Result<(), LineError> {
-    //     Ok(())
-    // }
-
-    // pub(super) fn write_timer_64t(&mut self, enable_irq: bool) -> Result<(), LineError> {
-    //     Ok(())
-    // }
-
-    // pub(super) fn write_timer_1024t(&mut self, enable_irq: bool) -> Result<(), LineError> {
-    //     Ok(())
-    // }
 }

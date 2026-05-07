@@ -11,7 +11,7 @@ pub struct Ram {
 impl Ram {
     pub fn new() -> Self {
         Self {
-            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {i:x}"))),
+            bytes: array::from_fn(|i| MBitRegister::new(format!("RAM byte {i:x}"), true, true)),
         }
     }
 
@@ -39,7 +39,7 @@ mod tests {
     #[rstest]
     fn read_uninitialised_byte(ram: Ram) {
         for bit in ram.byte(67).iter() {
-            assert_eq!(bit.possible_reads(), [true, false]);
+            assert_eq!(bit.state().possible_reads(), [true, false]);
         }
     }
 }
