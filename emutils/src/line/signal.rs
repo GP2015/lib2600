@@ -2,11 +2,11 @@ use strum_macros::Display;
 
 #[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq)]
 pub enum LineSignal {
-    #[strum(to_string = "high")]
-    High,
-
     #[strum(to_string = "low")]
     Low,
+
+    #[strum(to_string = "high")]
+    High,
 
     #[strum(to_string = "high-impedance")]
     HighZ,
@@ -21,8 +21,8 @@ impl LineSignal {
     #[must_use]
     pub const fn as_bool(&self) -> Option<bool> {
         match self {
-            Self::High => Some(true),
             Self::Low => Some(false),
+            Self::High => Some(true),
             Self::HighZ => None,
         }
     }

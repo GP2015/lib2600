@@ -13,8 +13,8 @@ impl<const SIZE: usize> BusState<SIZE> {
     }
 
     #[must_use]
-    pub fn try_line_state(&self, bit: usize) -> Option<LineState> {
-        self.line_states.get(bit).copied()
+    pub const fn size(&self) -> usize {
+        SIZE
     }
 
     #[must_use]
@@ -24,13 +24,13 @@ impl<const SIZE: usize> BusState<SIZE> {
         self.line_states[BIT]
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = LineState> {
-        self.line_states.iter().copied()
+    #[must_use]
+    pub fn try_line_state(&self, bit: usize) -> Option<LineState> {
+        self.line_states.get(bit).copied()
     }
 
-    #[must_use]
-    pub fn is_defined(&self) -> bool {
-        self.iter().all(LineState::is_defined)
+    pub fn iter(&self) -> impl Iterator<Item = LineState> {
+        self.line_states.iter().copied()
     }
 
     #[must_use]

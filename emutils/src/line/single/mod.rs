@@ -2,7 +2,7 @@ pub mod state;
 
 use crate::{
     line::{LineError, LineSignal, LineState},
-    reg::BitRegister,
+    reg::BitRegisterState,
 };
 use delegate::delegate;
 
@@ -41,21 +41,38 @@ impl Line {
         self.combined_state
     }
 
+    #[must_use]
+    fn contend_states(first: LineState, second: LineState) -> Option<LineState> {
+        let mut result = LineState::new(false, false, false);
+
+        for first_signal in first.iter_possible() {
+            for second_signal in second.iter_possible() {
+                match first_signal.contend_with(second_signal)? {
+                    LineSignal::Low => result.low = true,
+                    LineSignal::High => result.high = true,
+                    LineSignal::HighZ => result.high_z = true,
+                }
+            }
+        }
+
+        Some(result)
+    }
+
     fn update_combined_state(&mut self) -> Result<(), LineError> {
         let init = LineState::new(false, false, true);
         self.combined_state = self
             .connection_states
             .iter()
             .copied()
-            .try_fold(init, LineState::contend_with)
+            .try_fold(init, Self::contend_states)
             .ok_or_else(|| LineError::ShortCircuit {
                 name: self.name().to_string(),
             })?;
         Ok(())
     }
 
-    pub fn check_possible(&self) -> Result<(), LineError> {
-        if !self.combined_state.can_be_read() {
+    pub fn check_valid(&self) -> Result<(), LineError> {
+        if !self.combined_state.is_valid() {
             return Err(LineError::ImpossibleLineSignal {
                 name: self.name.clone(),
             });
@@ -75,9 +92,8 @@ impl Line {
     }
 
     #[allow(clippy::missing_panics_doc)]
-    pub fn clear_only_possible(&mut self, connection: LineConnectionId) -> Result<(), LineError> {
-        self.connection_state_mut(connection)?
-            .set_all(false, false, false);
+    pub fn remove_all(&mut self, connection: LineConnectionId) -> Result<(), LineError> {
+        self.set_all(connection, false, false, false)?;
 
         #[allow(clippy::unwrap_used)]
         self.update_combined_state().unwrap();
@@ -85,102 +101,124 @@ impl Line {
         Ok(())
     }
 
+    pub fn add(
+        &mut self,
+        connection: LineConnectionId,
+        signal: LineSignal,
+    ) -> Result<(), LineError> {
+        let state = self.connection_state_mut(connection)?;
+        match signal {
+            LineSignal::Low => state.low = true,
+            LineSignal::High => state.high = true,
+            LineSignal::HighZ => state.high_z = true,
+        }
+        self.update_combined_state()
+    }
+
+    pub fn remove(
+        &mut self,
+        connection: LineConnectionId,
+        signal: LineSignal,
+    ) -> Result<(), LineError> {
+        let state = self.connection_state_mut(connection)?;
+        match signal {
+            LineSignal::Low => state.low = false,
+            LineSignal::High => state.high = false,
+            LineSignal::HighZ => state.high_z = false,
+        }
+        self.update_combined_state()
+    }
+
+    pub fn set_all(
+        &mut self,
+        connection: LineConnectionId,
+        low: bool,
+        high: bool,
+        high_z: bool,
+    ) -> Result<(), LineError> {
+        let state = self.connection_state_mut(connection)?;
+        state.low = low;
+        state.high = high;
+        state.high_z = high_z;
+        self.update_combined_state()
+    }
+
+    pub fn add_drive(&mut self, connection: LineConnectionId, val: bool) -> Result<(), LineError> {
+        if val {
+            self.add_high(connection)
+        } else {
+            self.add_low(connection)
+        }
+    }
+
+    pub fn remove_drive(
+        &mut self,
+        connection: LineConnectionId,
+        val: bool,
+    ) -> Result<(), LineError> {
+        if val {
+            self.remove_high(connection)
+        } else {
+            self.remove_low(connection)
+        }
+    }
+
     pub fn copy_from_line_state(
         &mut self,
         connection: LineConnectionId,
-        line: &LineState,
-        only_possible: bool,
+        line_state: &LineState,
     ) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
 
-        if only_possible {
-            state.set_all(
-                line.high_possible(),
-                line.low_possible(),
-                line.high_z_possible(),
-            );
-        } else {
-            if line.high_possible() {
-                state.high = true;
-            }
+        if line_state.low {
+            state.low = true;
+        }
 
-            if line.low_possible() {
-                state.low = true;
-            }
+        if line_state.high {
+            state.high = true;
+        }
 
-            if line.high_z_possible() {
-                state.high_z = true;
-            }
+        if line_state.high_z {
+            state.high_z = true;
         }
 
         self.update_combined_state()
     }
 
-    pub fn copy_from_reg(
+    pub fn copy_from_reg_state(
         &mut self,
         connection: LineConnectionId,
-        reg: &BitRegister,
-        only_possible: bool,
+        reg_state: &BitRegisterState,
     ) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
 
-        if only_possible {
-            state.set_all(reg.high_possible(), reg.low_possible(), false);
-        } else {
-            if reg.high_possible() {
-                state.high = true;
-            }
-            if reg.low_possible() {
-                state.low = true;
-            }
+        if reg_state.low {
+            state.low = true;
+        }
+
+        if reg_state.high {
+            state.high = true;
         }
 
         self.update_combined_state()
     }
 
     delegate! {
-        #[must_use]
-        to self.combined_state{
-            pub const fn is_possible(&self, signal: LineSignal) -> bool;
+        to self{
+            #[call(add)]
+            pub fn add_low(&mut self, connection: LineConnectionId, [LineSignal::Low]) -> Result<(), LineError>;
+            #[call(add)]
+            pub fn add_high(&mut self, connection: LineConnectionId, [LineSignal::High]) -> Result<(), LineError>;
+            #[call(add)]
+            pub fn add_high_z(&mut self, connection: LineConnectionId, [LineSignal::HighZ]) -> Result<(), LineError>;
 
-            pub const fn high_possible(&self) -> bool;
-            pub const fn low_possible(&self) -> bool;
-            pub const fn high_z_possible(&self) -> bool;
-
-            pub const fn could_read_high(&self) -> bool;
-            pub const fn could_read_low(&self) -> bool;
-
-            pub const fn is_defined(&self) -> bool;
-
-            pub const fn collapsed(&self) -> Option<LineSignal>;
-            pub fn read(&self) -> Option<bool>;
-            pub const fn possible_reads(&self) -> &'static [bool];
+            #[call(remove)]
+            pub fn remove_low(&mut self, connection: LineConnectionId, [LineSignal::Low]) -> Result<(), LineError>;
+            #[call(remove)]
+            pub fn remove_high(&mut self, connection: LineConnectionId, [LineSignal::High]) -> Result<(), LineError>;
+            #[call(remove)]
+            pub fn remove_high_z(&mut self, connection: LineConnectionId, [LineSignal::HighZ]) -> Result<(), LineError>;
         }
-
-        to self.combined_state{
-            pub fn iter_possible(&self) -> impl Iterator<Item = LineSignal>;
-        }
-
-        #[expr($; self.update_combined_state())]
-        to |connection: LineConnectionId| self.connection_state_mut(connection)?{
-            pub fn add(&mut self, signal: LineSignal, only_possible: bool) -> Result<(), LineError>;
-
-            pub fn add_high(&mut self, only_possible: bool) -> Result<(), LineError>;
-            pub fn add_low(&mut self, only_possible: bool) -> Result<(), LineError>;
-
-            pub fn add_drive(&mut self, val: bool, only_possible: bool) -> Result<(), LineError>;
-            pub fn add_high_z(&mut self, only_possible: bool) -> Result<(), LineError>;
-            pub fn set_all(&mut self, high: bool, low: bool, high_z: bool) -> Result<(), LineError>;
-
-            pub fn remove(&mut self, signal: LineSignal) -> Result<(), LineError>;
-
-            pub fn remove_high(&mut self) -> Result<(), LineError>;
-            pub fn remove_low(&mut self) -> Result<(), LineError>;
-            pub fn remove_high_z(&mut self) -> Result<(), LineError>;
-
-            pub fn remove_drive(&mut self, val: bool) -> Result<(), LineError>;
-        }
-
     }
 }
 
@@ -204,29 +242,29 @@ mod tests {
     #[rstest]
     fn single_connection(mut line: Line) {
         let connection = line.create_connection();
-        line.add_high(connection, true).unwrap();
-        assert!(line.read().unwrap());
-        line.add_low(connection, true).unwrap();
-        assert!(!line.read().unwrap());
+        line.add_high(connection).unwrap();
+        assert!(line.state().read().unwrap());
+        line.add_low(connection).unwrap();
+        assert!(!line.state().read().unwrap());
     }
 
     #[rstest]
     fn double_connection(mut line: Line) {
         let connection1 = line.create_connection();
         let connection2 = line.create_connection();
-        line.add_high(connection1, true).unwrap();
-        line.add_high_z(connection2, true).unwrap();
-        assert!(line.could_read_high());
-        assert!(!line.could_read_low());
-        line.add_high(connection2, false).unwrap();
-        assert!(line.could_read_high());
-        assert!(!line.could_read_low());
-        line.add_high_z(connection1, true).unwrap();
+        line.add_high(connection1).unwrap();
+        line.add_high_z(connection2).unwrap();
+        assert!(line.state().could_read_high());
+        assert!(!line.state().could_read_low());
+        line.add_high(connection2).unwrap();
+        assert!(line.state().could_read_high());
+        assert!(!line.state().could_read_low());
+        line.add_high_z(connection1).unwrap();
         line.remove_high(connection2).unwrap();
-        assert!(line.could_read_high());
-        assert!(line.could_read_low());
-        line.add_low(connection1, true).unwrap();
-        assert!(!line.could_read_high());
-        assert!(line.could_read_low());
+        assert!(line.state().could_read_high());
+        assert!(line.state().could_read_low());
+        line.add_low(connection1).unwrap();
+        assert!(!line.state().could_read_high());
+        assert!(line.state().could_read_low());
     }
 }

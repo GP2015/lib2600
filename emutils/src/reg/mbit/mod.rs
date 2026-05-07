@@ -1,10 +1,11 @@
+pub mod state;
+
 use crate::{
     bit,
     line::BusState,
-    reg::{BitRegister, RegisterError},
+    reg::{BitRegister, MBitRegisterState, RegisterError},
 };
 use delegate::delegate;
-use itertools::Itertools;
 use std::array;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -15,10 +16,10 @@ pub struct MBitRegister<const SIZE: usize> {
 
 impl<const SIZE: usize> MBitRegister<SIZE> {
     #[must_use]
-    pub fn new<S: Into<String>>(name: S) -> Self {
+    pub fn new<S: Into<String>>(name: S, low: bool, high: bool) -> Self {
         let name = name.into();
         Self {
-            bits: array::from_fn(|bit| BitRegister::new(format!("{name} bit {bit}"))),
+            bits: array::from_fn(|bit| BitRegister::new(format!("{name} bit {bit}"), low, high)),
             name,
         }
     }
@@ -26,11 +27,6 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
-    }
-
-    #[must_use]
-    pub const fn size(&self) -> usize {
-        SIZE
     }
 
     #[must_use]
@@ -70,40 +66,45 @@ impl<const SIZE: usize> MBitRegister<SIZE> {
     }
 
     #[must_use]
-    pub fn read(&self) -> Option<usize> {
-        bit::some_bits_to_usize(self.bits.iter().map(BitRegister::collapsed))
+    pub fn state(&self) -> MBitRegisterState<SIZE> {
+        #[allow(clippy::indexing_slicing)]
+        MBitRegisterState::new(array::from_fn(|bit| self.bits[bit].state()))
     }
 
-    pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
-        self.bits
-            .iter()
-            .map(BitRegister::possible_reads)
-            .multi_cartesian_product()
-            .map(|bits| bit::bits_to_usize(bits.into_iter().copied()))
-    }
-
-    pub fn add_wrapping(&mut self, val: usize, only_possible: bool) {
+    pub fn add_wrapping(&mut self, val: usize) {
         for (bit, reg) in self.bits.iter_mut().enumerate() {
-            reg.add(bit::bit_of_usize(val, bit), only_possible);
+            reg.add(bit::bit_of_usize(val, bit));
         }
     }
 
-    pub fn add(&mut self, val: usize, only_possible: bool) -> Result<(), RegisterError> {
-        if bit::usize_exceeds_bit_count(val, self.size()) {
+    pub fn add(&mut self, val: usize) -> Result<(), RegisterError> {
+        if bit::usize_exceeds_bit_count(val, SIZE) {
             return Err(RegisterError::WriteValueTooLarge {
                 name: self.name.clone(),
                 value: val,
-                size: self.size(),
+                size: SIZE,
             });
         }
 
-        self.add_wrapping(val, only_possible);
+        self.add_wrapping(val);
         Ok(())
     }
 
-    pub fn copy_from_bus_state(&mut self, bus: &BusState<SIZE>, only_possible: bool) {
+    pub fn remove_all(&mut self) {
+        for reg in self.iter_mut() {
+            reg.remove_all();
+        }
+    }
+
+    pub fn copy_from_bus_state(&mut self, bus: &BusState<SIZE>) {
         for (reg, line) in self.iter_mut().zip(bus.iter()) {
-            reg.copy_from_line_state(&line, only_possible);
+            reg.copy_from_line_state(&line);
+        }
+    }
+
+    pub fn copy_from_reg_state(&mut self, other: &MBitRegisterState<SIZE>) {
+        for (reg, other_reg) in self.iter_mut().zip(other.iter()) {
+            reg.copy_from_reg_state(&other_reg);
         }
     }
 
@@ -125,12 +126,12 @@ mod tests {
 
     #[fixture]
     fn reg() -> MBitRegister<REG_SIZE> {
-        MBitRegister::new(REG_NAME)
+        MBitRegister::new(REG_NAME, true, true)
     }
 
     #[rstest]
     fn new_correct_size(reg: MBitRegister<REG_SIZE>) {
-        assert_eq!(reg.size(), REG_SIZE);
+        assert_eq!(reg.state().size(), REG_SIZE);
     }
 
     #[rstest]
@@ -146,34 +147,6 @@ mod tests {
     }
 
     #[rstest]
-    #[case([false, false, false, false], 0)]
-    #[case([false, true, false, false], 0b10)]
-    #[case([true, true, false, true], 0b1011)]
-    fn read_success(
-        mut reg: MBitRegister<REG_SIZE>,
-        #[case] bits: [bool; REG_SIZE],
-        #[case] val: usize,
-    ) {
-        for (bit_reg, &b) in reg.iter_mut().zip(bits.iter()) {
-            bit_reg.add(b, true);
-        }
-        assert_eq!(reg.read(), Some(val));
-    }
-
-    #[rstest]
-    fn read_failure(mut reg: MBitRegister<REG_SIZE>, #[values(true, false)] initial: bool) {
-        reg.iter_mut().for_each(|r| r.add(initial, true));
-        reg.bit_mut::<2>().add(!initial, false);
-        assert_eq!(reg.read(), None);
-    }
-
-    // Iter possible reads
-    // Iter possible reads
-    // Iter possible reads
-    // Iter possible reads
-    // Iter possible reads
-
-    #[rstest]
     #[case(0, [false, false, false, false])]
     #[case(0b101, [true, false, true, false])]
     #[case(0b1011, [true, true, false, true])]
@@ -184,10 +157,10 @@ mod tests {
         #[case] val: usize,
         #[case] bits: [bool; REG_SIZE],
     ) {
-        reg.iter_mut().for_each(|r| r.add(initial, true));
-        reg.add_wrapping(val, true);
+        reg.iter_mut().for_each(|r| r.add(initial));
+        reg.add_wrapping(val);
         for (bit_reg, &b) in reg.iter().zip(bits.iter()) {
-            assert_eq!(bit_reg.collapsed(), Some(b));
+            assert_eq!(bit_reg.state().collapsed(), Some(b));
         }
     }
 
@@ -202,34 +175,26 @@ mod tests {
         #[case] val: usize,
         #[case] bits: [bool; REG_SIZE],
     ) {
-        reg.iter_mut().for_each(|r| r.add(initial, true));
-        reg.add_wrapping(val, false);
+        reg.iter_mut().for_each(|r| r.add(initial));
+        reg.add_wrapping(val);
         for (bit_reg, &b) in reg.iter().zip(bits.iter()) {
-            assert!(bit_reg.is_possible(initial));
-            assert!(bit_reg.is_possible(b));
+            assert!(bit_reg.state().is_possible(initial));
+            assert!(bit_reg.state().is_possible(b));
         }
     }
 
     #[rstest]
-    fn add_success(
-        mut reg: MBitRegister<REG_SIZE>,
-        #[values(0, 0b100, 0b1011)] val: usize,
-        #[values(true, false)] only_possible: bool,
-    ) {
-        assert!(reg.add(val, only_possible).is_ok());
+    fn add_success(mut reg: MBitRegister<REG_SIZE>, #[values(0, 0b100, 0b1011)] val: usize) {
+        assert!(reg.add(val).is_ok());
     }
 
     #[rstest]
-    fn add_failure(
-        mut reg: MBitRegister<REG_SIZE>,
-        #[values(0b10000, 0b11011)] val: usize,
-        #[values(true, false)] only_possible: bool,
-    ) {
+    fn add_failure(mut reg: MBitRegister<REG_SIZE>, #[values(0b10000, 0b11011)] val: usize) {
         let e = RegisterError::WriteValueTooLarge {
             name: reg.name().to_string(),
             value: val,
-            size: reg.size(),
+            size: reg.state().size(),
         };
-        assert_eq!(reg.add(val, only_possible).err().unwrap(), e);
+        assert_eq!(reg.add(val).err().unwrap(), e);
     }
 }

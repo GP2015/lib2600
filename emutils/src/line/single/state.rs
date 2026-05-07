@@ -1,51 +1,35 @@
 use crate::line::LineSignal;
-use delegate::delegate;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct LineState {
-    pub high: bool,
     pub low: bool,
+    pub high: bool,
     pub high_z: bool,
 }
 
 impl LineState {
     #[must_use]
-    pub const fn new(high: bool, low: bool, high_z: bool) -> Self {
-        Self { high, low, high_z }
-    }
-
-    #[must_use]
-    pub const fn high_possible(self) -> bool {
-        self.high
-    }
-
-    #[must_use]
-    pub const fn low_possible(self) -> bool {
-        self.low
-    }
-
-    #[must_use]
-    pub const fn high_z_possible(self) -> bool {
-        self.high_z
+    pub const fn new(low: bool, high: bool, high_z: bool) -> Self {
+        Self { low, high, high_z }
     }
 
     #[must_use]
     pub const fn is_possible(self, signal: LineSignal) -> bool {
         match signal {
-            LineSignal::High => self.high,
             LineSignal::Low => self.low,
+            LineSignal::High => self.high,
             LineSignal::HighZ => self.high_z,
         }
     }
 
     #[must_use]
-    pub const fn could_read_high(self) -> bool {
-        self.high | self.high_z
+    pub const fn could_read_low(self) -> bool {
+        self.low | self.high_z
     }
 
     #[must_use]
-    pub const fn could_read_low(self) -> bool {
-        self.low | self.high_z
+    pub const fn could_read_high(self) -> bool {
+        self.high | self.high_z
     }
 
     #[must_use]
@@ -55,35 +39,40 @@ impl LineState {
 
     #[must_use]
     pub const fn is_defined(self) -> bool {
-        matches!((self.high, self.low, self.high_z), (true, false, false))
-            || matches!((self.high, self.low, self.high_z), (false, true, false))
-            || matches!((self.high, self.low, self.high_z), (false, false, true))
+        matches!(
+            (self.low, self.high, self.high_z),
+            (true, false, false) | (false, true, false) | (false, false, true)
+        )
     }
 
     #[must_use]
     pub const fn collapsed(self) -> Option<LineSignal> {
-        match (self.high, self.low, self.high_z) {
-            (true, false, false) => Some(LineSignal::High),
-            (false, true, false) => Some(LineSignal::Low),
+        match (self.low, self.high, self.high_z) {
+            (true, false, false) => Some(LineSignal::Low),
+            (false, true, false) => Some(LineSignal::High),
             (false, false, true) => Some(LineSignal::HighZ),
             _ => None,
         }
     }
 
     #[must_use]
-    pub fn read(self) -> Option<bool> {
-        self.collapsed().and_then(|signal| signal.as_bool())
+    pub const fn read(self) -> Option<bool> {
+        match (self.low, self.high, self.high_z) {
+            (true, false, false) => Some(false),
+            (false, true, false) => Some(true),
+            _ => None,
+        }
     }
 
     #[must_use]
-    pub const fn can_be_read(self) -> bool {
-        self.high | self.low | self.high_z
+    pub const fn is_valid(self) -> bool {
+        self.low | self.high | self.high_z
     }
 
     pub fn iter_possible(self) -> impl Iterator<Item = LineSignal> {
         [
-            (self.high, LineSignal::High),
             (self.low, LineSignal::Low),
+            (self.high, LineSignal::High),
             (self.high_z, LineSignal::HighZ),
         ]
         .into_iter()
@@ -92,85 +81,11 @@ impl LineState {
 
     #[must_use]
     pub const fn possible_reads(self) -> &'static [bool] {
-        match (self.high, self.low, self.high_z) {
+        match (self.low, self.high, self.high_z) {
             (false, false, false) => &[],
-            (false, true, false) => &[false],
-            (true, false, false) => &[true],
-            (true, true, false) | (_, _, true) => &[true, false],
-        }
-    }
-
-    pub(crate) const fn add(&mut self, signal: LineSignal, only_possible: bool) {
-        if only_possible {
-            self.set_all(false, false, false);
-        }
-
-        match signal {
-            LineSignal::High => self.high = true,
-            LineSignal::Low => self.low = true,
-            LineSignal::HighZ => self.high_z = true,
-        }
-    }
-
-    pub(crate) const fn remove(&mut self, signal: LineSignal) {
-        match signal {
-            LineSignal::High => self.high = false,
-            LineSignal::Low => self.low = false,
-            LineSignal::HighZ => self.high_z = false,
-        }
-    }
-
-    pub(crate) const fn add_drive(&mut self, val: bool, only_possible: bool) {
-        if val {
-            self.add_high(only_possible);
-        } else {
-            self.add_low(only_possible);
-        }
-    }
-
-    pub(crate) const fn remove_drive(&mut self, val: bool) {
-        if val {
-            self.remove_high();
-        } else {
-            self.remove_low();
-        }
-    }
-
-    pub(crate) const fn set_all(&mut self, high: bool, low: bool, high_z: bool) {
-        self.high = high;
-        self.low = low;
-        self.high_z = high_z;
-    }
-
-    #[must_use]
-    pub(crate) fn contend_with(self, other: Self) -> Option<Self> {
-        let mut result = Self::new(false, false, false);
-
-        for first_signal in self.iter_possible() {
-            for second_signal in other.iter_possible() {
-                let signal = first_signal.contend_with(second_signal)?;
-                result.add(signal, false);
-            }
-        }
-
-        Some(result)
-    }
-
-    delegate! {
-        to self{
-            #[call(add)]
-            pub(crate) const fn add_high(&mut self, [LineSignal::High], only_possible: bool);
-            #[call(add)]
-            pub(crate) const fn add_low(&mut self, [LineSignal::Low], only_possible: bool);
-            #[call(add)]
-            pub(crate) const fn add_high_z(&mut self, [LineSignal::HighZ], only_possible: bool);
-
-            #[call(remove)]
-            pub(crate) const fn remove_high(&mut self, [LineSignal::High]);
-            #[call(remove)]
-            pub(crate) const fn remove_low(&mut self, [LineSignal::Low]);
-            #[call(remove)]
-            pub(crate) const fn remove_high_z(&mut self, [LineSignal::HighZ]);
+            (true, false, false) => &[false],
+            (false, true, false) => &[true],
+            (true, true, false) | (_, _, true) => &[false, true],
         }
     }
 }
@@ -182,263 +97,134 @@ mod tests {
 
     #[rstest]
     fn new(
-        #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
+        #[values(true, false)] high: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = LineState::new(high, low, high_z);
-        assert_eq!(signals.high, high);
+        let signals = LineState::new(low, high, high_z);
         assert_eq!(signals.low, low);
+        assert_eq!(signals.high, high);
         assert_eq!(signals.high_z, high_z);
     }
 
     #[rstest]
     fn is_possible(
-        #[values(true, false)] high: bool,
         #[values(true, false)] low: bool,
+        #[values(true, false)] high: bool,
         #[values(true, false)] high_z: bool,
     ) {
-        let signals = LineState::new(high, low, high_z);
-        assert_eq!(signals.is_possible(LineSignal::High), high);
+        let signals = LineState::new(low, high, high_z);
         assert_eq!(signals.is_possible(LineSignal::Low), low);
+        assert_eq!(signals.is_possible(LineSignal::High), high);
         assert_eq!(signals.is_possible(LineSignal::HighZ), high_z);
     }
 
     #[rstest]
     #[case(false, false, false, false, false)]
     #[case(false, false, true, true, true)]
-    #[case(false, true, false, false, true)]
-    #[case(false, true, true, true, true)]
     #[case(true, false, false, true, false)]
     #[case(true, false, true, true, true)]
+    #[case(false, true, false, false, true)]
+    #[case(false, true, true, true, true)]
     #[case(true, true, false, true, true)]
     #[case(true, true, true, true, true)]
     fn could_read(
-        #[case] high: bool,
         #[case] low: bool,
+        #[case] high: bool,
         #[case] high_z: bool,
-        #[case] could_read_high: bool,
         #[case] could_read_low: bool,
+        #[case] could_read_high: bool,
     ) {
-        let signals = LineState::new(high, low, high_z);
-        assert_eq!(signals.could_read_high(), could_read_high);
+        let signals = LineState::new(low, high, high_z);
         assert_eq!(signals.could_read_low(), could_read_low);
+        assert_eq!(signals.could_read_high(), could_read_high);
     }
 
     #[rstest]
-    #[case(true, false, false, LineSignal::High)]
-    #[case(false, true, false, LineSignal::Low)]
+    #[case(true, false, false, LineSignal::Low)]
+    #[case(false, true, false, LineSignal::High)]
     #[case(false, false, true, LineSignal::HighZ)]
     fn collapsed_success(
-        #[case] high: bool,
         #[case] low: bool,
+        #[case] high: bool,
         #[case] high_z: bool,
         #[case] res: LineSignal,
     ) {
-        let state = LineState::new(high, low, high_z);
+        let state = LineState::new(low, high, high_z);
         assert_eq!(state.collapsed().unwrap(), res);
     }
 
     #[rstest]
     #[case(false, false, false)]
-    #[case(false, true, true)]
     #[case(true, false, true)]
+    #[case(false, true, true)]
     #[case(true, true, false)]
     #[case(true, true, true)]
-    fn collapsed_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
-        let state = LineState::new(high, low, high_z);
+    fn collapsed_failure(#[case] low: bool, #[case] high: bool, #[case] high_z: bool) {
+        let state = LineState::new(low, high, high_z);
         assert!(state.collapsed().is_none());
     }
 
     #[rstest]
-    #[case(true, false, false, true)]
-    #[case(false, true, false, false)]
+    #[case(true, false, false, false)]
+    #[case(false, true, false, true)]
     fn read_success(
-        #[case] high: bool,
         #[case] low: bool,
+        #[case] high: bool,
         #[case] high_z: bool,
         #[case] res: bool,
     ) {
-        let signals = LineState::new(high, low, high_z);
+        let signals = LineState::new(low, high, high_z);
         assert_eq!(signals.read().unwrap(), res);
     }
 
     #[rstest]
     #[case(false, false, false)]
     #[case(false, false, true)]
-    #[case(false, true, true)]
     #[case(true, false, true)]
+    #[case(false, true, true)]
     #[case(true, true, false)]
     #[case(true, true, true)]
-    fn read_failure(#[case] high: bool, #[case] low: bool, #[case] high_z: bool) {
-        let signals = LineState::new(high, low, high_z);
+    fn read_failure(#[case] low: bool, #[case] high: bool, #[case] high_z: bool) {
+        let signals = LineState::new(low, high, high_z);
         assert!(signals.read().is_none());
     }
 
     #[rstest]
     #[case(false, false, false, &[])]
     #[case(false, false, true, &[LineSignal::HighZ])]
-    #[case(false, true, false, &[LineSignal::Low])]
-    #[case(false, true, true, &[LineSignal::Low, LineSignal::HighZ])]
-    #[case(true, false, false, &[LineSignal::High])]
-    #[case(true, false, true, &[LineSignal::High, LineSignal::HighZ])]
-    #[case(true, true, false, &[LineSignal::High, LineSignal::Low])]
-    #[case(true, true, true, &[LineSignal::High, LineSignal::Low, LineSignal::HighZ])]
+    #[case(true, false, false, &[LineSignal::Low])]
+    #[case(true, false, true, &[LineSignal::Low, LineSignal::HighZ])]
+    #[case(false, true, false, &[LineSignal::High])]
+    #[case(false, true, true, &[LineSignal::High, LineSignal::HighZ])]
+    #[case(true, true, false, &[LineSignal::Low, LineSignal::High])]
+    #[case(true, true, true, &[LineSignal::Low, LineSignal::High, LineSignal::HighZ])]
     fn iter_possible(
-        #[case] high: bool,
         #[case] low: bool,
+        #[case] high: bool,
         #[case] high_z: bool,
         #[case] res: &[LineSignal],
     ) {
-        let signals: Vec<LineSignal> = LineState::new(high, low, high_z).iter_possible().collect();
+        let signals: Vec<LineSignal> = LineState::new(low, high, high_z).iter_possible().collect();
         assert_eq!(signals, res);
     }
 
     #[rstest]
     #[case(false, false, false, &[])]
-    #[case(false, false, true, &[true, false])]
-    #[case(false, true, false, &[false])]
-    #[case(false, true, true, &[true, false])]
-    #[case(true, false, false, &[true])]
-    #[case(true, false, true, &[true, false])]
-    #[case(true, true, false, &[true, false])]
-    #[case(true, true, true, &[true, false])]
+    #[case(false, false, true, &[false, true])]
+    #[case(true, false, false, &[false])]
+    #[case(true, false, true, &[false, true])]
+    #[case(false, true, false, &[true])]
+    #[case(false, true, true, &[false, true])]
+    #[case(true, true, false, &[false, true])]
+    #[case(true, true, true, &[false, true])]
     fn possible_reads(
-        #[case] high: bool,
         #[case] low: bool,
+        #[case] high: bool,
         #[case] high_z: bool,
         #[case] res: &[bool],
     ) {
-        let signals = LineState::new(high, low, high_z).possible_reads();
+        let signals = LineState::new(low, high, high_z).possible_reads();
         assert_eq!(signals, res);
-    }
-
-    #[rstest]
-    fn add_not_only_possible(
-        #[values(true, false)] initial: bool,
-        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
-    ) {
-        let mut signals = LineState::new(initial, initial, initial);
-        signals.add(signal, false);
-        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
-            assert_eq!(signals.is_possible(s), signal == s || initial);
-        }
-    }
-
-    #[rstest]
-    fn add_only_possible(
-        #[values(true, false)] initial: bool,
-        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
-    ) {
-        let mut signals = LineState::new(initial, initial, initial);
-        signals.add(signal, true);
-        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
-            assert_eq!(signals.is_possible(s), signal == s);
-        }
-    }
-
-    #[rstest]
-    fn remove(
-        #[values(true, false)] initial: bool,
-        #[values(LineSignal::High, LineSignal::Low, LineSignal::HighZ)] signal: LineSignal,
-    ) {
-        let mut signals = LineState::new(initial, initial, initial);
-        signals.remove(signal);
-        for s in [LineSignal::High, LineSignal::Low, LineSignal::HighZ] {
-            assert_eq!(signals.is_possible(s), signal != s && initial);
-        }
-    }
-
-    #[rstest]
-    fn add_drive(#[values(true, false)] state: bool) {
-        let mut signals = LineState::new(false, false, false);
-        signals.add_drive(state, true);
-        assert_eq!(signals.is_possible(LineSignal::High), state);
-        assert_eq!(signals.is_possible(LineSignal::Low), !state);
-        assert!(!signals.is_possible(LineSignal::HighZ));
-    }
-
-    #[rstest]
-    fn remove_drive(#[values(true, false)] state: bool) {
-        let mut signals = LineState::new(true, true, true);
-        signals.remove_drive(state);
-        assert_eq!(signals.is_possible(LineSignal::High), !state);
-        assert_eq!(signals.is_possible(LineSignal::Low), state);
-        assert!(signals.is_possible(LineSignal::HighZ));
-    }
-
-    #[rstest]
-    fn set_all(
-        #[values(true, false)] initial: bool,
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] high_z: bool,
-    ) {
-        let mut signals = LineState::new(initial, initial, initial);
-        signals.set_all(high, low, high_z);
-        assert_eq!(signals, LineState::new(high, low, high_z));
-    }
-
-    #[rstest]
-    fn contend_success_empty(
-        #[values(true, false)] high: bool,
-        #[values(true, false)] low: bool,
-        #[values(true, false)] high_z: bool,
-    ) {
-        let non_empty = LineState::new(high, low, high_z);
-        let empty = LineState::new(false, false, false);
-        assert_eq!(non_empty.contend_with(empty).unwrap(), empty);
-        assert_eq!(empty.contend_with(non_empty).unwrap(), empty);
-    }
-
-    #[rstest]
-    #[case(false, false, true)]
-    #[case(false, true, false)]
-    #[case(false, true, true)]
-    #[case(true, false, false)]
-    #[case(true, false, true)]
-    #[case(true, true, false)]
-    #[case(true, true, true)]
-    fn contend_success_high_z_only(
-        #[case] first_high: bool,
-        #[case] first_low: bool,
-        #[case] first_high_z: bool,
-    ) {
-        let first = LineState::new(first_high, first_low, first_high_z);
-        let second = LineState::new(false, false, true);
-        assert_eq!(first.contend_with(second).unwrap(), first);
-    }
-
-    #[rstest]
-    fn contend_success_contention(
-        #[values(true, false)] bool_state: bool,
-        #[values(true, false)] first_high_z: bool,
-        #[values(true, false)] second_high_z: bool,
-    ) {
-        let first = LineState::new(bool_state, !bool_state, first_high_z);
-        let second = LineState::new(bool_state, !bool_state, second_high_z);
-        let res = LineState::new(bool_state, !bool_state, first_high_z & second_high_z);
-        assert_eq!(first.contend_with(second).unwrap(), res);
-    }
-
-    #[rstest]
-    #[case(false, true, true, false)]
-    #[case(false, true, true, true)]
-    #[case(true, false, false, true)]
-    #[case(true, false, true, true)]
-    #[case(true, true, false, true)]
-    #[case(true, true, true, false)]
-    #[case(true, true, true, true)]
-    fn contend_failure_contention(
-        #[case] first_high: bool,
-        #[case] first_low: bool,
-        #[case] second_high: bool,
-        #[case] second_low: bool,
-        #[values(true, false)] first_high_z: bool,
-        #[values(true, false)] second_high_z: bool,
-    ) {
-        let first = LineState::new(first_high, first_low, first_high_z);
-        let second = LineState::new(second_high, second_low, second_high_z);
-        assert!(first.contend_with(second).is_none());
     }
 }
