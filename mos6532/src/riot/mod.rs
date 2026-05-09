@@ -1,15 +1,20 @@
 mod control;
 mod instructions;
-mod ram;
 mod registers;
 mod states;
 
+use std::array;
+
 use crate::{
     RiotLines,
-    riot::{instructions::PossibleInstructions, ram::Ram, registers::RiotRegs, states::RiotStates},
+    riot::{instructions::PossibleInstructions, registers::RiotRegs, states::RiotStates},
 };
-use emutils::line::{Bus, BusConId, LineError, LineState};
+use emutils::{
+    line::{Bus, BusConId, LineError, LineState},
+    reg::MBitReg,
+};
 
+const RAM_SIZE: usize = 128;
 const TIMER_INTERVALS: [usize; 4] = [1, 8, 64, 1024];
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -18,7 +23,7 @@ pub struct Riot {
     pa_con: BusConId,
     pb_con: BusConId,
     reg: RiotRegs,
-    ram: Ram,
+    ram: [MBitReg<8>; RAM_SIZE],
     phi2_signal: bool,
     old_pa7_state: LineState,
 }
@@ -31,7 +36,7 @@ impl Riot {
             pa_con: pa.create_connection(),
             pb_con: pb.create_connection(),
             reg: RiotRegs::new(),
-            ram: Ram::new(),
+            ram: array::from_fn(|i| MBitReg::new(format!("RAM byte {i:x}"), true, true)),
             phi2_signal: false,
             old_pa7_state: LineState::new(false, false, true),
         };

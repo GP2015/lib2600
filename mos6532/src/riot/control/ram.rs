@@ -15,12 +15,8 @@ impl Riot {
             db.add_high_z(self.db_con)?;
         }
 
-        for addr in states
-            .a
-            .iter_possible_reads()
-            .map(|a| u8::try_from(a).unwrap())
-        {
-            let ram_byte = self.ram.byte_mut(addr);
+        for addr in states.a.iter_possible_reads() {
+            let ram_byte = &mut self.ram[addr];
 
             if rw_high {
                 let ram_byte_state = ram_byte.state();
