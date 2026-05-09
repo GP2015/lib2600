@@ -4,8 +4,8 @@ mod signal;
 mod single;
 
 pub use {
-    bus::{Bus, BusConnectionId, state::BusState},
+    bus::{Bus, BusConId, state::BusState},
     error::LineError,
     signal::LineSignal,
-    single::{Line, LineConnectionId, state::LineState},
+    single::{Line, LineConId, state::LineState},
 };

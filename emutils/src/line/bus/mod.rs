@@ -2,19 +2,19 @@ pub mod state;
 
 use crate::{
     bit,
-    line::{BusState, Line, LineConnectionId, LineError},
-    reg::{BitRegister, MBitRegister},
+    line::{BusState, Line, LineConId, LineError},
+    reg::MBitRegState,
 };
 use std::array;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct BusConnectionId(usize);
+pub struct BusConId(usize);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Bus<const SIZE: usize> {
     name: String,
     lines: [Line; SIZE],
-    line_connections: Vec<[LineConnectionId; SIZE]>,
+    line_connections: Vec<[LineConId; SIZE]>,
 }
 
 macro_rules! line_con_row_iter {
@@ -41,12 +41,12 @@ impl<const SIZE: usize> Bus<SIZE> {
         }
     }
 
-    pub fn create_connection(&mut self) -> BusConnectionId {
+    pub fn create_connection(&mut self) -> BusConId {
         #[allow(clippy::indexing_slicing)]
         let connection_row = array::from_fn(|bit| self.lines[bit].create_connection());
 
         self.line_connections.push(connection_row);
-        BusConnectionId(self.line_connections.len() - 1)
+        BusConId(self.line_connections.len() - 1)
     }
 
     #[must_use]
@@ -54,10 +54,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         self.name.as_str()
     }
 
-    fn line_connection_row(
-        &self,
-        connection: BusConnectionId,
-    ) -> Result<&[LineConnectionId; SIZE], LineError> {
+    fn line_connection_row(&self, connection: BusConId) -> Result<&[LineConId; SIZE], LineError> {
         self.line_connections
             .get(connection.0)
             .ok_or_else(|| LineError::ConnectionIdOutOfBounds {
@@ -75,8 +72,8 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     pub fn line_mut<const BIT: usize>(
         &mut self,
-        connection: BusConnectionId,
-    ) -> Result<(&mut Line, LineConnectionId), LineError> {
+        connection: BusConId,
+    ) -> Result<(&mut Line, LineConId), LineError> {
         const { assert!(BIT < SIZE) }
 
         #[allow(clippy::indexing_slicing)]
@@ -96,9 +93,9 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     pub fn try_line_mut(
         &mut self,
-        connection: BusConnectionId,
+        connection: BusConId,
         bit: usize,
-    ) -> Result<(&mut Line, LineConnectionId), LineError> {
+    ) -> Result<(&mut Line, LineConId), LineError> {
         if bit >= SIZE {
             return Err(LineError::BitOutOfRange {
                 name: self.name.clone(),
@@ -121,8 +118,8 @@ impl<const SIZE: usize> Bus<SIZE> {
     #[allow(clippy::iter_not_returning_iterator)]
     pub fn iter_mut(
         &mut self,
-        connection: BusConnectionId,
-    ) -> Result<impl Iterator<Item = (&mut Line, LineConnectionId)>, LineError> {
+        connection: BusConId,
+    ) -> Result<impl Iterator<Item = (&mut Line, LineConId)>, LineError> {
         let con_iter = line_con_row_iter!(self, connection);
         Ok(self.lines.iter_mut().zip(con_iter))
     }
@@ -140,7 +137,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         BusState::new(array::from_fn(|bit| self.lines[bit].state()))
     }
 
-    pub fn add_high_z(&mut self, connection: BusConnectionId) -> Result<(), LineError> {
+    pub fn add_high_z(&mut self, connection: BusConId) -> Result<(), LineError> {
         for (line, con) in self.iter_mut(connection)? {
             line.add_high_z(con)?;
         }
@@ -149,7 +146,7 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     pub fn add_drive_wrapping(
         &mut self,
-        connection: BusConnectionId,
+        connection: BusConId,
         val: usize,
     ) -> Result<(), LineError> {
         let con_iter = line_con_row_iter!(self, connection);
@@ -159,7 +156,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         Ok(())
     }
 
-    pub fn add_drive(&mut self, connection: BusConnectionId, val: usize) -> Result<(), LineError> {
+    pub fn add_drive(&mut self, connection: BusConId, val: usize) -> Result<(), LineError> {
         if bit::usize_exceeds_bit_count(val, self.lines.len()) {
             return Err(LineError::DriveValueTooLarge {
                 name: self.name.clone(),
@@ -171,7 +168,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         self.add_drive_wrapping(connection, bit::low_bits_of_usize(val, self.lines.len()))
     }
 
-    pub fn remove_all(&mut self, connection: BusConnectionId) -> Result<(), LineError> {
+    pub fn remove_all(&mut self, connection: BusConId) -> Result<(), LineError> {
         for (line, con) in self.iter_mut(connection)? {
             line.remove_all(con)?;
         }
@@ -180,7 +177,7 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     pub fn copy_from_bus_state(
         &mut self,
-        connection: BusConnectionId,
+        connection: BusConId,
         bus: &BusState<SIZE>,
     ) -> Result<(), LineError> {
         for ((this_line, line_connection), line_state) in self.iter_mut(connection)?.zip(bus.iter())
@@ -191,15 +188,12 @@ impl<const SIZE: usize> Bus<SIZE> {
         Ok(())
     }
 
-    pub fn copy_from_reg(
+    pub fn copy_from_reg_state(
         &mut self,
-        connection: BusConnectionId,
-        reg: &MBitRegister<SIZE>,
+        connection: BusConId,
+        reg: &MBitRegState<SIZE>,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), bit_reg) in self
-            .iter_mut(connection)?
-            .zip(reg.iter().map(BitRegister::state))
-        {
+        for ((this_line, line_connection), bit_reg) in self.iter_mut(connection)?.zip(reg.iter()) {
             this_line.copy_from_reg_state(line_connection, &bit_reg)?;
         }
 

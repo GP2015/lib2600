@@ -1,19 +1,19 @@
 pub mod state;
 
-use crate::{line::LineState, reg::bit::state::BitRegisterState};
+use crate::{line::LineState, reg::bit::state::BitRegState};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct BitRegister {
+pub struct BitReg {
     name: String,
-    state: BitRegisterState,
+    state: BitRegState,
 }
 
-impl BitRegister {
+impl BitReg {
     #[must_use]
     pub fn new<S: Into<String>>(name: S, low: bool, high: bool) -> Self {
         Self {
             name: name.into(),
-            state: BitRegisterState::new(low, high),
+            state: BitRegState::new(low, high),
         }
     }
 
@@ -23,7 +23,7 @@ impl BitRegister {
     }
 
     #[must_use]
-    pub const fn state(&self) -> BitRegisterState {
+    pub const fn state(&self) -> BitRegState {
         self.state
     }
 
@@ -62,7 +62,7 @@ impl BitRegister {
         }
     }
 
-    pub const fn copy_from_reg_state(&mut self, reg: &BitRegisterState) {
+    pub const fn copy_from_reg_state(&mut self, reg: &BitRegState) {
         if reg.high {
             self.state.high = true;
         }
@@ -75,7 +75,7 @@ impl BitRegister {
 
 #[cfg(test)]
 mod tests {
-    use crate::line::{Line, LineConnectionId};
+    use crate::line::{Line, LineConId};
 
     use super::*;
     use rstest::{fixture, rstest};
@@ -83,25 +83,25 @@ mod tests {
     const REG_NAME: &str = "reg";
 
     #[fixture]
-    fn line_and_connection() -> (Line, LineConnectionId) {
+    fn line_and_connection() -> (Line, LineConId) {
         let mut line = Line::new("");
         let connection = line.create_connection();
         (line, connection)
     }
 
     #[fixture]
-    fn reg() -> BitRegister {
-        BitRegister::new(REG_NAME, true, true)
+    fn reg() -> BitReg {
+        BitReg::new(REG_NAME, true, true)
     }
 
     #[rstest]
-    fn initial(reg: BitRegister) {
+    fn initial(reg: BitReg) {
         assert!(reg.state().low);
         assert!(reg.state().high);
     }
 
     #[rstest]
-    fn name(reg: BitRegister) {
+    fn name(reg: BitReg) {
         assert_eq!(reg.name(), REG_NAME);
     }
 
@@ -110,8 +110,8 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(true, false)] low: bool,
         #[values(true, false)] high: bool,
-        mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, LineConnectionId),
+        mut reg: BitReg,
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConId),
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();
@@ -125,8 +125,8 @@ mod tests {
         #[values(true, false)] initial: bool,
         #[values(true, false)] low: bool,
         #[values(true, false)] high: bool,
-        mut reg: BitRegister,
-        #[from(line_and_connection)] (mut line, connection): (Line, LineConnectionId),
+        mut reg: BitReg,
+        #[from(line_and_connection)] (mut line, connection): (Line, LineConId),
     ) {
         reg.set_all(initial, initial);
         line.set_all(connection, high, low, false).unwrap();

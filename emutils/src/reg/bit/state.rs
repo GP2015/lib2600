@@ -1,10 +1,10 @@
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct BitRegisterState {
+pub struct BitRegState {
     pub low: bool,
     pub high: bool,
 }
 
-impl BitRegisterState {
+impl BitRegState {
     #[must_use]
     pub const fn new(low: bool, high: bool) -> Self {
         Self { low, high }
@@ -52,14 +52,14 @@ mod tests {
 
     #[rstest]
     fn new(#[values(true, false)] low: bool, #[values(true, false)] high: bool) {
-        let states = BitRegisterState::new(low, high);
+        let states = BitRegState::new(low, high);
         assert_eq!(states.low, low);
         assert_eq!(states.high, high);
     }
 
     #[rstest]
     fn is_possible(#[values(true, false)] low: bool, #[values(true, false)] high: bool) {
-        let states = BitRegisterState::new(low, high);
+        let states = BitRegState::new(low, high);
         assert_eq!(states.is_possible(false), low);
         assert_eq!(states.is_possible(true), high);
     }
@@ -68,7 +68,7 @@ mod tests {
     #[case(false, true, true)]
     #[case(true, false, false)]
     fn collapsed_success(#[case] low: bool, #[case] high: bool, #[case] state: bool) {
-        let states = BitRegisterState::new(low, high);
+        let states = BitRegState::new(low, high);
         assert_eq!(states.collapsed().unwrap(), state);
     }
 
@@ -76,7 +76,7 @@ mod tests {
     #[case(false, false)]
     #[case(true, true)]
     fn collapsed_failure(#[case] low: bool, #[case] high: bool) {
-        let states = BitRegisterState::new(low, high);
+        let states = BitRegState::new(low, high);
         assert!(states.collapsed().is_none());
     }
 
@@ -86,7 +86,7 @@ mod tests {
     #[case(false, true, &[true])]
     #[case(true, true, &[false, true])]
     fn possible_reads(#[case] low: bool, #[case] high: bool, #[case] res: &[bool]) {
-        let states = BitRegisterState::new(low, high).possible_reads();
+        let states = BitRegState::new(low, high).possible_reads();
         assert_eq!(states, res);
     }
 }

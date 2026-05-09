@@ -1,14 +1,14 @@
-use crate::{bit, reg::BitRegisterState};
+use crate::{bit, reg::BitRegState};
 use itertools::Itertools;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct MBitRegisterState<const SIZE: usize> {
-    pub bit_states: [BitRegisterState; SIZE],
+pub struct MBitRegState<const SIZE: usize> {
+    pub bit_states: [BitRegState; SIZE],
 }
 
-impl<const SIZE: usize> MBitRegisterState<SIZE> {
+impl<const SIZE: usize> MBitRegState<SIZE> {
     #[must_use]
-    pub const fn new(bit_states: [BitRegisterState; SIZE]) -> Self {
+    pub const fn new(bit_states: [BitRegState; SIZE]) -> Self {
         Self { bit_states }
     }
 
@@ -18,18 +18,18 @@ impl<const SIZE: usize> MBitRegisterState<SIZE> {
     }
 
     #[must_use]
-    pub const fn bit_state<const BIT: usize>(&self) -> BitRegisterState {
+    pub const fn bit_state<const BIT: usize>(&self) -> BitRegState {
         const { assert!(BIT < SIZE) }
         #[allow(clippy::indexing_slicing)]
         self.bit_states[BIT]
     }
 
     #[must_use]
-    pub fn try_bit_state(&self, bit: usize) -> Option<BitRegisterState> {
+    pub fn try_bit_state(&self, bit: usize) -> Option<BitRegState> {
         self.bit_states.get(bit).copied()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = BitRegisterState> {
+    pub fn iter(&self) -> impl Iterator<Item = BitRegState> {
         self.bit_states.iter().copied()
     }
 

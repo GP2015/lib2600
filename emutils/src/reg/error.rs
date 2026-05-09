@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, Hash, PartialEq)]
-pub enum RegisterError {
+pub enum RegError {
     #[error("register {name} has no bit {bit}")]
     BitOutOfRange {
         name: String,

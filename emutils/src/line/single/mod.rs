@@ -2,12 +2,12 @@ pub mod state;
 
 use crate::{
     line::{LineError, LineSignal, LineState},
-    reg::BitRegisterState,
+    reg::BitRegState,
 };
 use delegate::delegate;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct LineConnectionId(usize);
+pub struct LineConId(usize);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Line {
@@ -25,10 +25,10 @@ impl Line {
         }
     }
 
-    pub fn create_connection(&mut self) -> LineConnectionId {
+    pub fn create_connection(&mut self) -> LineConId {
         let state = LineState::new(false, false, false);
         self.connection_states.push(state);
-        LineConnectionId(self.connection_states.len() - 1)
+        LineConId(self.connection_states.len() - 1)
     }
 
     #[must_use]
@@ -80,10 +80,7 @@ impl Line {
         Ok(())
     }
 
-    fn connection_state_mut(
-        &mut self,
-        connection: LineConnectionId,
-    ) -> Result<&mut LineState, LineError> {
+    fn connection_state_mut(&mut self, connection: LineConId) -> Result<&mut LineState, LineError> {
         self.connection_states.get_mut(connection.0).ok_or_else(|| {
             LineError::ConnectionIdOutOfBounds {
                 name: self.name.clone(),
@@ -92,7 +89,7 @@ impl Line {
     }
 
     #[allow(clippy::missing_panics_doc)]
-    pub fn remove_all(&mut self, connection: LineConnectionId) -> Result<(), LineError> {
+    pub fn remove_all(&mut self, connection: LineConId) -> Result<(), LineError> {
         self.set_all(connection, false, false, false)?;
 
         #[allow(clippy::unwrap_used)]
@@ -101,11 +98,7 @@ impl Line {
         Ok(())
     }
 
-    pub fn add(
-        &mut self,
-        connection: LineConnectionId,
-        signal: LineSignal,
-    ) -> Result<(), LineError> {
+    pub fn add(&mut self, connection: LineConId, signal: LineSignal) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
         match signal {
             LineSignal::Low => state.low = true,
@@ -115,11 +108,7 @@ impl Line {
         self.update_combined_state()
     }
 
-    pub fn remove(
-        &mut self,
-        connection: LineConnectionId,
-        signal: LineSignal,
-    ) -> Result<(), LineError> {
+    pub fn remove(&mut self, connection: LineConId, signal: LineSignal) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
         match signal {
             LineSignal::Low => state.low = false,
@@ -131,7 +120,7 @@ impl Line {
 
     pub fn set_all(
         &mut self,
-        connection: LineConnectionId,
+        connection: LineConId,
         low: bool,
         high: bool,
         high_z: bool,
@@ -143,7 +132,7 @@ impl Line {
         self.update_combined_state()
     }
 
-    pub fn add_drive(&mut self, connection: LineConnectionId, val: bool) -> Result<(), LineError> {
+    pub fn add_drive(&mut self, connection: LineConId, val: bool) -> Result<(), LineError> {
         if val {
             self.add_high(connection)
         } else {
@@ -151,11 +140,7 @@ impl Line {
         }
     }
 
-    pub fn remove_drive(
-        &mut self,
-        connection: LineConnectionId,
-        val: bool,
-    ) -> Result<(), LineError> {
+    pub fn remove_drive(&mut self, connection: LineConId, val: bool) -> Result<(), LineError> {
         if val {
             self.remove_high(connection)
         } else {
@@ -165,7 +150,7 @@ impl Line {
 
     pub fn copy_from_line_state(
         &mut self,
-        connection: LineConnectionId,
+        connection: LineConId,
         line_state: &LineState,
     ) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
@@ -187,8 +172,8 @@ impl Line {
 
     pub fn copy_from_reg_state(
         &mut self,
-        connection: LineConnectionId,
-        reg_state: &BitRegisterState,
+        connection: LineConId,
+        reg_state: &BitRegState,
     ) -> Result<(), LineError> {
         let state = self.connection_state_mut(connection)?;
 
@@ -206,18 +191,18 @@ impl Line {
     delegate! {
         to self{
             #[call(add)]
-            pub fn add_low(&mut self, connection: LineConnectionId, [LineSignal::Low]) -> Result<(), LineError>;
+            pub fn add_low(&mut self, connection: LineConId, [LineSignal::Low]) -> Result<(), LineError>;
             #[call(add)]
-            pub fn add_high(&mut self, connection: LineConnectionId, [LineSignal::High]) -> Result<(), LineError>;
+            pub fn add_high(&mut self, connection: LineConId, [LineSignal::High]) -> Result<(), LineError>;
             #[call(add)]
-            pub fn add_high_z(&mut self, connection: LineConnectionId, [LineSignal::HighZ]) -> Result<(), LineError>;
+            pub fn add_high_z(&mut self, connection: LineConId, [LineSignal::HighZ]) -> Result<(), LineError>;
 
             #[call(remove)]
-            pub fn remove_low(&mut self, connection: LineConnectionId, [LineSignal::Low]) -> Result<(), LineError>;
+            pub fn remove_low(&mut self, connection: LineConId, [LineSignal::Low]) -> Result<(), LineError>;
             #[call(remove)]
-            pub fn remove_high(&mut self, connection: LineConnectionId, [LineSignal::High]) -> Result<(), LineError>;
+            pub fn remove_high(&mut self, connection: LineConId, [LineSignal::High]) -> Result<(), LineError>;
             #[call(remove)]
-            pub fn remove_high_z(&mut self, connection: LineConnectionId, [LineSignal::HighZ]) -> Result<(), LineError>;
+            pub fn remove_high_z(&mut self, connection: LineConId, [LineSignal::HighZ]) -> Result<(), LineError>;
         }
     }
 }
