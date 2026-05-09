@@ -1,40 +1,51 @@
 use crate::{
     Riot,
-    riot::lines::{RiotLineStates, RiotOutputLines},
+    riot::{TIMER_INTERVALS, states::RiotStates},
 };
-use emutils::line::LineError;
+use emutils::line::{Bus, LineError};
 
 impl Riot {
-    pub(crate) fn read_timer(&mut self, lines: &mut RiotOutputLines) -> Result<(), LineError> {
-        lines.db.copy_from_reg(self.con.db, &self.timer)?;
-        self.timer_ir_flag.add(false, false);
-        Ok(())
+    // Only (pseudo-)instruction that writes to timer_ir_flag
+    pub(crate) const fn clear_timer_ir_flag(&mut self, only_possible: bool) {
+        if only_possible {
+            self.reg.timer_ir_flag.remove_all();
+        }
+
+        self.reg.timer_ir_flag.add(false);
     }
 
-    pub(crate) fn write_timer(&mut self, states: &RiotLineStates) {
-        self.timer.copy_from_bus_state(&states.db, false);
-        self.timer_ir_flag.add(false, false);
+    pub(crate) fn read_timer(&self, db: &mut Bus<8>) -> Result<(), LineError> {
+        let timer_state = self.reg.timer.state();
+        db.copy_from_reg_state(self.db_con, &timer_state)
+    }
 
-        self.timer_interval
-            .bit_mut::<0>()
-            .copy_from_line_state(&states.a.line_state::<0>(), false);
+    // Only instruction that writes to timer, sub-timer, timer_interval
+    pub(crate) fn write_timer(&mut self, states: &RiotStates, only_possible: bool) {
+        if only_possible {
+            self.reg.timer.remove_all();
+            self.reg.sub_timer.remove_all();
+            self.reg.timer_interval.remove_all();
+        }
 
-        self.timer_interval
-            .bit_mut::<1>()
-            .copy_from_line_state(&states.a.line_state::<1>(), false);
+        self.reg.timer.copy_from_bus_state(&states.db);
 
-        let mut first_iter = true;
+        macro_rules! set_timer_interval {
+            ($($size:literal),+) => {$(
+                let a_bit = &states.a.line_state::<$size>();
+                self.reg.timer_interval.bit_mut::<$size>().copy_from_line_state(&a_bit);
+            )+};
+        }
 
-        #[allow(clippy::indexing_slicing)]
+        set_timer_interval!(0, 1);
+
         for interval in self
+            .reg
             .timer_interval
+            .state()
             .iter_possible_reads()
             .map(|val| TIMER_INTERVALS[val] - 1)
         {
-            #[allow(clippy::unwrap_used)]
-            self.sub_timer.add(interval, false && first_iter).unwrap();
-
-            first_iter = false;
+            self.reg.sub_timer.add(interval).unwrap();
         }
     }
 }

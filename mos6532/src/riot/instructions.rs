@@ -1,4 +1,4 @@
-use crate::riot::lines::RiotLineStates;
+use crate::riot::states::RiotStates;
 
 #[derive(Clone, Debug, Default)]
 pub struct PossibleInstructions {
@@ -10,8 +10,29 @@ pub struct PossibleInstructions {
     pub wedc: bool,
 }
 
-impl From<&RiotLineStates> for PossibleInstructions {
-    fn from(states: &RiotLineStates) -> Self {
+impl PossibleInstructions {
+    pub fn only_possible(&self) -> bool {
+        let count = [self.ram, self.io, self.wt, self.rt, self.rirf, self.wedc]
+            .into_iter()
+            .filter(|b| *b)
+            .count();
+
+        assert!(count > 0);
+
+        count == 1
+    }
+
+    pub fn timer_only_possible(&self) -> bool {
+        assert!(self.wt | self.rt);
+
+        ![self.ram, self.io, self.rirf, self.wedc]
+            .into_iter()
+            .any(|b| b)
+    }
+}
+
+impl From<&RiotStates> for PossibleInstructions {
+    fn from(states: &RiotStates) -> Self {
         let mut instructions = Self::default();
 
         let rs = states.rs;

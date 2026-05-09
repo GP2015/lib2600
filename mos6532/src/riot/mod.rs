@@ -1,26 +1,23 @@
 mod control;
 mod instructions;
-mod lines;
 mod ram;
 mod registers;
+mod states;
 
 use crate::{
-    RiotConnectionIds, RiotLines,
-    riot::{
-        instructions::PossibleInstructions,
-        lines::{RiotLineStates, RiotOutputLines},
-        ram::Ram,
-        registers::{RegisterChanges, Registers},
-    },
+    RiotLines,
+    riot::{instructions::PossibleInstructions, ram::Ram, registers::RiotRegs, states::RiotStates},
 };
-use emutils::line::{LineError, LineState};
+use emutils::line::{Bus, BusConId, LineError, LineState};
 
 const TIMER_INTERVALS: [usize; 4] = [1, 8, 64, 1024];
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Riot {
-    con: RiotConnectionIds,
-    reg: Registers,
+    db_con: BusConId,
+    pa_con: BusConId,
+    pb_con: BusConId,
+    reg: RiotRegs,
     ram: Ram,
     phi2_signal: bool,
     old_pa7_state: LineState,
@@ -28,28 +25,34 @@ pub struct Riot {
 
 impl Riot {
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
-    pub fn new(connections: RiotConnectionIds) -> Self {
-        Self {
-            con: connections,
-            reg: Registers::new(),
+    pub fn new(db: &mut Bus<8>, pa: &mut Bus<8>, pb: &mut Bus<8>) -> Self {
+        let riot = Self {
+            db_con: db.create_connection(),
+            pa_con: pa.create_connection(),
+            pb_con: pb.create_connection(),
+            reg: RiotRegs::new(),
             ram: Ram::new(),
             phi2_signal: false,
             old_pa7_state: LineState::new(false, false, true),
-        }
+        };
+
+        pa.remove_all(riot.pa_con).unwrap();
+        pa.add_high_z(riot.pa_con).unwrap();
+
+        pb.remove_all(riot.pb_con).unwrap();
+        pb.add_high_z(riot.pb_con).unwrap();
+
+        riot
     }
 
     pub fn drive_phi2(&mut self, lines: RiotLines, bool_signal: bool) -> Result<(), LineError> {
         lines.check_valid()?;
-        let states = RiotLineStates::from(&lines);
-        let mut lines = RiotOutputLines::from(lines);
 
         match (self.phi2_signal, bool_signal) {
-            (false, true) => self.handle_rising_edge(&mut lines, &states)?,
+            (false, true) => self.handle_rising_edge(lines)?,
             (true, false) => {
-                for (line, con) in lines.db.iter_mut(self.con.db)? {
-                    line.set_all(con, false, false, true).unwrap();
-                }
+                lines.db.remove_all(self.db_con).unwrap();
+                lines.db.add_high_z(self.db_con).unwrap();
             }
             _ => return Ok(()),
         }
@@ -58,27 +61,27 @@ impl Riot {
         Ok(())
     }
 
-    fn handle_rising_edge(
-        &mut self,
-        lines: &mut RiotOutputLines,
-        states: &RiotLineStates,
-    ) -> Result<(), LineError> {
-        lines.db.remove_all(self.con.db)?;
-        lines.pa.remove_all(self.con.pa)?;
-        lines.pb.remove_all(self.con.pb)?;
+    fn handle_rising_edge(&mut self, lines: RiotLines) -> Result<(), LineError> {
+        let states = RiotStates::new(&lines, &self.reg);
+        let RiotLines { db, pa, pb, .. } = lines;
 
-        self.update_peripherals(lines)?;
-        self.update_edc(states);
+        db.remove_all(self.db_con)?;
+        pa.remove_all(self.pa_con)?;
+        pb.remove_all(self.pb_con)?;
+
+        self.update_edc(pa);
         self.update_timer();
 
-        let mut reg_changes = RegisterChanges::default();
-
-        if states.cs1.could_read_low() || states.cs2.could_read_high() {
-            reg_changes.add_new_option();
-        }
-
         if states.cs1.could_read_high() && states.cs2.could_read_low() {
-            let instructions = PossibleInstructions::from(states);
+            let instructions = PossibleInstructions::from(&states);
+
+            let only_possible = instructions.only_possible()
+                && lines.cs1.state().could_read_low()
+                && !states.cs2.could_read_high();
+
+            if instructions.wt || instructions.rt {
+                self.clear_timer_ir_flag(instructions.timer_only_possible());
+            }
 
             macro_rules! call_instr_fns {
                 ($(($instr:ident, $action:expr)),+ $(,)?) => {$(
@@ -89,13 +92,17 @@ impl Riot {
             }
 
             call_instr_fns!(
-                (ram, self.call_ram(lines, states)?),
-                (io, self.call_io(lines, states)?),
-                (wt, self.write_timer(states)),
-                (rt, self.read_timer(lines)?),
-                (rirf, self.read_ir_flag(lines)?),
-                (wedc, self.write_edc(states)),
+                (ram, self.call_ram(db, &states, only_possible)?),
+                (io, self.call_io(db, &states, only_possible)?),
+                (wt, self.write_timer(&states, only_possible)),
+                (rt, self.read_timer(db)?),
+                (rirf, self.read_ir_flag(db, &states, only_possible)?),
+                (wedc, self.write_edc(db, &states, only_possible)?),
             );
+
+            if instructions.io {
+                self.update_peripherals(pa, pb)?;
+            }
         }
 
         Ok(())

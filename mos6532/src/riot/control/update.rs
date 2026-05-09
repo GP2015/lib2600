@@ -1,21 +1,19 @@
-use crate::{
-    Riot,
-    riot::{
-        TIMER_INTERVALS,
-        lines::{RiotLineStates, RiotOutputLines},
-    },
-};
-use emutils::line::LineError;
+use crate::{Riot, riot::TIMER_INTERVALS};
+use emutils::line::{Bus, LineError};
 use itertools::izip;
 
 const LOW_ONLY: (bool, bool) = (true, false);
 const HIGH_ONLY: (bool, bool) = (false, true);
 
 impl Riot {
-    pub(crate) fn update_peripherals(&self, lines: &mut RiotOutputLines) -> Result<(), LineError> {
+    pub(crate) fn update_peripherals(
+        &self,
+        pa: &mut Bus<8>,
+        pb: &mut Bus<8>,
+    ) -> Result<(), LineError> {
         for (p, bus_con, ddr, or) in [
-            (&mut lines.pa, self.con.pa, &self.reg.ddra, &self.reg.ora),
-            (&mut lines.pb, self.con.pb, &self.reg.ddrb, &self.reg.orb),
+            (pa, self.pa_con, &self.reg.ddra, &self.reg.ora),
+            (pb, self.pb_con, &self.reg.ddrb, &self.reg.orb),
         ] {
             for ((p_line, line_con), ddr_bit, or_bit) in
                 izip!(p.iter_mut(bus_con)?, ddr.iter(), or.iter())
@@ -35,8 +33,8 @@ impl Riot {
         Ok(())
     }
 
-    pub(crate) fn update_edc(&mut self, states: &RiotLineStates) {
-        let new_pa7_state = states.pa.line_state::<7>();
+    pub(crate) const fn update_edc(&mut self, pa: &Bus<8>) {
+        let new_pa7_state = pa.line::<7>().state();
 
         match (
             self.reg.edc_edge_type.state().low_high_possible(),
@@ -92,7 +90,6 @@ impl Riot {
             }
 
             if sub_timer_zero && timer_other {
-                #[allow(clippy::indexing_slicing)]
                 for interval in self
                     .reg
                     .timer_interval
@@ -100,7 +97,7 @@ impl Riot {
                     .iter_possible_reads()
                     .map(|val| TIMER_INTERVALS[val] - 1)
                 {
-                    self.reg.sub_timer.add(interval);
+                    self.reg.sub_timer.add(interval).unwrap();
                 }
             }
         }
@@ -110,9 +107,7 @@ impl Riot {
                 bit.set_all(true, true);
             }
         } else if flag_low && (sub_timer_other || (sub_timer_zero && timer_other)) {
-            self.reg
-                .timer_interval
-                .copy_from_reg_state(&&interval_state);
+            self.reg.timer_interval.copy_from_reg_state(&interval_state);
         }
 
         if flag_high || (flag_low && sub_timer_zero && timer_zero) {

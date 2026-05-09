@@ -1,15 +1,22 @@
-use crate::{Riot, riot::lines::RiotLineStates};
+use crate::{Riot, riot::states::RiotStates};
+use emutils::line::{Bus, LineError};
 
 impl Riot {
-    pub(crate) const fn write_edc(&mut self, states: &RiotLineStates, only_instruction: bool) {
-        let a0 = states.a.line_state::<0>();
-
-        if a0.could_read_low() {
-            self.edc_edge_type.add(false, only_instruction);
+    // Only instruction that writes to edc_edge_type
+    pub(crate) fn write_edc(
+        &mut self,
+        db: &mut Bus<8>,
+        states: &RiotStates,
+        only_possible: bool,
+    ) -> Result<(), LineError> {
+        if only_possible {
+            self.reg.edc_edge_type.remove_all();
         }
 
-        if a0.could_read_high() {
-            self.edc_edge_type.add(true, only_instruction);
+        for &edc_state in states.a.line_state::<0>().possible_reads() {
+            self.reg.edc_edge_type.add(edc_state);
         }
+
+        db.add_high_z(self.db_con)
     }
 }
