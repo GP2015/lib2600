@@ -15,14 +15,13 @@ pub struct RiotLines<'a> {
 
 impl RiotLines<'_> {
     pub(crate) fn check_valid(&self) -> Result<(), LineError> {
-        self.db.check_valid()?;
-        self.pa.check_valid()?;
-        self.pb.check_valid()?;
+        macro_rules! check_valid {
+            ($($p:ident),+) => {$(
+                self.$p.check_valid()?;
+            )+};
+        }
 
-        self.a.check_valid()?;
-        self.cs1.check_valid()?;
-        self.cs2.check_valid()?;
-        self.rs.check_valid()?;
-        self.rw.check_valid()
+        check_valid!(a, db, pa, pb, cs1, cs2, rs, rw);
+        Ok(())
     }
 }
