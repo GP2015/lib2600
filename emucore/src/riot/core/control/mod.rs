@@ -8,7 +8,7 @@ mod update;
 // #[cfg(test)]
 // use crate::{
 //     Riot, RiotConnectionIds, RiotLines,
-//     riot::{lines::RiotOutputLines, states::RiotStates},
+//     riot::{lines::RiotOutputLines, states::RiotReads},
 // };
 // #[cfg(test)]
 // use emutils::line::{Bus, BusConId, Line, LineConId};
@@ -65,9 +65,9 @@ mod update;
 //         }
 //     }
 
-//     pub fn internals(&mut self) -> (Riot, RiotOutputLines<'_>, RiotStates) {
+//     pub fn internals(&mut self) -> (Riot, RiotOutputLines<'_>, RiotReads) {
 //         let (riot, lines) = self.externals();
-//         let states = RiotStates::from(&lines);
+//         let states = RiotReads::from(&lines);
 //         (riot, RiotOutputLines::from(lines), states)
 //     }
 

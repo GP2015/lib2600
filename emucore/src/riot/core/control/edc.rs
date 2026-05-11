@@ -1,6 +1,6 @@
 use crate::{
-    common::line::{bus::Bus, error::LineError},
-    riot::core::{Riot, states::RiotStates},
+    common::line::{error::LineError, multi::Bus},
+    riot::core::{Riot, reads::RiotReads},
 };
 
 impl Riot {
@@ -8,14 +8,14 @@ impl Riot {
     pub fn write_edc(
         &mut self,
         db: &mut Bus<8>,
-        states: &RiotStates,
+        states: &RiotReads,
         only_possible: bool,
     ) -> Result<(), LineError> {
         if only_possible {
             self.reg.edc_edge_type.remove_all();
         }
 
-        for &edc_state in states.a.line_state::<0>().possible_reads() {
+        for &edc_state in states.a.bit::<0>().possible_reads() {
             self.reg.edc_edge_type.add(edc_state);
         }
 

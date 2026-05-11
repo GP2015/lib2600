@@ -13,13 +13,11 @@ pub enum LineSignal {
 }
 
 impl LineSignal {
-    #[must_use]
-    pub const fn from_bool(b: bool) -> Self {
+    pub fn from_bool(b: bool) -> Self {
         if b { Self::High } else { Self::Low }
     }
 
-    #[must_use]
-    pub const fn as_bool(self) -> Option<bool> {
+    pub fn as_bool(self) -> Option<bool> {
         match self {
             Self::Low => Some(false),
             Self::High => Some(true),
@@ -27,8 +25,7 @@ impl LineSignal {
         }
     }
 
-    #[must_use]
-    pub const fn contend_with(self, other: Self) -> Option<Self> {
+    pub fn contend_with(self, other: Self) -> Option<Self> {
         match (self, other) {
             (Self::Low, Self::Low) => Some(Self::Low),
             (Self::High, Self::High) => Some(Self::High),

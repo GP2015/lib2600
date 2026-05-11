@@ -1,4 +1,4 @@
-use crate::riot::core::states::RiotStates;
+use crate::riot::core::reads::RiotReads;
 
 #[derive(Clone, Debug, Default)]
 pub struct PossibleInstructions {
@@ -31,16 +31,16 @@ impl PossibleInstructions {
     }
 }
 
-impl From<&RiotStates> for PossibleInstructions {
-    fn from(states: &RiotStates) -> Self {
+impl From<&RiotReads> for PossibleInstructions {
+    fn from(states: &RiotReads) -> Self {
         let mut instructions = Self::default();
 
         let rs = states.rs;
         let rw = states.rw;
 
-        let a0 = states.a.line_state::<0>();
-        let a2 = states.a.line_state::<2>();
-        let a4 = states.a.line_state::<4>();
+        let a0 = states.a.bit::<0>();
+        let a2 = states.a.bit::<2>();
+        let a4 = states.a.bit::<4>();
 
         macro_rules! instr_branch {
             ($state:expr, $low:ident, $high:ident $(,)?) => {

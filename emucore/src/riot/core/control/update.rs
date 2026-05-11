@@ -1,5 +1,5 @@
 use crate::{
-    common::line::{bus::Bus, error::LineError},
+    common::line::{error::LineError, multi::Bus},
     riot::core::{Riot, TIMER_INTERVALS},
 };
 use itertools::izip;
@@ -14,7 +14,7 @@ impl Riot {
             (pb, self.pb_con, &self.reg.ddrb, &self.reg.orb),
         ] {
             for ((p_line, line_con), ddr_bit, or_bit) in
-                izip!(p.iter_mut(bus_con)?, ddr.iter(), or.iter())
+                izip!(p.try_iter_mut(bus_con)?, ddr.iter(), or.iter())
             {
                 let (ddr_low, ddr_high) = ddr_bit.state().low_high_possible();
 
@@ -31,7 +31,7 @@ impl Riot {
         Ok(())
     }
 
-    pub const fn update_edc(&mut self, pa: &Bus<8>) {
+    pub fn update_edc(&mut self, pa: &Bus<8>) {
         let new_pa7_state = pa.line::<7>().state();
 
         match (

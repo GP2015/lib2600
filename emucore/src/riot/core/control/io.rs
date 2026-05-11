@@ -1,9 +1,9 @@
 use crate::{
     common::{
-        line::{bus::Bus, error::LineError},
-        reg::mbit::MBitReg,
+        line::{error::LineError, multi::Bus},
+        reg::multi::MBitReg,
     },
-    riot::core::{Riot, states::RiotStates},
+    riot::core::{Riot, reads::RiotReads},
 };
 use itertools::iproduct;
 
@@ -12,11 +12,11 @@ impl Riot {
     pub fn call_io(
         &mut self,
         db: &mut Bus<8>,
-        states: &RiotStates,
+        states: &RiotReads,
         mut only_possible: bool,
     ) -> Result<(), LineError> {
-        let a0 = states.a.line_state::<0>();
-        let a1 = states.a.line_state::<1>();
+        let a0 = states.a.bit::<0>();
+        let a1 = states.a.bit::<1>();
 
         only_possible &= states.rw.is_defined() & a0.is_defined() & a1.is_defined();
 
@@ -54,9 +54,9 @@ impl Riot {
         Ok(())
     }
 
-    fn read_orb(&self, db: &mut Bus<8>, states: &RiotStates) -> Result<(), LineError> {
+    fn read_orb(&self, db: &mut Bus<8>, states: &RiotReads) -> Result<(), LineError> {
         for (bit, ((db_line, db_line_con), ddrb_bit_state)) in db
-            .iter_mut(self.db_con)?
+            .try_iter_mut(self.db_con)?
             .zip(states.ddrb.iter())
             .enumerate()
         {

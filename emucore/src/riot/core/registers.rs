@@ -1,4 +1,7 @@
-use crate::common::reg::{bit::BitReg, mbit::MBitReg};
+use crate::common::{
+    read::single::SingleRead,
+    reg::{multi::MBitReg, single::BitReg},
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct RiotRegs {
@@ -20,19 +23,19 @@ pub struct RiotRegs {
 impl RiotRegs {
     pub fn new() -> Self {
         Self {
-            ddra: MBitReg::new("DDRA", true, false),
-            ddrb: MBitReg::new("DDRB", true, false),
-            ora: MBitReg::new("ORA", true, false),
-            orb: MBitReg::new("ORB", true, false),
+            ddra: MBitReg::new(SingleRead::Low),
+            ddrb: MBitReg::new(SingleRead::Low),
+            ora: MBitReg::new(SingleRead::Low),
+            orb: MBitReg::new(SingleRead::Low),
 
-            edc_ir_flag: BitReg::new("EDC Interrupt Flag", true, true),
-            timer_ir_flag: BitReg::new("Timer Interrupt Flag", true, true),
+            edc_ir_flag: BitReg::new(SingleRead::Unknown),
+            timer_ir_flag: BitReg::new(SingleRead::Unknown),
 
-            edc_edge_type: BitReg::new("EDC Edge Type", true, false),
+            edc_edge_type: BitReg::new(SingleRead::Low),
 
-            timer: MBitReg::new("Timer", true, true),
-            sub_timer: MBitReg::new("Sub-Timer", true, true),
-            timer_interval: MBitReg::new("Timer Interval", true, true),
+            timer: MBitReg::new(SingleRead::Unknown),
+            sub_timer: MBitReg::new(SingleRead::Unknown),
+            timer_interval: MBitReg::new(SingleRead::Unknown),
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    common::line::{bus::Bus, error::LineError},
-    riot::core::{Riot, states::RiotStates},
+    common::line::{error::LineError, multi::Bus},
+    riot::core::{Riot, reads::RiotReads},
 };
 
 impl Riot {
@@ -8,7 +8,7 @@ impl Riot {
     pub fn call_ram(
         &mut self,
         db: &mut Bus<8>,
-        states: &RiotStates,
+        states: &RiotReads,
         only_possible: bool,
     ) -> Result<(), LineError> {
         let (rw_low, rw_high) = states.rw.could_read_low_high();

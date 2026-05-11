@@ -1,13 +1,10 @@
-pub mod state;
-
 use crate::common::{
-    bit,
     line::{
-        bus::state::BusState,
+        drive_state::DriveState,
         error::LineError,
         single::{Line, LineConId},
     },
-    reg::mbit::state::MBitRegState,
+    read::multi::MultiRead,
 };
 use std::array;
 
@@ -52,8 +49,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         BusConId(self.line_connections.len() - 1)
     }
 
-    #[must_use]
-    pub const fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         self.name.as_str()
     }
 
@@ -65,8 +61,7 @@ impl<const SIZE: usize> Bus<SIZE> {
             })
     }
 
-    #[must_use]
-    pub const fn line<const BIT: usize>(&self) -> &Line {
+    pub fn line<const BIT: usize>(&self) -> &Line {
         const { assert!(BIT < SIZE) }
         &self.lines[BIT]
     }
@@ -108,7 +103,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         self.lines.iter()
     }
 
-    pub fn iter_mut(
+    pub fn try_iter_mut(
         &mut self,
         connection: BusConId,
     ) -> Result<impl Iterator<Item = (&mut Line, LineConId)>, LineError> {
@@ -123,70 +118,34 @@ impl<const SIZE: usize> Bus<SIZE> {
         Ok(())
     }
 
-    #[must_use]
-    pub fn state(&self) -> BusState<SIZE> {
+    pub fn read(&self) -> MultiRead<SIZE> {
         #[allow(clippy::indexing_slicing)]
-        BusState::new(array::from_fn(|bit| self.lines[bit].state()))
+        MultiRead::new(array::from_fn(|bit| self.lines[bit].read()))
     }
 
-    pub fn add_high_z(&mut self, connection: BusConId) -> Result<(), LineError> {
-        for (line, con) in self.iter_mut(connection)? {
-            line.add_high_z(con)?;
-        }
-        Ok(())
-    }
-
-    pub fn add_drive_wrapping(
+    pub fn set_drive_state(
         &mut self,
         connection: BusConId,
-        val: usize,
+        state: &[DriveState; SIZE],
     ) -> Result<(), LineError> {
-        let con_iter = line_con_row_iter!(self, connection);
-        for (bit, (line, connection)) in self.lines.iter_mut().zip(con_iter).enumerate() {
-            line.add_drive(connection, bit::bit_of_usize(val, bit))?;
-        }
-        Ok(())
-    }
-
-    pub fn add_drive(&mut self, connection: BusConId, val: usize) -> Result<(), LineError> {
-        if bit::usize_exceeds_bit_count(val, self.lines.len()) {
-            return Err(LineError::DriveValueTooLarge {
-                name: self.name.clone(),
-                value: val,
-                size: self.lines.len(),
-            });
-        }
-
-        self.add_drive_wrapping(connection, bit::low_bits_of_usize(val, self.lines.len()))
-    }
-
-    pub fn remove_all(&mut self, connection: BusConId) -> Result<(), LineError> {
-        for (line, con) in self.iter_mut(connection)? {
-            line.remove_all(con)?;
-        }
-        Ok(())
-    }
-
-    pub fn copy_from_bus_state(
-        &mut self,
-        connection: BusConId,
-        bus: &BusState<SIZE>,
-    ) -> Result<(), LineError> {
-        for ((this_line, line_connection), line_state) in self.iter_mut(connection)?.zip(bus.iter())
+        for ((this_line, line_connection), &line_state) in
+            self.try_iter_mut(connection)?.zip(state.iter())
         {
-            this_line.copy_from_line_state(line_connection, line_state)?;
+            this_line.set_drive_state(line_connection, line_state)?;
         }
 
         Ok(())
     }
 
-    pub fn copy_from_reg_state(
+    pub fn set_drive_to_read(
         &mut self,
         connection: BusConId,
-        reg: &MBitRegState<SIZE>,
+        read: &MultiRead<SIZE>,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), bit_reg) in self.iter_mut(connection)?.zip(reg.iter()) {
-            this_line.copy_from_reg_state(line_connection, bit_reg)?;
+        for ((this_line, line_connection), line_state) in
+            self.try_iter_mut(connection)?.zip(read.iter())
+        {
+            this_line.set_drive_to_read(line_connection, line_state)?;
         }
 
         Ok(())

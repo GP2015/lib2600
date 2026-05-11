@@ -1,24 +1,25 @@
 mod control;
 mod instructions;
+mod reads;
 mod registers;
-mod states;
-
-use std::array;
 
 use crate::{
     common::{
         line::{
-            bus::{Bus, BusConId},
+            drive_state::DriveState,
             error::LineError,
-            single::state::LineState,
+            multi::{Bus, BusConId},
         },
-        reg::mbit::MBitReg,
+        read::single::SingleRead,
+        reg::multi::MBitReg,
+        signal::LineSignal,
     },
     riot::{
-        core::{instructions::PossibleInstructions, registers::RiotRegs, states::RiotStates},
+        core::{instructions::PossibleInstructions, reads::RiotReads, registers::RiotRegs},
         lines::RiotLines,
     },
 };
+use std::array;
 
 const RAM_SIZE: usize = 128;
 const TIMER_INTERVALS: [usize; 4] = [1, 8, 64, 1024];
@@ -31,27 +32,24 @@ pub struct Riot {
     reg: RiotRegs,
     ram: [MBitReg<8>; RAM_SIZE],
     phi2_signal: bool,
-    old_pa7_state: LineState,
+    old_pa7_state: SingleRead,
 }
 
 impl Riot {
-    #[must_use]
     pub fn new(db: &mut Bus<8>, pa: &mut Bus<8>, pb: &mut Bus<8>) -> Self {
         let riot = Self {
             db_con: db.create_connection(),
             pa_con: pa.create_connection(),
             pb_con: pb.create_connection(),
             reg: RiotRegs::new(),
-            ram: array::from_fn(|i| MBitReg::new(format!("RAM byte {i:x}"), true, true)),
+            ram: array::from_fn(|_| MBitReg::new(SingleRead::Unknown)),
             phi2_signal: false,
-            old_pa7_state: LineState::new(false, false, true),
+            old_pa7_state: SingleRead::Unknown,
         };
 
-        pa.remove_all(riot.pa_con).unwrap();
-        pa.add_high_z(riot.pa_con).unwrap();
-
-        pb.remove_all(riot.pb_con).unwrap();
-        pb.add_high_z(riot.pb_con).unwrap();
+        let high_z_out = [DriveState::from_only(LineSignal::HighZ); 8];
+        pa.set_drive_state(riot.pa_con, &high_z_out).unwrap();
+        pb.set_drive_state(riot.pb_con, &high_z_out).unwrap();
 
         riot
     }
@@ -62,8 +60,8 @@ impl Riot {
         match (self.phi2_signal, bool_signal) {
             (false, true) => self.handle_rising_edge(lines)?,
             (true, false) => {
-                lines.db.remove_all(self.db_con).unwrap();
-                lines.db.add_high_z(self.db_con).unwrap();
+                let high_z_out = [DriveState::from_only(LineSignal::HighZ); 8];
+                lines.db.set_drive_state(self.db_con, &high_z_out).unwrap();
             }
             _ => return Ok(()),
         }
@@ -73,7 +71,7 @@ impl Riot {
     }
 
     fn handle_rising_edge(&mut self, lines: RiotLines) -> Result<(), LineError> {
-        let states = RiotStates::new(&lines, &self.reg);
+        let states = RiotReads::new(&lines, &self.reg);
         let RiotLines { db, pa, pb, .. } = lines;
 
         db.remove_all(self.db_con)?;

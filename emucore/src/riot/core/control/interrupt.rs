@@ -1,6 +1,6 @@
 use crate::{
-    common::line::{bus::Bus, error::LineError},
-    riot::core::{Riot, states::RiotStates},
+    common::line::{error::LineError, multi::Bus},
+    riot::core::{Riot, reads::RiotReads},
 };
 
 impl Riot {
@@ -8,10 +8,10 @@ impl Riot {
     pub fn read_ir_flag(
         &mut self,
         db: &mut Bus<8>,
-        states: &RiotStates,
+        states: &RiotReads,
         only_possible: bool,
     ) -> Result<(), LineError> {
-        for (i, (db_line, db_line_con)) in db.iter_mut(self.db_con)?.enumerate() {
+        for (i, (db_line, db_line_con)) in db.try_iter_mut(self.db_con)?.enumerate() {
             match i {
                 7 => db_line.copy_from_reg_state(db_line_con, states.timer_ir_flag)?,
                 6 => db_line.copy_from_reg_state(db_line_con, states.edc_ir_flag)?,

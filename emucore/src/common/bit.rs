@@ -1,19 +1,15 @@
-#[must_use]
-pub const fn bit_of_usize(val: usize, bit: usize) -> bool {
+pub fn bit_of_usize(val: usize, bit: usize) -> bool {
     (val >> bit) & 1 == 1
 }
 
-#[must_use]
-pub const fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
+pub fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
     val >> bit_count != 0
 }
 
-#[must_use]
-pub const fn low_bits_of_usize(val: usize, bit_count: usize) -> usize {
+pub fn low_bits_of_usize(val: usize, bit_count: usize) -> usize {
     val & ((1 << bit_count) - 1)
 }
 
-#[must_use]
 pub fn some_bits_to_usize<I>(bits: I) -> Option<usize>
 where
     I: Iterator<Item = Option<bool>> + DoubleEndedIterator,
@@ -22,7 +18,6 @@ where
         .try_fold(0, |acc, bit| bit.map(|b| (acc << 1) | usize::from(b)))
 }
 
-#[must_use]
 pub fn bits_to_usize<I>(bits: I) -> usize
 where
     I: Iterator<Item = bool> + DoubleEndedIterator,

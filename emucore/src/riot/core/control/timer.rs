@@ -1,11 +1,11 @@
 use crate::{
-    common::line::{bus::Bus, error::LineError},
-    riot::core::{Riot, TIMER_INTERVALS, states::RiotStates},
+    common::line::{error::LineError, multi::Bus},
+    riot::core::{Riot, TIMER_INTERVALS, reads::RiotReads},
 };
 
 impl Riot {
     // Only (pseudo-)instruction that writes to timer_ir_flag
-    pub const fn clear_timer_ir_flag(&mut self, only_possible: bool) {
+    pub fn clear_timer_ir_flag(&mut self, only_possible: bool) {
         if only_possible {
             self.reg.timer_ir_flag.remove_all();
         }
@@ -19,7 +19,7 @@ impl Riot {
     }
 
     // Only instruction that writes to timer, sub-timer, timer_interval
-    pub fn write_timer(&mut self, states: &RiotStates, only_possible: bool) {
+    pub fn write_timer(&mut self, states: &RiotReads, only_possible: bool) {
         if only_possible {
             self.reg.timer.remove_all();
             self.reg.sub_timer.remove_all();
