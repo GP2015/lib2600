@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["emutils", "mos6532"]
+members = ["emucore"]
 
 [workspace.package]
 edition = "2024"
