@@ -6,15 +6,15 @@ pub struct BitReg {
 }
 
 impl BitReg {
-    pub fn new(initial: SingleRead) -> Self {
+    pub const fn new(initial: SingleRead) -> Self {
         Self { inner: initial }
     }
 
-    pub fn read(&self) -> SingleRead {
+    pub const fn read(&self) -> SingleRead {
         self.inner
     }
 
-    pub fn set_to_read(&mut self, inner: SingleRead) {
+    pub const fn set_to_read(&mut self, inner: SingleRead) {
         self.inner = inner;
     }
 }

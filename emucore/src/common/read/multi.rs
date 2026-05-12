@@ -1,16 +1,29 @@
-use crate::common::{bit, read::single::SingleRead};
+use std::array;
+
+use crate::common::{
+    bit,
+    mux::{BaseCondition, HasMux, IsCondition},
+    read::single::SingleRead,
+};
 use itertools::Itertools;
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct MultiRead<const SIZE: usize> {
     inner: [SingleRead; SIZE],
 }
 
 impl<const SIZE: usize> MultiRead<SIZE> {
-    pub fn new(reads: [SingleRead; SIZE]) -> Self {
+    pub const fn new(reads: [SingleRead; SIZE]) -> Self {
         Self { inner: reads }
     }
 
-    pub fn bit<const BIT: usize>(&self) -> SingleRead {
+    pub fn new_val(val: usize) -> Self {
+        Self {
+            inner: array::from_fn(|bit| SingleRead::new_drive(val >> bit & 1 == 1)),
+        }
+    }
+
+    pub const fn bit<const BIT: usize>(&self) -> SingleRead {
         const { assert!(BIT < SIZE) }
         self.inner[BIT]
     }
@@ -31,25 +44,75 @@ impl<const SIZE: usize> MultiRead<SIZE> {
             .map(|bits| bit::bits_to_usize(bits.into_iter()))
     }
 
-    pub fn could_be_val(&self, val: usize) -> bool {
-        for (bit, bit_reg) in self.iter().enumerate() {
-            if !bit_reg.could_read((val >> bit) & 1 == 1) {
-                return false;
-            }
+    pub fn is_val(&self, val: usize) -> BaseCondition {
+        let check = |b: usize| {
+            self.iter()
+                .enumerate()
+                .all(|(bit, bit_state)| bit_state.could_read((val >> bit) & 1 == b))
+        };
+
+        match (check(1), check(0)) {
+            (false, false) => unreachable!(),
+            (true, false) => BaseCondition::Yes,
+            (false, true) => BaseCondition::No,
+            (true, true) => BaseCondition::Unknown,
         }
-        true
     }
 
-    pub fn could_be_diff(&self, val: usize) -> bool {
-        for (bit, bit_reg) in self.iter().enumerate() {
-            if bit_reg.could_read((val >> bit) & 1 == 0) {
-                return true;
+    pub fn decremented(&self) -> Self {
+        let mut res = self.clone();
+        let mut must_carry = true;
+
+        for bit in &mut res.inner {
+            match bit {
+                SingleRead::High => {
+                    *bit = if must_carry {
+                        SingleRead::Low
+                    } else {
+                        SingleRead::Unknown
+                    };
+                    break;
+                }
+                SingleRead::Low => {
+                    *bit = if must_carry {
+                        SingleRead::High
+                    } else {
+                        SingleRead::Unknown
+                    };
+                }
+                SingleRead::Unknown => {
+                    if must_carry {
+                        *bit = SingleRead::Low;
+                    }
+                    must_carry = false;
+                }
             }
         }
-        false
+
+        res
     }
 
-    pub fn could_be_val_diff(&self, val: usize) -> (bool, bool) {
-        (self.could_be_val(val), self.could_be_diff(val))
+    pub fn combine_with(&self, other: &Self) -> Self {
+        Self {
+            inner: array::from_fn(|bit| {
+                self.try_bit(bit)
+                    .unwrap()
+                    .combine_with(other.try_bit(bit).unwrap())
+            }),
+        }
+    }
+}
+
+impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
+    fn mux(
+        cond: &impl IsCondition,
+        low_opt: &impl Fn() -> Self,
+        high_opt: &impl Fn() -> Self,
+    ) -> Self {
+        match cond.as_cond() {
+            BaseCondition::No => low_opt(),
+            BaseCondition::Yes => high_opt(),
+            BaseCondition::Unknown => low_opt().combine_with(&high_opt()),
+        }
     }
 }

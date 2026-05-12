@@ -3,15 +3,25 @@
 //     not(test),
 //     warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)
 // )]
-#![allow(
-    clippy::missing_panics_doc,
-    clippy::missing_errors_doc,
-    clippy::missing_const_for_fn,
-    clippy::struct_excessive_bools,
-    clippy::cast_possible_truncation,
-    clippy::similar_names
-)]
+#![allow(unused, clippy::missing_panics_doc, clippy::missing_errors_doc)]
 
 mod common;
-pub mod core;
+mod core;
 mod riot;
+
+// pub use crate::{
+//     common::{
+//         line::{
+//             drive_state::DriveState,
+//             error::LineError,
+//             multi::{Bus, BusConId},
+//             single::{Line, LineConId},
+//         },
+//         mux::{HasMux, IsCondition},
+//         read::{multi::MultiRead, single::SingleRead},
+//         signal::LineSignal,
+//     },
+//     core::Emulator,
+// };
+
+pub use crate::{core::Emulator, riot::core::Riot};

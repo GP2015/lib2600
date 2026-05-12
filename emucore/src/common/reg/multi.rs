@@ -17,7 +17,7 @@ impl<const SIZE: usize> MBitReg<SIZE> {
         }
     }
 
-    pub fn bit<const BIT: usize>(&self) -> &BitReg {
+    pub const fn bit<const BIT: usize>(&self) -> &BitReg {
         const { assert!(BIT < SIZE) }
         &self.bits[BIT]
     }
@@ -26,7 +26,7 @@ impl<const SIZE: usize> MBitReg<SIZE> {
         MultiRead::new(array::from_fn(|bit| self.bits[bit].read()))
     }
 
-    pub fn set_to_read(&mut self, read: MultiRead<SIZE>) {
+    pub fn set_to_read(&mut self, read: &MultiRead<SIZE>) {
         for (bit_reg, single_read) in self.bits.iter_mut().zip(read.iter()) {
             bit_reg.set_to_read(single_read);
         }

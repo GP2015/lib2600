@@ -49,7 +49,7 @@ impl<const SIZE: usize> Bus<SIZE> {
         BusConId(self.line_connections.len() - 1)
     }
 
-    pub fn name(&self) -> &str {
+    pub const fn name(&self) -> &str {
         self.name.as_str()
     }
 
@@ -61,7 +61,7 @@ impl<const SIZE: usize> Bus<SIZE> {
             })
     }
 
-    pub fn line<const BIT: usize>(&self) -> &Line {
+    pub const fn line<const BIT: usize>(&self) -> &Line {
         const { assert!(BIT < SIZE) }
         &self.lines[BIT]
     }

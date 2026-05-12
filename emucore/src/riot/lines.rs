@@ -1,4 +1,4 @@
-use crate::common::line::{multi::Bus, error::LineError, single::Line};
+use crate::common::line::{error::LineError, multi::Bus, single::Line};
 
 #[derive(Debug, Eq, Hash, PartialEq)]
 pub struct RiotLines<'a> {

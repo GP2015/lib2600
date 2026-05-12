@@ -1,12 +1,12 @@
-pub fn bit_of_usize(val: usize, bit: usize) -> bool {
+pub const fn bit_of_usize(val: usize, bit: usize) -> bool {
     (val >> bit) & 1 == 1
 }
 
-pub fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
+pub const fn usize_exceeds_bit_count(val: usize, bit_count: usize) -> bool {
     val >> bit_count != 0
 }
 
-pub fn low_bits_of_usize(val: usize, bit_count: usize) -> usize {
+pub const fn low_bits_of_usize(val: usize, bit_count: usize) -> usize {
     val & ((1 << bit_count) - 1)
 }
 
