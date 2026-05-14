@@ -1,7 +1,9 @@
+pub mod state;
+
 use crate::common::{
     line::{
-        drive_state::DriveState,
         error::LineError,
+        multi::state::BusDriveState,
         single::{Line, LineConId},
     },
     read::multi::MultiRead,
@@ -120,15 +122,15 @@ impl<const SIZE: usize> Bus<SIZE> {
 
     pub fn read(&self) -> MultiRead<SIZE> {
         #[allow(clippy::indexing_slicing)]
-        MultiRead::new(array::from_fn(|bit| self.lines[bit].read()))
+        MultiRead::from(array::from_fn(|bit| self.lines[bit].read()))
     }
 
     pub fn set_drive_state(
         &mut self,
         connection: BusConId,
-        state: &[DriveState; SIZE],
+        state: &BusDriveState<SIZE>,
     ) -> Result<(), LineError> {
-        for ((this_line, line_connection), &line_state) in
+        for ((this_line, line_connection), line_state) in
             self.try_iter_mut(connection)?.zip(state.iter())
         {
             this_line.set_drive_state(line_connection, line_state)?;

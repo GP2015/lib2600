@@ -12,22 +12,6 @@ pub struct DriveState {
 }
 
 impl DriveState {
-    pub const fn from_only(signal: LineSignal) -> Self {
-        Self {
-            low: matches!(signal, LineSignal::Low),
-            high: matches!(signal, LineSignal::High),
-            high_z: matches!(signal, LineSignal::HighZ),
-        }
-    }
-
-    pub const fn from_drive(drive_val: SingleRead) -> Self {
-        Self {
-            low: matches!(drive_val, SingleRead::Low | SingleRead::Unknown),
-            high: matches!(drive_val, SingleRead::High | SingleRead::Unknown),
-            high_z: false,
-        }
-    }
-
     pub const fn is_valid(self) -> bool {
         self.low | self.high | self.high_z
     }
@@ -46,6 +30,36 @@ impl DriveState {
             low: self.low || other.low,
             high: self.high || other.high,
             high_z: self.high_z || other.high_z,
+        }
+    }
+}
+
+impl From<SingleRead> for DriveState {
+    fn from(value: SingleRead) -> Self {
+        Self {
+            low: matches!(value, SingleRead::Low | SingleRead::Unknown),
+            high: matches!(value, SingleRead::High | SingleRead::Unknown),
+            high_z: false,
+        }
+    }
+}
+
+impl From<LineSignal> for DriveState {
+    fn from(value: LineSignal) -> Self {
+        Self {
+            low: matches!(value, LineSignal::Low),
+            high: matches!(value, LineSignal::High),
+            high_z: matches!(value, LineSignal::HighZ),
+        }
+    }
+}
+
+impl From<bool> for DriveState {
+    fn from(value: bool) -> Self {
+        Self {
+            low: !value,
+            high: value,
+            high_z: false,
         }
     }
 }

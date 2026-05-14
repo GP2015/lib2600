@@ -1,5 +1,7 @@
+pub mod state;
+
 use crate::common::{
-    line::{drive_state::DriveState, error::LineError},
+    line::{error::LineError, single::state::DriveState},
     read::single::SingleRead,
     signal::LineSignal,
 };

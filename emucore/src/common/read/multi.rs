@@ -13,16 +13,6 @@ pub struct MultiRead<const SIZE: usize> {
 }
 
 impl<const SIZE: usize> MultiRead<SIZE> {
-    pub const fn new(reads: [SingleRead; SIZE]) -> Self {
-        Self { inner: reads }
-    }
-
-    pub fn new_val(val: usize) -> Self {
-        Self {
-            inner: array::from_fn(|bit| SingleRead::new_drive(val >> bit & 1 == 1)),
-        }
-    }
-
     pub const fn bit<const BIT: usize>(&self) -> SingleRead {
         const { assert!(BIT < SIZE) }
         self.inner[BIT]
@@ -94,11 +84,21 @@ impl<const SIZE: usize> MultiRead<SIZE> {
 
     pub fn combine_with(&self, other: &Self) -> Self {
         Self {
-            inner: array::from_fn(|bit| {
-                self.try_bit(bit)
-                    .unwrap()
-                    .combine_with(other.try_bit(bit).unwrap())
-            }),
+            inner: array::from_fn(|bit| self.inner[bit].combine_with(other.inner[bit])),
+        }
+    }
+}
+
+impl<const SIZE: usize> From<[SingleRead; SIZE]> for MultiRead<SIZE> {
+    fn from(value: [SingleRead; SIZE]) -> Self {
+        Self { inner: value }
+    }
+}
+
+impl<const SIZE: usize> From<usize> for MultiRead<SIZE> {
+    fn from(value: usize) -> Self {
+        Self {
+            inner: array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)),
         }
     }
 }

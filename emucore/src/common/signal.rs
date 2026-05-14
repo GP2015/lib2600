@@ -13,10 +13,6 @@ pub enum LineSignal {
 }
 
 impl LineSignal {
-    pub const fn from_bool(b: bool) -> Self {
-        if b { Self::High } else { Self::Low }
-    }
-
     pub const fn as_bool(self) -> Option<bool> {
         match self {
             Self::Low => Some(false),
@@ -35,6 +31,12 @@ impl LineSignal {
     }
 }
 
+impl From<bool> for LineSignal {
+    fn from(value: bool) -> Self {
+        if value { Self::High } else { Self::Low }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,7 +46,7 @@ mod tests {
     #[case(false, LineSignal::Low)]
     #[case(true, LineSignal::High)]
     fn from_bool(#[case] b: bool, #[case] signal: LineSignal) {
-        assert_eq!(LineSignal::from_bool(b), signal);
+        assert_eq!(LineSignal::from(b), signal);
     }
 
     #[rstest]

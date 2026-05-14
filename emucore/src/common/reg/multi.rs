@@ -2,7 +2,6 @@ use crate::common::{
     read::{multi::MultiRead, single::SingleRead},
     reg::single::BitReg,
 };
-use delegate::delegate;
 use std::array;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -11,19 +10,13 @@ pub struct MBitReg<const SIZE: usize> {
 }
 
 impl<const SIZE: usize> MBitReg<SIZE> {
-    pub fn new(initial_each: SingleRead) -> Self {
-        Self {
-            bits: array::from_fn(|_| BitReg::new(initial_each)),
-        }
-    }
-
-    pub const fn bit<const BIT: usize>(&self) -> &BitReg {
+    pub const fn bit_mut<const BIT: usize>(&mut self) -> &mut BitReg {
         const { assert!(BIT < SIZE) }
-        &self.bits[BIT]
+        &mut self.bits[BIT]
     }
 
     pub fn read(&self) -> MultiRead<SIZE> {
-        MultiRead::new(array::from_fn(|bit| self.bits[bit].read()))
+        MultiRead::from(array::from_fn(|bit| self.bits[bit].read()))
     }
 
     pub fn set_to_read(&mut self, read: &MultiRead<SIZE>) {
@@ -32,11 +25,27 @@ impl<const SIZE: usize> MBitReg<SIZE> {
         }
     }
 
-    delegate! {
-        to self.bits {
-            #[call(get)]
-            pub fn try_bit(&self, bit: usize) -> Option<&BitReg>;
-            pub fn iter(&self) -> impl Iterator<Item = &BitReg>;
+    // delegate! {
+    //     to self.bits {
+    //         #[call(get)]
+    //         pub fn try_bit(&self, bit: usize) -> Option<&BitReg>;
+    //         pub fn iter(&self) -> impl Iterator<Item = &BitReg>;
+    //     }
+    // }
+}
+
+impl<const SIZE: usize> From<[SingleRead; SIZE]> for MBitReg<SIZE> {
+    fn from(value: [SingleRead; SIZE]) -> Self {
+        Self {
+            bits: array::from_fn(|bit| BitReg::from(value[bit])),
+        }
+    }
+}
+
+impl<const SIZE: usize> From<usize> for MBitReg<SIZE> {
+    fn from(value: usize) -> Self {
+        Self {
+            bits: array::from_fn(|bit| BitReg::from(value >> bit & 1 == 1)),
         }
     }
 }

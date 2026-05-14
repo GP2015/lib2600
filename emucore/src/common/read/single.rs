@@ -8,10 +8,6 @@ pub enum SingleRead {
 }
 
 impl SingleRead {
-    pub const fn new_drive(drive: bool) -> Self {
-        if drive { Self::High } else { Self::Low }
-    }
-
     pub const fn could_read_low(self) -> bool {
         matches!(self, Self::Low | Self::Unknown)
     }
@@ -42,6 +38,12 @@ impl SingleRead {
             (Self::High, Self::High) => Self::High,
             _ => Self::Unknown,
         }
+    }
+}
+
+impl From<bool> for SingleRead {
+    fn from(value: bool) -> Self {
+        if value { Self::High } else { Self::Low }
     }
 }
 
