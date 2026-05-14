@@ -24,4 +24,9 @@ mod riot;
 //     core::Emulator,
 // };
 
-pub use crate::{core::Emulator, riot::core::Riot};
+pub use crate::core::*;
+
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
