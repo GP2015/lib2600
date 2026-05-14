@@ -56,4 +56,17 @@ impl RiotReads {
             timer_interval: regs.timer_interval.read(),
         }
     }
+
+    pub fn update(&mut self, regs: &RiotRegs) {
+        self.ddra = regs.ddra.read();
+        self.ddrb = regs.ddrb.read();
+        self.ora = regs.ora.read();
+        self.orb = regs.orb.read();
+        self.edc_ir_flag = regs.edc_ir_flag.read();
+        self.timer_ir_flag = regs.timer_ir_flag.read();
+        self.edc_edge_type = regs.edc_edge_type.read();
+        self.timer = regs.timer.read();
+        self.sub_timer = regs.sub_timer.read();
+        self.timer_interval = regs.timer_interval.read();
+    }
 }

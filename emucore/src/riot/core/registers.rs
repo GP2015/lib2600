@@ -23,19 +23,19 @@ pub struct RiotRegs {
 impl RiotRegs {
     pub fn new() -> Self {
         Self {
-            ddra: MBitReg::new(SingleRead::Low),
-            ddrb: MBitReg::new(SingleRead::Low),
-            ora: MBitReg::new(SingleRead::Low),
-            orb: MBitReg::new(SingleRead::Low),
+            ddra: MBitReg::from([SingleRead::Low; 8]),
+            ddrb: MBitReg::from([SingleRead::Low; 8]),
+            ora: MBitReg::from([SingleRead::Low; 8]),
+            orb: MBitReg::from([SingleRead::Low; 8]),
 
-            edc_ir_flag: BitReg::new(SingleRead::Unknown),
-            timer_ir_flag: BitReg::new(SingleRead::Unknown),
+            edc_ir_flag: BitReg::from(SingleRead::Unknown),
+            timer_ir_flag: BitReg::from(SingleRead::Unknown),
 
-            edc_edge_type: BitReg::new(SingleRead::Low),
+            edc_edge_type: BitReg::from(SingleRead::Low),
 
-            timer: MBitReg::new(SingleRead::Unknown),
-            sub_timer: MBitReg::new(SingleRead::Unknown),
-            timer_interval: MBitReg::new(SingleRead::Unknown),
+            timer: MBitReg::from([SingleRead::Unknown; 8]),
+            sub_timer: MBitReg::from([SingleRead::Unknown; 10]),
+            timer_interval: MBitReg::from([SingleRead::Unknown; 2]),
         }
     }
 }
