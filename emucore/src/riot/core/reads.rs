@@ -3,6 +3,7 @@ use crate::{
     riot::{core::registers::RiotRegs, lines::RiotLines},
 };
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct RiotReads {
     pub a: MultiRead<7>,
     pub db: MultiRead<8>,
