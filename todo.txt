@@ -1,5 +1,0 @@
--- RIOT --
-Don't allow pins with no possible value.
-Handle iter unit tests in Pins.
-Add in error name checking.
-Should the reset sequence be dependant on the clock?
