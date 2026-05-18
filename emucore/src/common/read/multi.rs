@@ -1,5 +1,6 @@
 use crate::common::{BaseCondition, HasMux, IsCondition, read::single::SingleRead};
 use core::array;
+use heapless::Vec;
 
 pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
 
@@ -19,21 +20,24 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
     }
 
     fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
-        // self.iter()
-        //     .map(|line_state| line_state.possible_reads().iter().copied())
-        //     .multi_cartesian_product()
-        //     .map(|bits| bit::bits_to_usize(bits.into_iter()))
+        let mut count = Vec::<_, SIZE>::new();
+        let mut mask = 0;
 
-        (0..(1 << SIZE)).filter(|&val| {
-            let mut b = true;
-            for (i, state) in self.iter().enumerate() {
-                let bit = (val >> i) & 1 == 1;
-                if state.could_read(bit) {
-                    b = false;
-                    break;
-                }
+        for (i, &read) in self.iter().enumerate() {
+            match read.as_bool() {
+                Some(b) => mask |= usize::from(b) << i,
+                None => count.push(i).expect("big enough"),
             }
-            b
+        }
+
+        (0..(1 << count.len())).map(move |id| {
+            let mut val = mask;
+
+            for (src_bit, &dst_bit) in count.iter().enumerate() {
+                val |= ((id >> src_bit) & 1) << dst_bit;
+            }
+
+            val
         })
     }
 

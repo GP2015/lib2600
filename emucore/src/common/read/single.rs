@@ -9,6 +9,15 @@ pub enum SingleRead {
 
 impl SingleRead {
     #[must_use]
+    pub const fn as_bool(self) -> Option<bool> {
+        match self {
+            Self::High => Some(true),
+            Self::Low => Some(false),
+            Self::Unknown => None,
+        }
+    }
+
+    #[must_use]
     pub const fn could_read_low(self) -> bool {
         matches!(self, Self::Low | Self::Unknown)
     }
