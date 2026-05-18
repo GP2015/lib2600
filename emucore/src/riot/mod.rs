@@ -86,21 +86,19 @@ pub struct Riot {
     old_pa7_read: SingleRead,
 }
 
-impl Default for Riot {
-    fn default() -> Self {
+impl Riot {
+    pub fn new() -> Self {
         Self {
             db_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
             pa_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
             pb_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
             reg: RiotRegs::new(),
-            ram: array::from_fn(|_| MBitReg::from([SingleRead::Unknown; 8])),
+            ram: array::from_fn(|_| MBitReg::from([SingleRead::Unknown; _])),
             phi2_signal: false,
             old_pa7_read: SingleRead::Unknown,
         }
     }
-}
 
-impl Riot {
     fn update_edc(&mut self, reads: &RiotAllReads, pa7_read: SingleRead) {
         let def = &|| reads.edc_ir_flag;
         self.reg.edc_ir_flag.set_to_read(SingleRead::mux(
@@ -141,7 +139,7 @@ impl Riot {
         ));
 
         let def = &|| reads.sub_timer;
-        let unknown = &|| [SingleRead::Unknown; 10];
+        let unknown = &|| [SingleRead::Unknown; _];
         self.reg.sub_timer.set_to_read(&MultiRead::mux(
             &reads.timer_ir_flag,
             &|| {
@@ -157,7 +155,7 @@ impl Riot {
         ));
 
         let def = &|| reads.timer_interval;
-        let unknown = &|| [SingleRead::Unknown; 2];
+        let unknown = &|| [SingleRead::Unknown; _];
         self.reg.timer_interval.set_to_read(&MultiRead::mux(
             &reads.timer_ir_flag,
             &|| {

@@ -5,7 +5,7 @@ use crate::common::{
     signal::LineSignal,
 };
 
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct DriveState {
     pub low: bool,
     pub high: bool,
@@ -13,6 +13,15 @@ pub struct DriveState {
 }
 
 impl DriveState {
+    #[must_use]
+    pub const fn none_enabled() -> Self {
+        Self {
+            low: false,
+            high: false,
+            high_z: false,
+        }
+    }
+
     #[must_use]
     pub fn read(self) -> SingleRead {
         match (self.low, self.high, self.high_z) {
@@ -33,7 +42,7 @@ impl DriveState {
     }
 
     fn contend_pair(self, other: Self) -> Option<Self> {
-        let mut result = Self::default();
+        let mut result = Self::none_enabled();
 
         let iter_possible = |state: Self| {
             [

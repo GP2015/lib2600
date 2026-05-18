@@ -5,7 +5,7 @@ pub enum LineIdent {
     #[strum(to_string = "{name}")]
     UniqueLine { name: &'static str },
 
-    #[strum(to_string = "{bus_name}{bit}")]
+    #[strum(to_string = "{bus_name} bit {bit}")]
     BusLine { bus_name: &'static str, bit: usize },
 }
 

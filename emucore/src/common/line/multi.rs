@@ -45,7 +45,7 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
     }
 
     fn contend(bus_name: &'static str, states: &[Self]) -> Result<Self, LineError> {
-        let mut res = [DriveState::default(); SIZE];
+        let mut res = [DriveState::none_enabled(); SIZE];
 
         for (bit, state) in res.iter_mut().enumerate() {
             let ident = LineIdent::BusLine { bus_name, bit };
