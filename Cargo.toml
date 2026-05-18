@@ -6,13 +6,10 @@ members = ["emucore"]
 edition = "2024"
 
 [workspace.dependencies]
-delegate = "0.13.5"
-getset = "0.1.6"
-itertools = "0.14.0"
-mimalloc = "0.1.50"
+itertools = { version = "0.14.0", default-features = false }
 rstest = "0.26.1"
 strum_macros = "0.28.0"
-thiserror = "2.0.18"
+thiserror = { version = "2.0.18", default-features = false }
 
 [profile.release]
 lto = "fat"
