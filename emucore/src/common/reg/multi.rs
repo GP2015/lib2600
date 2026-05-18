@@ -1,8 +1,9 @@
-use crate::common::{
-    read::{multi::MultiRead, single::SingleRead},
-    reg::single::BitReg,
+use core::{
+    array,
+    ops::{Index, IndexMut},
 };
-use std::array;
+
+use crate::common::{read::multi::MultiRead, reg::single::BitReg};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct MBitReg<const SIZE: usize> {
@@ -10,32 +11,32 @@ pub struct MBitReg<const SIZE: usize> {
 }
 
 impl<const SIZE: usize> MBitReg<SIZE> {
-    pub const fn bit_mut<const BIT: usize>(&mut self) -> &mut BitReg {
-        const { assert!(BIT < SIZE) }
-        &mut self.bits[BIT]
-    }
-
     pub fn read(&self) -> MultiRead<SIZE> {
-        MultiRead::from(array::from_fn(|bit| self.bits[bit].read()))
+        array::from_fn(|bit| self.bits[bit].read())
     }
 
-    pub fn set_to_read(&mut self, read: &MultiRead<SIZE>) {
-        for (bit_reg, single_read) in self.bits.iter_mut().zip(read.iter()) {
+    pub fn set_to_read(&mut self, reads: &MultiRead<SIZE>) {
+        for (bit_reg, &single_read) in self.bits.iter_mut().zip(reads.iter()) {
             bit_reg.set_to_read(single_read);
         }
     }
-
-    // delegate! {
-    //     to self.bits {
-    //         #[call(get)]
-    //         pub fn try_bit(&self, bit: usize) -> Option<&BitReg>;
-    //         pub fn iter(&self) -> impl Iterator<Item = &BitReg>;
-    //     }
-    // }
 }
 
-impl<const SIZE: usize> From<[SingleRead; SIZE]> for MBitReg<SIZE> {
-    fn from(value: [SingleRead; SIZE]) -> Self {
+impl<const SIZE: usize> Index<usize> for MBitReg<SIZE> {
+    type Output = BitReg;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.bits[index]
+    }
+}
+
+impl<const SIZE: usize> IndexMut<usize> for MBitReg<SIZE> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.bits[index]
+    }
+}
+
+impl<const SIZE: usize> From<MultiRead<SIZE>> for MBitReg<SIZE> {
+    fn from(value: MultiRead<SIZE>) -> Self {
         Self {
             bits: array::from_fn(|bit| BitReg::from(value[bit])),
         }

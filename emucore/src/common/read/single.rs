@@ -8,14 +8,17 @@ pub enum SingleRead {
 }
 
 impl SingleRead {
+    #[must_use]
     pub const fn could_read_low(self) -> bool {
         matches!(self, Self::Low | Self::Unknown)
     }
 
+    #[must_use]
     pub const fn could_read_high(self) -> bool {
         matches!(self, Self::High | Self::Unknown)
     }
 
+    #[must_use]
     pub const fn could_read(self, state: bool) -> bool {
         if state {
             self.could_read_high()
@@ -24,6 +27,7 @@ impl SingleRead {
         }
     }
 
+    #[must_use]
     pub const fn possible_reads(self) -> &'static [bool] {
         match self {
             Self::Low => &[false],
@@ -32,6 +36,7 @@ impl SingleRead {
         }
     }
 
+    #[must_use]
     pub const fn combine_with(self, other: Self) -> Self {
         match (self, other) {
             (Self::Low, Self::Low) => Self::Low,

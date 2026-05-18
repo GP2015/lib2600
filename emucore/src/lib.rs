@@ -1,3 +1,4 @@
+#![no_std]
 #![warn(clippy::pedantic, clippy::nursery)]
 // #![cfg_attr(
 //     not(test),
@@ -9,24 +10,20 @@ mod common;
 mod core;
 mod riot;
 
-// pub use crate::{
-//     common::{
-//         line::{
-//             drive_state::DriveState,
-//             error::LineError,
-//             multi::{Bus, BusConId},
-//             single::{Line, LineConId},
-//         },
-//         mux::{HasMux, IsCondition},
-//         read::{multi::MultiRead, single::SingleRead},
-//         signal::LineSignal,
-//     },
-//     core::Emulator,
-// };
-
-pub use crate::core::*;
-
-use mimalloc::MiMalloc;
-
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+pub use crate::{
+    common::{
+        line::{
+            error::LineError,
+            ident::LineIdent,
+            multi::{BusDriveState, IsBusDriveState},
+            single::DriveState,
+        },
+        mux::{BaseCondition, HasMux, IsCondition},
+        read::{
+            multi::{IsMultiRead, MultiRead},
+            single::SingleRead,
+        },
+        signal::LineSignal,
+    },
+    core::Emulator,
+};

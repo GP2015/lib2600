@@ -1,4 +1,5 @@
 use crate::common::{
+    line::{error::LineError, ident::LineIdent},
     mux::{BaseCondition, HasMux, IsCondition},
     read::single::SingleRead,
     signal::LineSignal,
@@ -12,10 +13,12 @@ pub struct DriveState {
 }
 
 impl DriveState {
+    #[must_use]
     pub const fn is_valid(self) -> bool {
         self.low | self.high | self.high_z
     }
 
+    #[must_use]
     pub fn read(self) -> SingleRead {
         match (self.low, self.high, self.high_z) {
             (false, false, false) => unreachable!(),
@@ -25,12 +28,56 @@ impl DriveState {
         }
     }
 
+    #[must_use]
     pub const fn combine_with(self, other: Self) -> Self {
         Self {
             low: self.low || other.low,
             high: self.high || other.high,
             high_z: self.high_z || other.high_z,
         }
+    }
+
+    fn contend_pair(self, other: Self) -> Option<Self> {
+        let mut result = Self::default();
+
+        let iter_possible = |state: Self| {
+            [
+                (state.low, LineSignal::Low),
+                (state.high, LineSignal::High),
+                (state.high_z, LineSignal::HighZ),
+            ]
+            .into_iter()
+            .filter_map(|(enabled, signal)| enabled.then_some(signal))
+        };
+
+        for first_signal in iter_possible(self) {
+            for second_signal in iter_possible(other) {
+                match first_signal.contend_with(second_signal)? {
+                    LineSignal::Low => result.low = true,
+                    LineSignal::High => result.high = true,
+                    LineSignal::HighZ => result.high_z = true,
+                }
+            }
+        }
+
+        Some(result)
+    }
+
+    pub fn contend(
+        ident: impl Into<LineIdent>,
+        mut states: impl Iterator<Item = Self>,
+    ) -> Result<Self, LineError> {
+        let init = Self {
+            low: false,
+            high: false,
+            high_z: true,
+        };
+
+        states
+            .try_fold(init, Self::contend_pair)
+            .ok_or_else(|| LineError::ShortCircuit {
+                ident: ident.into(),
+            })
     }
 }
 

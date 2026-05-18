@@ -1,40 +1,46 @@
-use std::array;
-
 use crate::common::{
-    bit,
     mux::{BaseCondition, HasMux, IsCondition},
     read::single::SingleRead,
 };
-use itertools::Itertools;
+use core::array;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct MultiRead<const SIZE: usize> {
-    inner: [SingleRead; SIZE],
+pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
+
+pub trait IsMultiRead {
+    fn from_usize(value: usize) -> Self;
+    fn iter_possible_reads(&self) -> impl Iterator<Item = usize>;
+    fn is_val(&self, val: usize) -> BaseCondition;
+    #[must_use]
+    fn decremented(&self) -> Self;
+    #[must_use]
+    fn combine_with(&self, other: &Self) -> Self;
 }
 
-impl<const SIZE: usize> MultiRead<SIZE> {
-    pub const fn bit<const BIT: usize>(&self) -> SingleRead {
-        const { assert!(BIT < SIZE) }
-        self.inner[BIT]
+impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
+    fn from_usize(value: usize) -> Self {
+        array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1))
     }
 
-    pub fn try_bit(&self, bit: usize) -> Option<SingleRead> {
-        self.inner.get(bit).copied()
+    fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
+        // self.iter()
+        //     .map(|line_state| line_state.possible_reads().iter().copied())
+        //     .multi_cartesian_product()
+        //     .map(|bits| bit::bits_to_usize(bits.into_iter()))
+
+        (0..(1 << SIZE)).filter(|&val| {
+            let mut b = true;
+            for (i, state) in self.iter().enumerate() {
+                let bit = (val >> i) & 1 == 1;
+                if state.could_read(bit) {
+                    b = false;
+                    break;
+                }
+            }
+            b
+        })
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = SingleRead> {
-        self.inner.iter().copied()
-    }
-
-    pub fn iter_possible_reads(&self) -> impl Iterator<Item = usize> {
-        self.inner
-            .iter()
-            .map(|line_state| line_state.possible_reads().iter().copied())
-            .multi_cartesian_product()
-            .map(|bits| bit::bits_to_usize(bits.into_iter()))
-    }
-
-    pub fn is_val(&self, val: usize) -> BaseCondition {
+    fn is_val(&self, val: usize) -> BaseCondition {
         let check = |b: usize| {
             self.iter()
                 .enumerate()
@@ -49,11 +55,11 @@ impl<const SIZE: usize> MultiRead<SIZE> {
         }
     }
 
-    pub fn decremented(&self) -> Self {
-        let mut res = self.clone();
+    fn decremented(&self) -> Self {
+        let mut res = *self;
         let mut must_carry = true;
 
-        for bit in &mut res.inner {
+        for bit in &mut res {
             match bit {
                 SingleRead::High => {
                     *bit = if must_carry {
@@ -82,24 +88,8 @@ impl<const SIZE: usize> MultiRead<SIZE> {
         res
     }
 
-    pub fn combine_with(&self, other: &Self) -> Self {
-        Self {
-            inner: array::from_fn(|bit| self.inner[bit].combine_with(other.inner[bit])),
-        }
-    }
-}
-
-impl<const SIZE: usize> From<[SingleRead; SIZE]> for MultiRead<SIZE> {
-    fn from(value: [SingleRead; SIZE]) -> Self {
-        Self { inner: value }
-    }
-}
-
-impl<const SIZE: usize> From<usize> for MultiRead<SIZE> {
-    fn from(value: usize) -> Self {
-        Self {
-            inner: array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)),
-        }
+    fn combine_with(&self, other: &Self) -> Self {
+        array::from_fn(|bit| self[bit].combine_with(other[bit]))
     }
 }
 

@@ -1,27 +1,19 @@
-use crate::common::line::{error::LineError, multi::Bus, single::Line};
+use crate::common::read::{multi::MultiRead, single::SingleRead};
 
 #[derive(Debug, Eq, Hash, PartialEq)]
-pub struct RiotLines<'a> {
-    pub db: &'a mut Bus<8>,
-    pub pa: &'a mut Bus<8>,
-    pub pb: &'a mut Bus<8>,
+pub struct RiotLineReads {
+    pub db: MultiRead<8>,
+    pub pa: MultiRead<8>,
 
-    pub a: &'a Bus<7>,
-    pub cs1: &'a Line,
-    pub cs2: &'a Line,
-    pub rs: &'a Line,
-    pub rw: &'a Line,
-}
+    pub pb0: SingleRead,
+    pub pb1: SingleRead,
+    pub pb3: SingleRead,
+    pub pb6: SingleRead,
+    pub pb7: SingleRead,
 
-impl RiotLines<'_> {
-    pub fn check_valid(&self) -> Result<(), LineError> {
-        macro_rules! check_valid {
-            ($($p:ident),+) => {$(
-                self.$p.check_valid()?;
-            )+};
-        }
-
-        check_valid!(a, db, pa, pb, cs1, cs2, rs, rw);
-        Ok(())
-    }
+    pub a: MultiRead<7>,
+    pub cs1: SingleRead,
+    pub cs2: SingleRead,
+    pub rs: SingleRead,
+    pub rw: SingleRead,
 }
