@@ -14,11 +14,6 @@ pub struct DriveState {
 
 impl DriveState {
     #[must_use]
-    pub const fn is_valid(self) -> bool {
-        self.low | self.high | self.high_z
-    }
-
-    #[must_use]
     pub fn read(self) -> SingleRead {
         match (self.low, self.high, self.high_z) {
             (false, false, false) => unreachable!(),

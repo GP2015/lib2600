@@ -122,9 +122,14 @@ impl Riot {
 
     fn timer_interval_read(read: MultiRead<2>) -> MultiRead<10> {
         read.iter_possible_reads()
-            .map(|i| MultiRead::from_usize(TIMER_INTERVALS[i]))
+            .map(|i| {
+                MultiRead::from_usize(
+                    #[expect(clippy::indexing_slicing)]
+                    TIMER_INTERVALS[i],
+                )
+            })
             .reduce(|acc, val| acc.combine_with(&val))
-            .unwrap()
+            .expect("MultiRead will always have at least one possible read")
     }
 
     fn update_timer(&mut self, reads: &RiotAllReads) {
@@ -179,10 +184,13 @@ impl Riot {
 
     fn update_ram_bytes(&mut self, reads: &RiotAllReads) {
         for addr in reads.a.iter_possible_reads() {
-            self.ram[addr].set_to_read(&only_on_cs!(
+            #[expect(clippy::indexing_slicing)]
+            let ram_byte = &mut self.ram[addr];
+
+            ram_byte.set_to_read(&only_on_cs!(
                 reads,
                 MultiRead,
-                &|| self.ram[addr].read(),
+                &|| ram_byte.read(),
                 &|| reads.db,
                 (&reads.rs, false),
                 (&reads.rw, false),
@@ -312,9 +320,12 @@ impl Riot {
                 &reads
                     .a
                     .iter_possible_reads()
-                    .map(|addr| self.ram[addr].read())
+                    .map(|addr| {
+                        #[expect(clippy::indexing_slicing)]
+                        self.ram[addr].read()
+                    })
                     .reduce(|acc, byte| acc.combine_with(&byte))
-                    .unwrap(),
+                    .expect("SingleRead will always have at least one possible read"),
             )
         };
 
@@ -372,11 +383,17 @@ impl Riot {
             });
         }
 
-        for (i, &pb_con_index) in PB_CONNECTED_LINES.iter().enumerate() {
-            self.pb_out[i] = DriveState::mux(
+        for (pb_out_state, &pb_con_index) in self.pb_out.iter_mut().zip(PB_CONNECTED_LINES.iter()) {
+            *pb_out_state = DriveState::mux(
+                #[expect(clippy::indexing_slicing)]
                 &reads.ddrb[pb_con_index],
                 &|| DriveState::from(LineSignal::HighZ),
-                &|| DriveState::from(reads.orb[pb_con_index]),
+                &|| {
+                    DriveState::from(
+                        #[expect(clippy::indexing_slicing)]
+                        reads.orb[pb_con_index],
+                    )
+                },
             );
         }
     }

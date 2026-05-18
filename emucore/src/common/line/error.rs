@@ -1,6 +1,5 @@
-use thiserror::Error;
-
 use crate::common::line::ident::LineIdent;
+use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, Hash, PartialEq)]
 pub enum LineError {

@@ -22,11 +22,11 @@ pub trait IsBusDriveState<const SIZE: usize> {
 
 impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
     fn from_multi_read(reads: &MultiRead<SIZE>) -> Self {
-        array::from_fn(|bit| DriveState::from(reads[bit]))
+        reads.each_ref().map(|&read| DriveState::from(read))
     }
 
     fn from_signals(signals: &[LineSignal; SIZE]) -> Self {
-        array::from_fn(|bit| DriveState::from(signals[bit]))
+        signals.each_ref().map(|&signal| DriveState::from(signal))
     }
 
     fn from_usize(value: usize) -> Self {
@@ -34,11 +34,14 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
     }
 
     fn read(&self) -> MultiRead<SIZE> {
-        array::from_fn(|bit| self[bit].read())
+        self.each_ref().map(|state| state.read())
     }
 
     fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| self[bit].combine_with(other[bit]))
+        array::from_fn(|bit| {
+            #[expect(clippy::indexing_slicing)]
+            self[bit].combine_with(other[bit])
+        })
     }
 
     fn contend(bus_name: &'static str, states: &[Self]) -> Result<Self, LineError> {
@@ -46,7 +49,13 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
 
         for (bit, state) in res.iter_mut().enumerate() {
             let ident = LineIdent::BusLine { bus_name, bit };
-            *state = DriveState::contend(ident, states.iter().map(|v| v[bit]))?;
+            *state = DriveState::contend(
+                ident,
+                states.iter().map(|v| {
+                    #[expect(clippy::indexing_slicing)]
+                    v[bit]
+                }),
+            )?;
         }
 
         Ok(res)

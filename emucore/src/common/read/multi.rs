@@ -86,7 +86,10 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
     }
 
     fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| self[bit].combine_with(other[bit]))
+        array::from_fn(|bit| {
+            #[expect(clippy::indexing_slicing)]
+            self[bit].combine_with(other[bit])
+        })
     }
 }
 

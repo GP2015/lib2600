@@ -12,7 +12,7 @@ pub struct MBitReg<const SIZE: usize> {
 
 impl<const SIZE: usize> MBitReg<SIZE> {
     pub fn read(&self) -> MultiRead<SIZE> {
-        array::from_fn(|bit| self.bits[bit].read())
+        self.bits.each_ref().map(BitReg::read)
     }
 
     pub fn set_to_read(&mut self, reads: &MultiRead<SIZE>) {
@@ -25,20 +25,22 @@ impl<const SIZE: usize> MBitReg<SIZE> {
 impl<const SIZE: usize> Index<usize> for MBitReg<SIZE> {
     type Output = BitReg;
     fn index(&self, index: usize) -> &Self::Output {
+        #[expect(clippy::indexing_slicing)]
         &self.bits[index]
     }
 }
 
 impl<const SIZE: usize> IndexMut<usize> for MBitReg<SIZE> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        #[expect(clippy::indexing_slicing)]
         &mut self.bits[index]
     }
 }
 
 impl<const SIZE: usize> From<MultiRead<SIZE>> for MBitReg<SIZE> {
-    fn from(value: MultiRead<SIZE>) -> Self {
+    fn from(reads: MultiRead<SIZE>) -> Self {
         Self {
-            bits: array::from_fn(|bit| BitReg::from(value[bit])),
+            bits: reads.each_ref().map(|&read| BitReg::from(read)),
         }
     }
 }
