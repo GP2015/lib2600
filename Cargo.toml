@@ -9,6 +9,7 @@ edition = "2024"
 itertools = { version = "0.14.0", default-features = false }
 rstest = "0.26.1"
 strum_macros = "0.28.0"
+heapless = "0.9.3"
 thiserror = { version = "2.0.18", default-features = false }
 
 [profile.release]
