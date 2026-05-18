@@ -1,7 +1,4 @@
-use crate::common::{
-    mux::{BaseCondition, HasMux, IsCondition},
-    read::single::SingleRead,
-};
+use crate::common::{BaseCondition, HasMux, IsCondition, read::single::SingleRead};
 use core::array;
 
 pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];

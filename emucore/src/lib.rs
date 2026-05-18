@@ -4,7 +4,11 @@
 //     not(test),
 //     warn(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)
 // )]
-#![allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::similar_names
+)]
 
 mod common;
 mod core;
@@ -12,18 +16,18 @@ mod riot;
 
 pub use crate::{
     common::{
+        BaseCondition, HasMux, IsCondition,
         line::{
             error::LineError,
             ident::LineIdent,
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
         },
-        mux::{BaseCondition, HasMux, IsCondition},
         read::{
             multi::{IsMultiRead, MultiRead},
             single::SingleRead,
         },
         signal::LineSignal,
     },
-    core::Emulator,
+    core::{Emulator, ext_drives::ExtDrives},
 };

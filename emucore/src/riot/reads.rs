@@ -1,19 +1,27 @@
 use crate::{
     common::read::{multi::MultiRead, single::SingleRead},
-    riot::{core::registers::RiotRegs, lines::RiotLineReads},
+    riot::regs::RiotRegs,
 };
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct RiotReads {
+pub struct RiotLineReads {
+    pub db: MultiRead<8>,
+    pub pa: MultiRead<8>,
+    pub pb: MultiRead<5>,
+
+    pub a: MultiRead<7>,
+    pub cs1: SingleRead,
+    pub cs2: SingleRead,
+    pub rs: SingleRead,
+    pub rw: SingleRead,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct RiotAllReads {
     pub a: MultiRead<7>,
     pub db: MultiRead<8>,
     pub pa: MultiRead<8>,
-
-    pub pb0: SingleRead,
-    pub pb1: SingleRead,
-    pub pb3: SingleRead,
-    pub pb6: SingleRead,
-    pub pb7: SingleRead,
+    pub pb: MultiRead<5>,
 
     pub cs1: SingleRead,
     pub cs2: SingleRead,
@@ -35,18 +43,13 @@ pub struct RiotReads {
     pub timer_interval: MultiRead<2>,
 }
 
-impl RiotReads {
+impl RiotAllReads {
     pub fn new(line_reads: &RiotLineReads, regs: &RiotRegs) -> Self {
         Self {
             a: line_reads.a,
             db: line_reads.db,
             pa: line_reads.pa,
-
-            pb0: line_reads.pb0,
-            pb1: line_reads.pb1,
-            pb3: line_reads.pb3,
-            pb6: line_reads.pb6,
-            pb7: line_reads.pb7,
+            pb: line_reads.pb,
 
             cs1: line_reads.cs1,
             cs2: line_reads.cs2,

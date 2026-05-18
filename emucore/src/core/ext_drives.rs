@@ -1,6 +1,6 @@
 use crate::common::line::{multi::BusDriveState, single::DriveState};
 
-pub struct EmuLineDrives {
+pub struct ExtDrives {
     pub a: BusDriveState<13>,
     pub db: BusDriveState<8>,
     pub inp1: BusDriveState<7>,

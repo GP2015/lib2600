@@ -1,6 +1,6 @@
 use crate::common::{
+    BaseCondition, HasMux, IsCondition,
     line::{error::LineError, ident::LineIdent},
-    mux::{BaseCondition, HasMux, IsCondition},
     read::single::SingleRead,
     signal::LineSignal,
 };

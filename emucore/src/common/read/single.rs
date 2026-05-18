@@ -1,4 +1,4 @@
-use crate::common::mux::{BaseCondition, HasMux, IsCondition};
+use crate::common::{BaseCondition, HasMux, IsCondition};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum SingleRead {
