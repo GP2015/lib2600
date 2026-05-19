@@ -3,7 +3,7 @@ pub mod line_reads;
 
 use crate::{
     common::line::error::LineError,
-    core::{ext_drives::ExtDrives, line_reads::EmuLineStates},
+    full::{ext_drives::ExtDrives, line_reads::EmuLineStates},
     riot::Riot,
 };
 

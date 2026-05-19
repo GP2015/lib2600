@@ -1,7 +1,10 @@
 use crate::common::{
     BaseCondition, HasMux, IsCondition,
     line::{error::LineError, ident::LineIdent, single::DriveState},
-    read::multi::MultiRead,
+    read::{
+        multi::{CheckMultiRead, MultiRead},
+        single::SingleRead,
+    },
     signal::LineSignal,
 };
 use core::array;
@@ -11,11 +14,12 @@ pub type BusDriveState<const SIZE: usize> = [DriveState; SIZE];
 pub trait IsBusDriveState<const SIZE: usize> {
     fn from_multi_read(reads: &MultiRead<SIZE>) -> Self;
     fn from_signals(signals: &[LineSignal; SIZE]) -> Self;
-    fn from_usize(val: usize) -> Self;
-    fn read(&self) -> MultiRead<SIZE>;
+    fn from_value(val: u16) -> Self;
+    fn read(&self) -> Result<MultiRead<SIZE>, usize>;
+    fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError>;
     #[must_use]
     fn combine_with(&self, other: &Self) -> Self;
-    fn contend(name: &'static str, states: &[Self]) -> Result<Self, LineError>
+    fn contend(states: &[Self]) -> Result<Self, usize>
     where
         Self: Sized;
 }
@@ -29,12 +33,22 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
         signals.each_ref().map(|&signal| DriveState::from(signal))
     }
 
-    fn from_usize(value: usize) -> Self {
+    fn from_value(value: u16) -> Self {
         array::from_fn(|bit| DriveState::from(value >> bit & 1 == 1))
     }
 
-    fn read(&self) -> MultiRead<SIZE> {
-        self.each_ref().map(|state| state.read())
+    fn read(&self) -> Result<MultiRead<SIZE>, usize> {
+        let mut res = [SingleRead::Unknown; SIZE];
+
+        for (bit, (read_bit, state)) in res.iter_mut().zip(self.iter()).enumerate() {
+            *read_bit = state.read().ok_or(bit)?;
+        }
+
+        Ok(res)
+    }
+
+    fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError> {
+        self.read().ok_or_impossible(name)
     }
 
     fn combine_with(&self, other: &Self) -> Self {
@@ -44,18 +58,15 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
         })
     }
 
-    fn contend(bus_name: &'static str, states: &[Self]) -> Result<Self, LineError> {
+    fn contend(states: &[Self]) -> Result<Self, usize> {
         let mut res = [DriveState::none_enabled(); SIZE];
 
         for (bit, state) in res.iter_mut().enumerate() {
-            let ident = LineIdent::BusLine { bus_name, bit };
-            *state = DriveState::contend(
-                ident,
-                states.iter().map(|v| {
-                    #[expect(clippy::indexing_slicing)]
-                    v[bit]
-                }),
-            )?;
+            *state = DriveState::contend(states.iter().map(|v| {
+                #[expect(clippy::indexing_slicing)]
+                v[bit]
+            }))
+            .ok_or(bit)?;
         }
 
         Ok(res)
@@ -73,5 +84,28 @@ impl<const SIZE: usize> HasMux for BusDriveState<SIZE> {
             BaseCondition::Yes => high_opt(),
             BaseCondition::Unknown => low_opt().combine_with(&high_opt()),
         }
+    }
+}
+
+pub trait CheckBusDriveState<const SIZE: usize> {
+    fn ok_or_short(self, name: &'static str) -> Result<BusDriveState<SIZE>, LineError>;
+    fn ok_read_or_error(self, name: &'static str) -> Result<MultiRead<SIZE>, LineError>;
+}
+
+impl<const SIZE: usize> CheckBusDriveState<SIZE> for Result<BusDriveState<SIZE>, usize> {
+    fn ok_or_short(self, name: &'static str) -> Result<BusDriveState<SIZE>, LineError> {
+        match self {
+            Ok(state) => Ok(state),
+            Err(bit) => Err(LineError::ShortCircuit {
+                ident: LineIdent::BusLine {
+                    bus_name: name,
+                    bit,
+                },
+            }),
+        }
+    }
+
+    fn ok_read_or_error(self, name: &'static str) -> Result<MultiRead<SIZE>, LineError> {
+        self.ok_or_short(name)?.read().ok_or_impossible(name)
     }
 }

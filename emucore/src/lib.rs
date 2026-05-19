@@ -1,15 +1,25 @@
 #![no_std]
 #![warn(clippy::pedantic, clippy::nursery)]
-#![cfg_attr(not(test), warn(clippy::unwrap_used, clippy::indexing_slicing))]
-#![allow(
-    clippy::missing_errors_doc,
-    clippy::missing_panics_doc,
-    clippy::similar_names
+#![cfg_attr(
+    not(test),
+    warn(
+        clippy::indexing_slicing,
+        clippy::todo,
+        clippy::unreachable,
+        clippy::unwrap_used,
+    )
 )]
+#![allow(clippy::missing_errors_doc)]
 
 mod common;
-mod core;
+mod full;
 mod riot;
+
+#[cfg(not(test))]
+#[panic_handler]
+const fn panic(_: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
 
 pub use crate::{
     common::{
@@ -26,5 +36,5 @@ pub use crate::{
         },
         signal::LineSignal,
     },
-    core::{Emulator, ext_drives::ExtDrives},
+    full::{Emulator, ext_drives::ExtDrives},
 };

@@ -45,8 +45,8 @@ impl<const SIZE: usize> From<MultiRead<SIZE>> for MBitReg<SIZE> {
     }
 }
 
-impl<const SIZE: usize> From<usize> for MBitReg<SIZE> {
-    fn from(value: usize) -> Self {
+impl<const SIZE: usize> From<u16> for MBitReg<SIZE> {
+    fn from(value: u16) -> Self {
         Self {
             bits: array::from_fn(|bit| BitReg::from(value >> bit & 1 == 1)),
         }

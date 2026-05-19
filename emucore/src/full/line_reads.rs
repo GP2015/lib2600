@@ -1,6 +1,14 @@
 use crate::{
-    BusDriveState, DriveState, ExtDrives, IsBusDriveState, LineError,
-    common::read::{multi::MultiRead, single::SingleRead},
+    common::{
+        line::{
+            error::LineError,
+            ident::LineIdent,
+            multi::{BusDriveState, CheckBusDriveState, IsBusDriveState},
+            single::{CheckDriveState, DriveState},
+        },
+        read::{multi::MultiRead, single::SingleRead},
+    },
+    full::ext_drives::ExtDrives,
     riot::{Riot, reads::RiotLineReads},
 };
 
@@ -35,48 +43,51 @@ impl EmuLineStates {
     }
 
     pub fn update(&mut self, ext_drives: &ExtDrives, riot: &Riot) -> Result<(), LineError> {
-        let mut inp1 = MultiRead::from([SingleRead::Unknown; _]);
+        let mut inp1: [SingleRead; 7] = MultiRead::from([SingleRead::Unknown; _]);
         for (bit, read) in inp1.iter_mut().enumerate() {
-            *read = match bit {
-                0..4 => {
-                    #[expect(clippy::indexing_slicing)]
-                    let drives = [ext_drives.inp1[bit], riot.pa_out[bit + 4]].into_iter();
-                    DriveState::contend("inp1(0..4)", drives)?.read()
-                }
-                4..7 =>
-                {
-                    #[expect(clippy::indexing_slicing)]
-                    ext_drives.inp1[bit].read()
-                }
-                _ => unreachable!(),
+            let ident = LineIdent::BusLine {
+                bus_name: "inp1",
+                bit,
+            };
+
+            *read = if bit < 4 {
+                #[expect(clippy::indexing_slicing)]
+                let drives = [ext_drives.inp1[bit], riot.pa_out[bit + 4]].into_iter();
+                DriveState::contend(drives).ok_read_or_error(ident)?
+            } else {
+                #[expect(clippy::indexing_slicing)]
+                ext_drives.inp1[bit].read_or_error(ident)?
             }
         }
 
-        let mut inp2 = MultiRead::from([SingleRead::Unknown; _]);
+        let mut inp2: [SingleRead; 7] = MultiRead::from([SingleRead::Unknown; _]);
         for (bit, read) in inp2.iter_mut().enumerate() {
-            *read = match bit {
-                0..4 => {
-                    #[expect(clippy::indexing_slicing)]
-                    let drives = [ext_drives.inp2[bit], riot.pa_out[bit]].into_iter();
-                    DriveState::contend("inp2(0..4)", drives)?.read()
-                }
-                4..7 =>
-                {
-                    #[expect(clippy::indexing_slicing)]
-                    ext_drives.inp2[bit].read()
-                }
-                _ => unreachable!(),
-            }
+            let ident = LineIdent::BusLine {
+                bus_name: "inp2",
+                bit,
+            };
+
+            *read = if bit < 4 {
+                #[expect(clippy::indexing_slicing)]
+                let drives = [ext_drives.inp2[bit], riot.pa_out[bit]].into_iter();
+                DriveState::contend(drives).ok_read_or_error(ident)?
+            } else {
+                #[expect(clippy::indexing_slicing)]
+                ext_drives.inp2[bit].read_or_error(ident)?
+            };
         }
 
-        let a = ext_drives.a.read();
+        let a = ext_drives.a.read_or_error("a")?;
 
         let drives = &[ext_drives.db, riot.db_out];
-        let db = BusDriveState::contend("db", drives)?.read();
+        let db = BusDriveState::contend(drives).ok_read_or_error("db")?;
 
         macro_rules! create {
             ($name:ident, $drives:expr) => {
-                let $name = DriveState::contend(stringify!($name), $drives.into_iter())?.read();
+                let ident = LineIdent::UniqueLine {
+                    name: stringify!($name),
+                };
+                let $name = DriveState::contend($drives.into_iter()).ok_read_or_error(ident)?;
             };
         }
 

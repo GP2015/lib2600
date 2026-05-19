@@ -1,7 +1,7 @@
 use crate::common::{
     BaseCondition, HasMux, IsCondition,
     line::{error::LineError, ident::LineIdent},
-    read::single::SingleRead,
+    read::single::{CheckSingleRead, SingleRead},
     signal::LineSignal,
 };
 
@@ -23,13 +23,17 @@ impl DriveState {
     }
 
     #[must_use]
-    pub fn read(self) -> SingleRead {
+    pub const fn read(self) -> Option<SingleRead> {
         match (self.low, self.high, self.high_z) {
-            (false, false, false) => unreachable!(),
-            (true, false, false) => SingleRead::Low,
-            (false, true, false) => SingleRead::High,
-            _ => SingleRead::Unknown,
+            (false, false, false) => None,
+            (true, false, false) => Some(SingleRead::Low),
+            (false, true, false) => Some(SingleRead::High),
+            _ => Some(SingleRead::Unknown),
         }
+    }
+
+    pub fn read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError> {
+        self.read().ok_or_impossible(ident)
     }
 
     #[must_use]
@@ -67,21 +71,14 @@ impl DriveState {
         Some(result)
     }
 
-    pub fn contend(
-        ident: impl Into<LineIdent>,
-        mut states: impl Iterator<Item = Self>,
-    ) -> Result<Self, LineError> {
+    pub fn contend(mut states: impl Iterator<Item = Self>) -> Option<Self> {
         let init = Self {
             low: false,
             high: false,
             high_z: true,
         };
 
-        states
-            .try_fold(init, Self::contend_pair)
-            .ok_or_else(|| LineError::ShortCircuit {
-                ident: ident.into(),
-            })
+        states.try_fold(init, Self::contend_pair)
     }
 }
 
@@ -115,17 +112,6 @@ impl From<bool> for DriveState {
     }
 }
 
-impl IsCondition for DriveState {
-    fn as_cond(&self) -> BaseCondition {
-        match (self.low, self.high, self.high_z) {
-            (false, false, false) => unreachable!(),
-            (true, false, false) => BaseCondition::No,
-            (false, true, false) => BaseCondition::Yes,
-            _ => BaseCondition::Unknown,
-        }
-    }
-}
-
 impl HasMux for DriveState {
     fn mux(
         cond: &impl IsCondition,
@@ -137,5 +123,20 @@ impl HasMux for DriveState {
             BaseCondition::Yes => high_opt(),
             BaseCondition::Unknown => low_opt().combine_with(high_opt()),
         }
+    }
+}
+
+pub trait CheckDriveState {
+    fn ok_or_short(self, ident: LineIdent) -> Result<DriveState, LineError>;
+    fn ok_read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError>;
+}
+
+impl CheckDriveState for Option<DriveState> {
+    fn ok_or_short(self, ident: LineIdent) -> Result<DriveState, LineError> {
+        self.ok_or(LineError::ShortCircuit { ident })
+    }
+
+    fn ok_read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError> {
+        self.ok_or_short(ident)?.read().ok_or_impossible(ident)
     }
 }

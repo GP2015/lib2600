@@ -24,8 +24,8 @@ use core::array;
 use itertools::izip;
 
 const RAM_SIZE: usize = 128;
-const PB_CONNECTED_LINES: [usize; 5] = [0, 1, 3, 6, 7];
-const TIMER_INTERVALS: [usize; 4] = [1, 8, 64, 1024];
+const PB_CONNECTED_LINES: [u8; 5] = [0, 1, 3, 6, 7];
+const TIMER_INTERVALS: [u16; 4] = [1, 8, 64, 1024];
 
 macro_rules! only_on_cond {
     ($has_mux:ident, $def:expr, $success:expr, ($is_cond:expr, $cond_res:expr) $(,)?) => {
@@ -121,9 +121,9 @@ impl Riot {
     fn timer_interval_read(read: MultiRead<2>) -> MultiRead<10> {
         read.iter_possible_reads()
             .map(|i| {
-                MultiRead::from_usize(
+                MultiRead::from_value(
                     #[expect(clippy::indexing_slicing)]
-                    TIMER_INTERVALS[i],
+                    TIMER_INTERVALS[usize::from(i)],
                 )
             })
             .reduce(|acc, val| acc.combine_with(&val))
@@ -134,7 +134,7 @@ impl Riot {
         let def = &|| reads.timer;
         self.reg.timer.set_to_read(&MultiRead::mux(
             &reads.timer_ir_flag,
-            &|| MultiRead::mux(&reads.sub_timer.is_val(0), def, &|| def().decremented()),
+            &|| MultiRead::mux(&reads.sub_timer.is_value(0), def, &|| def().decremented()),
             &|| def().decremented(),
         ));
 
@@ -143,9 +143,9 @@ impl Riot {
         self.reg.sub_timer.set_to_read(&MultiRead::mux(
             &reads.timer_ir_flag,
             &|| {
-                MultiRead::mux(&def().is_val(0), &|| def().decremented(), &|| {
+                MultiRead::mux(&def().is_value(0), &|| def().decremented(), &|| {
                     MultiRead::mux(
-                        &reads.timer.is_val(0),
+                        &reads.timer.is_value(0),
                         &|| Self::timer_interval_read(reads.timer_interval),
                         unknown,
                     )
@@ -159,8 +159,8 @@ impl Riot {
         self.reg.timer_interval.set_to_read(&MultiRead::mux(
             &reads.timer_ir_flag,
             &|| {
-                MultiRead::mux(&reads.sub_timer.is_val(0), def, &|| {
-                    MultiRead::mux(&reads.timer.is_val(0), def, unknown)
+                MultiRead::mux(&reads.sub_timer.is_value(0), def, &|| {
+                    MultiRead::mux(&reads.timer.is_value(0), def, unknown)
                 })
             },
             unknown,
@@ -170,8 +170,8 @@ impl Riot {
         self.reg.timer_ir_flag.set_to_read(SingleRead::mux(
             &def(),
             &|| {
-                SingleRead::mux(&reads.sub_timer.is_val(0), &|| SingleRead::Low, &|| {
-                    SingleRead::mux(&reads.timer.is_val(0), &|| SingleRead::Low, &|| {
+                SingleRead::mux(&reads.sub_timer.is_value(0), &|| SingleRead::Low, &|| {
+                    SingleRead::mux(&reads.timer.is_value(0), &|| SingleRead::Low, &|| {
                         SingleRead::High
                     })
                 })
@@ -183,7 +183,7 @@ impl Riot {
     fn update_ram_bytes(&mut self, reads: &RiotAllReads) {
         for addr in reads.a.iter_possible_reads() {
             #[expect(clippy::indexing_slicing)]
-            let ram_byte = &mut self.ram[addr];
+            let ram_byte = &mut self.ram[usize::from(addr)];
 
             ram_byte.set_to_read(&only_on_cs!(
                 reads,
@@ -320,7 +320,7 @@ impl Riot {
                     .iter_possible_reads()
                     .map(|addr| {
                         #[expect(clippy::indexing_slicing)]
-                        self.ram[addr].read()
+                        self.ram[usize::from(addr)].read()
                     })
                     .reduce(|acc, byte| acc.combine_with(&byte))
                     .expect("SingleRead will always have at least one possible read"),
@@ -384,12 +384,12 @@ impl Riot {
         for (pb_out_state, &pb_con_index) in self.pb_out.iter_mut().zip(PB_CONNECTED_LINES.iter()) {
             *pb_out_state = DriveState::mux(
                 #[expect(clippy::indexing_slicing)]
-                &reads.ddrb[pb_con_index],
+                &reads.ddrb[usize::from(pb_con_index)],
                 &|| DriveState::from(LineSignal::HighZ),
                 &|| {
                     DriveState::from(
                         #[expect(clippy::indexing_slicing)]
-                        reads.orb[pb_con_index],
+                        reads.orb[usize::from(pb_con_index)],
                     )
                 },
             );

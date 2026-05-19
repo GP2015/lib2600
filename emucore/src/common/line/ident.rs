@@ -1,6 +1,6 @@
 use strum_macros::Display;
 
-#[derive(Clone, Debug, Display, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq)]
 pub enum LineIdent {
     #[strum(to_string = "{name}")]
     UniqueLine { name: &'static str },
