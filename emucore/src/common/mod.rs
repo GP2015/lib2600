@@ -2,6 +2,11 @@ pub mod line;
 pub mod read;
 pub mod signal;
 
+use crate::common::read::{multi::MultiRead, single::SingleRead};
+
+pub type BitReg = SingleRead;
+pub type MBitReg<const SIZE: usize> = MultiRead<SIZE>;
+
 pub trait IsCondition {
     fn as_cond(&self) -> BaseCondition;
 }

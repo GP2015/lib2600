@@ -3,7 +3,7 @@ pub mod regs;
 
 use crate::{
     common::{
-        HasMux,
+        BitReg, HasMux, MBitReg,
         line::{
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
@@ -80,8 +80,7 @@ pub struct Riot {
     pub pa_out: BusDriveState<8>,
     pub pb_out: BusDriveState<5>,
     reg: RiotRegs,
-    ram: [MultiRead<8>; RAM_SIZE],
-    phi2_signal: bool,
+    ram: [MBitReg<8>; RAM_SIZE],
     old_pa7_read: SingleRead,
 }
 
@@ -92,8 +91,7 @@ impl Riot {
             pa_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
             pb_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
             reg: RiotRegs::new(),
-            ram: array::from_fn(|_| MultiRead::from([SingleRead::Unknown; _])),
-            phi2_signal: false,
+            ram: [[BitReg::Unknown; _]; _],
             old_pa7_read: SingleRead::Unknown,
         }
     }
@@ -326,11 +324,11 @@ impl Riot {
         };
 
         let ir_reg_read = &|| {
-            BusDriveState::from(array::from_fn(|bit| match bit {
+            array::from_fn(|bit| match bit {
                 7 => DriveState::from(reads.reg.timer_ir_flag),
                 6 => DriveState::from(reads.reg.edc_ir_flag),
                 _ => DriveState::from(LineSignal::HighZ),
-            }))
+            })
         };
 
         let io_read = &|| {
@@ -402,7 +400,7 @@ impl Riot {
         }
     }
 
-    fn handle_rising_edge(&mut self, line_reads: RiotLineReads) {
+    pub fn handle_rising_edge(&mut self, line_reads: RiotLineReads) {
         let mut reads = RiotAllReads::new(line_reads, self.reg.clone());
 
         self.update_timer(&reads);
@@ -425,17 +423,7 @@ impl Riot {
         self.old_pa7_read = new_pa7_read;
     }
 
-    fn handle_falling_edge(&mut self) {
+    pub fn handle_falling_edge(&mut self) {
         self.db_out = BusDriveState::from_signals(&[LineSignal::HighZ; 8]);
-    }
-
-    pub fn drive_phi2(&mut self, line_reads: RiotLineReads, bool_signal: bool) {
-        match (self.phi2_signal, bool_signal) {
-            (false, true) => self.handle_rising_edge(line_reads),
-            (true, false) => self.handle_falling_edge(),
-            _ => (),
-        }
-
-        self.phi2_signal = bool_signal;
     }
 }
