@@ -34,7 +34,7 @@ impl Emulator {
         self.line_states.update(ext, &self.riot)?;
 
         let riot_reads = self.line_states.riot_reads();
-        self.riot.drive_phi2(&riot_reads, self.phi0);
+        self.riot.drive_phi2(riot_reads, self.phi0);
 
         self.line_states.update(ext, &self.riot)
     }
