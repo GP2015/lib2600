@@ -52,15 +52,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case(LineSignal::Low, false)]
-    #[case(LineSignal::High, true)]
-    fn as_bool_success(#[case] signal: LineSignal, #[case] b: bool) {
-        assert_eq!(signal.as_bool().unwrap(), b);
-    }
-
-    #[test]
-    fn as_bool_failure() {
-        assert!(LineSignal::HighZ.as_bool().is_none());
+    #[case(LineSignal::Low, Some(false))]
+    #[case(LineSignal::High, Some(true))]
+    #[case(LineSignal::HighZ, None)]
+    fn as_bool(#[case] signal: LineSignal, #[case] b: Option<bool>) {
+        assert_eq!(signal.as_bool(), b);
     }
 
     #[rstest]

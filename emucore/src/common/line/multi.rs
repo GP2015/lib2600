@@ -14,9 +14,9 @@ pub type BusDriveState<const SIZE: usize> = [DriveState; SIZE];
 pub trait IsBusDriveState<const SIZE: usize> {
     fn from_multi_read(reads: &MultiRead<SIZE>) -> Self;
     fn from_signals(signals: &[LineSignal; SIZE]) -> Self;
-    fn from_value(val: u16) -> Self;
+    // fn from_value(val: u16) -> Self;
     fn read(&self) -> Result<MultiRead<SIZE>, usize>;
-    fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError>;
+    // fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError>;
     #[must_use]
     fn combine_with(&self, other: &Self) -> Self;
     fn contend(states: &[Self]) -> Result<Self, usize>
@@ -26,16 +26,16 @@ pub trait IsBusDriveState<const SIZE: usize> {
 
 impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
     fn from_multi_read(reads: &MultiRead<SIZE>) -> Self {
-        reads.each_ref().map(|&read| DriveState::from(read))
+        reads.each_ref().map(|&read| read.into())
     }
 
     fn from_signals(signals: &[LineSignal; SIZE]) -> Self {
-        signals.each_ref().map(|&signal| DriveState::from(signal))
+        signals.each_ref().map(|&signal| signal.into())
     }
 
-    fn from_value(value: u16) -> Self {
-        array::from_fn(|bit| DriveState::from(value >> bit & 1 == 1))
-    }
+    // fn from_value(value: u16) -> Self {
+    //     array::from_fn(|bit| DriveState::from(value >> bit & 1 == 1))
+    // }
 
     fn read(&self) -> Result<MultiRead<SIZE>, usize> {
         let mut res = [SingleRead::Unknown; SIZE];
@@ -47,9 +47,9 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
         Ok(res)
     }
 
-    fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError> {
-        self.read().ok_or_impossible(name)
-    }
+    // fn read_or_error(&self, name: &'static str) -> Result<MultiRead<SIZE>, LineError> {
+    //     self.read().ok_or_impossible(name)
+    // }
 
     fn combine_with(&self, other: &Self) -> Self {
         array::from_fn(|bit| {
