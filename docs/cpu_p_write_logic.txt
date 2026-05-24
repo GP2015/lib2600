@@ -1,0 +1,30 @@
+nums are 1 higher than intended
+
+Write to S:
+PHA/PHP
+    dec 3
+PLA/PLP
+    inc 3
+TXS
+    set 2
+BRK
+    dec 3,4,5
+RTI
+    inc 3,4,5
+JSR
+    dec 4,5
+RTS
+    inc 3,4
+
+
+2(1)
+    set <- TXS
+3(2)
+    dec <- PHA/PHP/BRK
+    inc <- PLA/PLP/RTI/RTS
+4(3)
+    dec <- BRK/JSR
+    inc <- RTI/RTS
+5(4)
+    dec <- BRK/JSR
+    inc <- RTI
