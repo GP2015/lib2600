@@ -4,6 +4,7 @@ pub mod regs;
 use crate::{
     common::{
         BitReg, HasMux, MBitReg,
+        condition::{BaseCondition, IsCondition},
         line::{
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
@@ -26,52 +27,8 @@ const RAM_SIZE: usize = 128;
 const PB_CONNECTED_LINES: [u8; 5] = [0, 1, 3, 6, 7];
 const TIMER_INTERVALS: [u16; 4] = [1, 8, 64, 1024];
 
-macro_rules! only_on_cond {
-    ($has_mux:ident, $def:expr, $success:expr, ($is_cond:expr, $cond_res:expr) $(,)?) => {
-        if $cond_res {
-            $has_mux::mux($is_cond, $def, $success)
-        } else {
-            $has_mux::mux($is_cond, $success, $def)
-        }
-    };
-
-    (
-        $has_mux:ident,
-        $def:expr,
-        $success:expr,
-        ($is_cond:expr, $cond_res:expr),
-        $(($is_cond_v:expr, $cond_res_v:expr)),+ $(,)?
-    ) => {
-        only_on_cond!(
-            $has_mux,
-            $def,
-            &|| only_on_cond!(
-                $has_mux,
-                $def,
-                $success,
-                $(($is_cond_v, $cond_res_v)),+
-            ),
-            ($is_cond, $cond_res),
-        )
-    };
-}
-
-macro_rules! only_on_cs {
-    (
-        $reads:expr,
-        $has_mux:ident,
-        $def:expr,
-        $success:expr,
-        $(($is_cond:expr, $cond_res:expr)),+ $(,)?
-    ) => {
-        only_on_cond!(
-            $has_mux,
-            $def,
-            $success,
-            (&$reads.line.cs1, true),
-            (&$reads.line.cs2, false),
-        )
-    };
+fn cs_cond(reads: &RiotAllReads) -> BaseCondition {
+    reads.line.cs1.as_cond() & !reads.line.cs2.as_cond()
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -99,16 +56,16 @@ impl Riot {
     fn update_edc(&mut self, reads: &RiotAllReads, pa7_read: SingleRead) {
         let def = &|| reads.reg.edc_ir_flag;
         self.reg.edc_ir_flag = SingleRead::mux(
-            &reads.reg.edc_edge_type,
+            reads.reg.edc_edge_type.as_cond(),
             &|| {
-                SingleRead::mux(&self.old_pa7_read, def, &|| {
-                    SingleRead::mux(&pa7_read, &|| SingleRead::High, def)
+                SingleRead::mux(self.old_pa7_read.as_cond(), def, &|| {
+                    SingleRead::mux(pa7_read.as_cond(), &|| SingleRead::High, def)
                 })
             },
             &|| {
                 SingleRead::mux(
-                    &self.old_pa7_read,
-                    &|| SingleRead::mux(&pa7_read, def, &|| SingleRead::High),
+                    self.old_pa7_read.as_cond(),
+                    &|| SingleRead::mux(pa7_read.as_cond(), def, &|| SingleRead::High),
                     def,
                 )
             },
@@ -117,12 +74,7 @@ impl Riot {
 
     fn timer_interval_read(read: MultiRead<2>) -> MultiRead<10> {
         read.iter_possible_reads()
-            .map(|i| {
-                MultiRead::from_value(
-                    #[expect(clippy::indexing_slicing)]
-                    TIMER_INTERVALS[usize::from(i)],
-                )
-            })
+            .map(|i| MultiRead::from_value(TIMER_INTERVALS[usize::from(i)]))
             .reduce(|acc, val| acc.combine_with(&val))
             .expect("MultiRead will always have at least one possible read")
     }
@@ -130,9 +82,9 @@ impl Riot {
     fn update_timer(&mut self, reads: &RiotAllReads) {
         let def = &|| reads.reg.timer;
         self.reg.timer = MultiRead::mux(
-            &reads.reg.timer_ir_flag,
+            reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                MultiRead::mux(&reads.reg.sub_timer.is_value(0), def, &|| {
+                MultiRead::mux(reads.reg.sub_timer.is_value(0), def, &|| {
                     def().decremented()
                 })
             },
@@ -142,11 +94,11 @@ impl Riot {
         let def = &|| reads.reg.sub_timer;
         let unknown = &|| [SingleRead::Unknown; _];
         self.reg.sub_timer = MultiRead::mux(
-            &reads.reg.timer_ir_flag,
+            reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                MultiRead::mux(&def().is_value(0), &|| def().decremented(), &|| {
+                MultiRead::mux(def().is_value(0), &|| def().decremented(), &|| {
                     MultiRead::mux(
-                        &reads.reg.timer.is_value(0),
+                        reads.reg.timer.is_value(0),
                         &|| Self::timer_interval_read(reads.reg.timer_interval),
                         unknown,
                     )
@@ -158,10 +110,10 @@ impl Riot {
         let def = &|| reads.reg.timer_interval;
         let unknown = &|| [SingleRead::Unknown; _];
         self.reg.timer_interval = MultiRead::mux(
-            &reads.reg.timer_ir_flag,
+            reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                MultiRead::mux(&reads.reg.sub_timer.is_value(0), def, &|| {
-                    MultiRead::mux(&reads.reg.timer.is_value(0), def, unknown)
+                MultiRead::mux(reads.reg.sub_timer.is_value(0), def, &|| {
+                    MultiRead::mux(reads.reg.timer.is_value(0), def, unknown)
                 })
             },
             unknown,
@@ -169,13 +121,13 @@ impl Riot {
 
         let def = &|| reads.reg.timer_ir_flag;
         self.reg.timer_ir_flag = SingleRead::mux(
-            &def(),
+            def().as_cond(),
             &|| {
                 SingleRead::mux(
-                    &reads.reg.sub_timer.is_value(0),
+                    reads.reg.sub_timer.is_value(0),
                     &|| SingleRead::Low,
                     &|| {
-                        SingleRead::mux(&reads.reg.timer.is_value(0), &|| SingleRead::Low, &|| {
+                        SingleRead::mux(reads.reg.timer.is_value(0), &|| SingleRead::Low, &|| {
                             SingleRead::High
                         })
                     },
@@ -187,34 +139,28 @@ impl Riot {
 
     fn update_ram_bytes(&mut self, reads: &RiotAllReads) {
         for addr in reads.line.a.iter_possible_reads() {
-            #[expect(clippy::indexing_slicing)]
             let ram_byte = &mut self.ram[usize::from(addr)];
 
-            *ram_byte = only_on_cs!(
-                reads,
-                MultiRead,
-                &|| *ram_byte,
-                &|| reads.line.db,
-                (&reads.line.rs, false),
-                (&reads.line.rw, false),
-            );
+            let cond = cs_cond(reads) & !reads.line.rs.as_cond() & !reads.line.rw.as_cond();
+            *ram_byte = MBitReg::mux(cond, &|| *ram_byte, &|| reads.line.db);
         }
     }
 
     fn update_io_regs(&mut self, reads: &RiotAllReads) {
+        let set_io_reg = |reg: &mut MBitReg<8>, read: &MultiRead<8>, a0, a1| {
+            let cond = cs_cond(reads)
+                & reads.line.rs.as_cond()
+                & !reads.line.a[2].as_cond()
+                & reads.line.a[0].as_cond().is_bool(a0)
+                & reads.line.a[1].as_cond().is_bool(a1)
+                & !reads.line.rw.as_cond();
+
+            *reg = MBitReg::mux(cond, &|| *read, &|| reads.line.db);
+        };
+
         macro_rules! set_io_reg {
             ($(($reg:ident, $a0:literal, $a1:literal)),+ $(,)?) => {$(
-                self.reg.$reg = only_on_cs!(
-                    reads,
-                    MultiRead,
-                    &|| reads.reg.$reg.clone(),
-                    &|| reads.line.db.clone(),
-                    (&reads.line.rs, true),
-                    (&reads.line.a.bit::<2>(), false),
-                    (&reads.line.a.bit::<0>(), $a0),
-                    (&reads.line.a.bit::<1>(), $a1),
-                    (&reads.line.rw, false),
-                );
+                set_io_reg(&mut self.reg.$reg, &reads.reg.$reg, $a0, $a1);
             )+};
         }
 
@@ -222,87 +168,50 @@ impl Riot {
             (ora, false, false),
             (orb, false, true),
             (ddra, true, false),
-            (ddrb, true, true)
+            (ddrb, true, true),
         );
     }
 
     fn update_edc_regs(&mut self, reads: &RiotAllReads) {
-        macro_rules! set_edc_reg {
-            ($reg:ident, $success:expr, $(($is_cond:expr, $cond_res:expr)),+ $(,)?) => {
-                self.reg.$reg = only_on_cs!(
-                    reads,
-                    SingleRead,
-                    &|| reads.reg.edc_ir_flag,
-                    $success,
-                    (&reads.line.rs, true),
-                    (&reads.line.a.bit::<2>(), true),
-                    $(($is_cond, $cond_res)),+
-                );
-            };
-        }
+        let def_cond = cs_cond(reads) & reads.line.rs.as_cond() & reads.line.a[2].as_cond();
 
-        set_edc_reg!(
-            edc_ir_flag,
-            &|| SingleRead::Low,
-            (&reads.line.rw, true),
-            (&reads.line.a.bit::<0>(), true),
-        );
+        let cond = def_cond & reads.line.rw.as_cond() & reads.line.a[0].as_cond();
+        self.reg.edc_ir_flag = BitReg::mux(cond, &|| reads.reg.edc_ir_flag, &|| SingleRead::Low);
 
-        set_edc_reg!(
-            edc_edge_type,
-            &|| reads.line.a[0],
-            (&reads.line.rw, false),
-            (&reads.line.a.bit::<4>(), false),
-        );
+        let cond = def_cond & !reads.line.rw.as_cond() & !reads.line.a[4].as_cond();
+        self.reg.edc_edge_type =
+            BitReg::mux(cond, &|| reads.reg.edc_edge_type, &|| reads.line.a[0]);
     }
 
     fn update_timer_regs(&mut self, reads: &RiotAllReads) {
-        macro_rules! only_on_timer_write {
-            ($has_mux:ident, $def:expr, $success:expr $(,)?) => {
-                only_on_cs!(
-                    reads,
-                    $has_mux,
-                    $def,
-                    $success,
-                    (&reads.line.rs, true),
-                    (&reads.line.a.bit::<2>(), true),
-                    (&reads.line.rw, false),
-                    (&reads.line.a.bit::<4>(), true),
-                )
-            };
+        let timer_write_cond = cs_cond(reads)
+            & reads.line.rs.as_cond()
+            & reads.line.a[2].as_cond()
+            & !reads.line.rw.as_cond()
+            & reads.line.a[4].as_cond();
+
+        self.reg.timer = MBitReg::mux(timer_write_cond, &|| reads.reg.timer, &|| reads.line.db);
+
+        for bit in 0..2 {
+            self.reg.timer_interval[bit] =
+                SingleRead::mux(timer_write_cond, &|| reads.reg.timer_interval[bit], &|| {
+                    reads.line.a[bit]
+                });
         }
 
-        self.reg.timer = only_on_timer_write!(MultiRead, &|| reads.reg.timer, &|| reads.line.db);
-
-        macro_rules! set_timer_interval {
-            ($($bit:literal),+) => {$(
-                self.reg.timer_interval[$bit] = only_on_timer_write!(
-                    SingleRead,
-                    &|| reads.reg.timer_interval[$bit],
-                    &|| reads.line.a[$bit],
-                );
-            )+};
-        }
-
-        set_timer_interval!(1, 0);
-
-        self.reg.sub_timer = only_on_timer_write!(MultiRead, &|| reads.reg.sub_timer, &|| {
+        self.reg.sub_timer = MultiRead::mux(timer_write_cond, &|| reads.reg.sub_timer, &|| {
             Self::timer_interval_read(self.reg.timer_interval)
         });
 
         let def = &|| reads.reg.timer_ir_flag;
-        self.reg.timer_ir_flag = only_on_cs!(
-            reads,
-            SingleRead,
-            def,
-            &|| SingleRead::mux(
-                &reads.line.rw,
-                &|| SingleRead::mux(&reads.line.a[4], def, &|| SingleRead::Low),
-                &|| SingleRead::mux(&reads.line.a[0], &|| SingleRead::Low, def),
-            ),
-            (&reads.line.rs, true),
-            (&reads.line.a.bit::<2>(), true),
-        );
+        let cond = cs_cond(reads) & reads.line.rs.as_cond() & reads.line.a[2].as_cond();
+        self.reg.timer_ir_flag = BitReg::mux(cond, def, &|| {
+            SingleRead::mux(
+                reads.line.rw.as_cond(),
+                &|| SingleRead::mux(reads.line.a[4].as_cond(), def, &|| SingleRead::Low),
+                &|| SingleRead::mux(reads.line.a[0].as_cond(), &|| SingleRead::Low, def),
+            )
+        });
     }
 
     fn update_db_bus(&mut self, reads: &RiotAllReads) {
@@ -314,10 +223,7 @@ impl Riot {
                     .line
                     .a
                     .iter_possible_reads()
-                    .map(|addr| {
-                        #[expect(clippy::indexing_slicing)]
-                        self.ram[usize::from(addr)]
-                    })
+                    .map(|addr| self.ram[usize::from(addr)])
                     .reduce(|acc, byte| acc.combine_with(&byte))
                     .expect("SingleRead will always have at least one possible read"),
             )
@@ -333,17 +239,17 @@ impl Riot {
 
         let io_read = &|| {
             BusDriveState::mux(
-                &reads.line.a[0],
+                reads.line.a[0].as_cond(),
                 &|| {
                     BusDriveState::mux(
-                        &reads.line.a[1],
+                        reads.line.a[1].as_cond(),
                         &|| BusDriveState::from_multi_read(&reads.reg.ora),
                         &|| BusDriveState::from_multi_read(&reads.reg.orb),
                     )
                 },
                 &|| {
                     BusDriveState::mux(
-                        &reads.line.a[1],
+                        reads.line.a[1].as_cond(),
                         &|| BusDriveState::from_multi_read(&reads.reg.ddra),
                         &|| BusDriveState::from_multi_read(&reads.reg.ddrb),
                     )
@@ -353,25 +259,20 @@ impl Riot {
 
         let misc_read = &|| {
             BusDriveState::mux(
-                &reads.line.a[0],
+                reads.line.a[0].as_cond(),
                 &|| BusDriveState::from_multi_read(&reads.reg.timer),
                 ir_reg_read,
             )
         };
 
         let bus_out = &|| {
-            BusDriveState::mux(&reads.line.rs, ram_read, &|| {
-                BusDriveState::mux(&reads.line.a[2], io_read, misc_read)
+            BusDriveState::mux(reads.line.rs.as_cond(), ram_read, &|| {
+                BusDriveState::mux(reads.line.a[2].as_cond(), io_read, misc_read)
             })
         };
 
-        self.db_out = only_on_cs!(
-            reads,
-            BusDriveState,
-            high_z_out,
-            bus_out,
-            (reads.line.rw, true)
-        );
+        let cond = cs_cond(reads) & reads.line.rw.as_cond();
+        self.db_out = BusDriveState::mux(cond, high_z_out, bus_out);
     }
 
     fn update_peripherals(&mut self, reads: &RiotAllReads) {
@@ -380,22 +281,18 @@ impl Riot {
             reads.reg.ddra.iter(),
             reads.reg.ora.iter()
         ) {
-            *pa_line = DriveState::mux(&ddra_bit, &|| DriveState::from(LineSignal::HighZ), &|| {
-                DriveState::from(ora_bit)
-            });
+            *pa_line = DriveState::mux(
+                ddra_bit.as_cond(),
+                &|| DriveState::from(LineSignal::HighZ),
+                &|| DriveState::from(ora_bit),
+            );
         }
 
         for (pb_out_state, &pb_con_index) in self.pb_out.iter_mut().zip(PB_CONNECTED_LINES.iter()) {
             *pb_out_state = DriveState::mux(
-                #[expect(clippy::indexing_slicing)]
-                &reads.reg.ddrb[usize::from(pb_con_index)],
+                reads.reg.ddrb[usize::from(pb_con_index)].as_cond(),
                 &|| DriveState::from(LineSignal::HighZ),
-                &|| {
-                    DriveState::from(
-                        #[expect(clippy::indexing_slicing)]
-                        reads.reg.orb[usize::from(pb_con_index)],
-                    )
-                },
+                &|| DriveState::from(reads.reg.orb[usize::from(pb_con_index)]),
             );
         }
     }
