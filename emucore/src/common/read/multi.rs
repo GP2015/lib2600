@@ -1,10 +1,11 @@
 use crate::common::{
-    BaseCondition, HasMux, IsCondition,
+    HasMux, IsCondition,
+    condition::BaseCondition,
     line::{error::LineError, ident::LineIdent},
     read::single::SingleRead,
 };
+use arrayvec::ArrayVec;
 use core::array;
-use heapless::Vec;
 
 pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
 
@@ -24,13 +25,13 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
     }
 
     fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
-        let mut count = Vec::<_, SIZE>::new();
+        let mut count = ArrayVec::<_, SIZE>::new();
         let mut mask = 0;
 
         for (i, &read) in self.iter().enumerate() {
             match read.as_bool() {
                 Some(b) => mask |= u16::from(b) << i,
-                None => count.push(i).expect("big enough"),
+                None => count.push(i),
             }
         }
 
@@ -101,11 +102,7 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
 }
 
 impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
-    fn mux(
-        cond: &impl IsCondition,
-        low_opt: &impl Fn() -> Self,
-        high_opt: &impl Fn() -> Self,
-    ) -> Self {
+    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
         match cond.as_cond() {
             BaseCondition::No => low_opt(),
             BaseCondition::Yes => high_opt(),

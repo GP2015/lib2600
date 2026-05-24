@@ -4,10 +4,10 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
+arrayvec.workspace = true
 itertools.workspace = true
 strum_macros.workspace = true
 thiserror.workspace = true
-heapless.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
