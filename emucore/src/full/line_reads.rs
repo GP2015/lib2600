@@ -62,11 +62,9 @@ impl EmuLineStates {
             };
 
             *read = if bit < 4 {
-                #[expect(clippy::indexing_slicing)]
                 let drives = [ext_drives.inp1[bit], riot.pa_out[bit + 4]].into_iter();
                 DriveState::contend(drives).ok_read_or_error(ident)?
             } else {
-                #[expect(clippy::indexing_slicing)]
                 ext_drives.inp1[bit].read_or_error(ident)?
             }
         }
@@ -79,11 +77,9 @@ impl EmuLineStates {
             };
 
             *read = if bit < 4 {
-                #[expect(clippy::indexing_slicing)]
                 let drives = [ext_drives.inp2[bit], riot.pa_out[bit]].into_iter();
                 DriveState::contend(drives).ok_read_or_error(ident)?
             } else {
-                #[expect(clippy::indexing_slicing)]
                 ext_drives.inp2[bit].read_or_error(ident)?
             };
         }
