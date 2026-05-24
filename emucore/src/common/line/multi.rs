@@ -1,5 +1,6 @@
 use crate::common::{
-    BaseCondition, HasMux, IsCondition,
+    HasMux, IsCondition,
+    condition::BaseCondition,
     line::{error::LineError, ident::LineIdent, single::DriveState},
     read::{
         multi::{CheckMultiRead, MultiRead},
@@ -52,21 +53,14 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
     // }
 
     fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| {
-            #[expect(clippy::indexing_slicing)]
-            self[bit].combine_with(other[bit])
-        })
+        array::from_fn(|bit| self[bit].combine_with(other[bit]))
     }
 
     fn contend(states: &[Self]) -> Result<Self, usize> {
         let mut res = [DriveState::none_enabled(); SIZE];
 
         for (bit, state) in res.iter_mut().enumerate() {
-            *state = DriveState::contend(states.iter().map(|v| {
-                #[expect(clippy::indexing_slicing)]
-                v[bit]
-            }))
-            .ok_or(bit)?;
+            *state = DriveState::contend(states.iter().map(|v| v[bit])).ok_or(bit)?;
         }
 
         Ok(res)
@@ -74,11 +68,7 @@ impl<const SIZE: usize> IsBusDriveState<SIZE> for BusDriveState<SIZE> {
 }
 
 impl<const SIZE: usize> HasMux for BusDriveState<SIZE> {
-    fn mux(
-        cond: &impl IsCondition,
-        low_opt: &impl Fn() -> Self,
-        high_opt: &impl Fn() -> Self,
-    ) -> Self {
+    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
         match cond.as_cond() {
             BaseCondition::No => low_opt(),
             BaseCondition::Yes => high_opt(),

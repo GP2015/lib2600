@@ -1,5 +1,6 @@
 use crate::common::{
-    BaseCondition, HasMux, IsCondition,
+    HasMux, IsCondition,
+    condition::BaseCondition,
     line::{error::LineError, ident::LineIdent},
     read::single::{CheckSingleRead, SingleRead},
     signal::LineSignal,
@@ -113,11 +114,7 @@ impl From<bool> for DriveState {
 }
 
 impl HasMux for DriveState {
-    fn mux(
-        cond: &impl IsCondition,
-        low_opt: &impl Fn() -> Self,
-        high_opt: &impl Fn() -> Self,
-    ) -> Self {
+    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
         match cond.as_cond() {
             BaseCondition::No => low_opt(),
             BaseCondition::Yes => high_opt(),
