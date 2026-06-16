@@ -1,0 +1,13 @@
+[package]
+name = "vm"
+version = "0.1.0"
+edition.workspace = true
+
+[build-dependencies]
+itertools.workspace = true
+proc-macro2.workspace = true
+syn.workspace = true
+quote.workspace = true
+
+[dependencies]
+anyhow.workspace = true

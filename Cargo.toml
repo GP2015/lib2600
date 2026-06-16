@@ -1,15 +1,19 @@
 [workspace]
 resolver = "3"
-members = ["emucore"]
+members = ["emucore", "vm"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
+anyhow = "1.0.102"
 arrayvec = { version = "0.7.6", default-features = false }
-itertools = { version = "0.14.0", default-features = false }
+itertools = { version = "0.15.0", default-features = false }
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
 rstest = "0.26.1"
 strum_macros = "0.28.0"
+syn = "2.0.117"
 thiserror = { version = "2.0.18", default-features = false }
 
 [profile.release]
