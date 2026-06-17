@@ -1,118 +1,221 @@
-use itertools::izip;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::Span;
 use quote::quote;
+use serde::Deserialize;
 use std::{array, env, fs, path::Path};
-use syn::Ident;
+use syn::{File as SynFile, Ident};
 
-fn make_segment_lut(path: &str, enum_name: &str, token_stream: &mut TokenStream2) -> [Ident; 256] {
-    let parsed_file: Vec<Vec<String>> = fs::read_to_string(path)
-        .unwrap()
-        .lines()
-        .map(|line| line.split_whitespace().map(|s| s.to_owned()).collect())
-        .collect();
+#[derive(Debug, Deserialize)]
+struct OpcodePattern(String);
 
-    let enum_ident = Ident::new(enum_name, Span::call_site());
+impl OpcodePattern {
+    fn possible_opcodes(&self) -> impl Iterator<Item = usize> {
+        self.0.split(",").flat_map(|pattern| {
+            assert!(pattern.len() == 8);
 
-    let variants = parsed_file.iter().map(|line| {
-        let variant = Ident::new(&line[0], Span::call_site());
-        quote! { #variant }
-    });
+            let mut unknown_indices: Vec<_> = Vec::new();
+            let mut mask = 0;
 
-    token_stream.extend(quote! {
-        #[derive(Clone, Copy, Debug)]
-        enum #enum_ident {
-            #(#variants),*
-        }
-    });
-
-    let mut lut: [Option<Ident>; 256] = array::from_fn(|_| None);
-
-    for row in parsed_file {
-        for pattern in &row[1..] {
-            for opcode in iter_possible_vals(pattern) {
-                let term_ident = Ident::new(&row[0], Span::call_site());
-                if lut[opcode] != Some(term_ident.clone()) {
-                    assert!(lut[opcode].is_none());
-                    lut[opcode] = Some(term_ident);
+            for (i, c) in pattern.chars().rev().enumerate() {
+                match c {
+                    '0' => (),
+                    '1' => mask |= 1 << i,
+                    '?' => unknown_indices.push(i),
+                    _ => unreachable!(),
                 }
             }
-        }
-    }
 
-    lut.map(Option::unwrap)
+            (0..(1 << unknown_indices.len())).map(move |id| {
+                let mut val = mask;
+
+                for (src_bit, &dst_bit) in unknown_indices.iter().enumerate() {
+                    val |= ((id >> src_bit) & 1) << dst_bit;
+                }
+
+                val
+            })
+        })
+    }
 }
 
-fn iter_possible_vals(rep: &str) -> impl Iterator<Item = usize> {
-    let stripped_rep = rep.replace('_', "");
-    assert!(stripped_rep.len() == 8);
+#[derive(Debug, Deserialize)]
+struct InstructionSegment {
+    name: String,
+    pattern: OpcodePattern,
+}
 
-    let mut unknown_indices: Vec<_> = Vec::new();
-    let mut mask = 0;
+#[derive(Debug, Deserialize)]
+struct RawInstructions {
+    base_instructions: Vec<InstructionSegment>,
+    addressing_modes: Vec<InstructionSegment>,
+    addressing_mode_registers: Vec<InstructionSegment>,
+}
 
-    for (i, c) in stripped_rep.chars().enumerate() {
-        match c {
-            '0' => mask |= 0 << i,
-            '1' => mask |= 1 << i,
-            '?' => unknown_indices.push(i),
-            _ => unreachable!(),
+#[derive(Debug, Default)]
+struct LutEntry {
+    instr: Option<usize>,
+    addr_mode: Option<usize>,
+    addr_mode_reg: Option<usize>,
+}
+
+#[derive(Clone, Debug)]
+enum AddrModeCount {
+    None,
+    Single(usize),
+    Multiple,
+}
+
+impl AddrModeCount {
+    fn add(&mut self, new_mode_idx: usize) {
+        match self {
+            Self::None => *self = Self::Single(new_mode_idx),
+            Self::Single(old_mode_idx) if *old_mode_idx != new_mode_idx => *self = Self::Multiple,
+            _ => (),
         }
     }
-
-    (0..(1 << unknown_indices.len())).map(move |id| {
-        let mut val = mask;
-
-        for (src_bit, &dst_bit) in unknown_indices.iter().enumerate() {
-            val |= ((id >> src_bit) & 1) << dst_bit;
-        }
-
-        val
-    })
 }
 
 fn main() {
-    let mut token_stream = TokenStream2::new();
+    let file_str = fs::read_to_string("src/instr.toml").unwrap();
+    let raw_instrs: RawInstructions = toml::from_str(&file_str).unwrap();
 
-    macro_rules! make_segment_lut {
-        ($(($lut_name:ident, $enum_name:ident, $file_name:literal)),+ $(,)?) => {$(
-            let path = concat!("src/instr/", $file_name);
-            let enum_name_str = stringify!($enum_name);
-            let $lut_name = make_segment_lut(path, enum_name_str, &mut token_stream);
-        )+};
+    let mut lut: [LutEntry; 256] = array::from_fn(|_| LutEntry::default());
+
+    for (i, base_instr) in raw_instrs.base_instructions.iter().enumerate() {
+        for opcode in base_instr.pattern.possible_opcodes() {
+            assert!(lut[opcode].instr.is_none() || lut[opcode].instr == Some(i));
+            lut[opcode].instr = Some(i);
+        }
     }
 
-    make_segment_lut!(
-        (base_instr_lut, BaseInstruction, "base_instr.txt"),
-        (addr_mode_lut, AddrMode, "addr_mode.txt"),
-        (addr_idx_lut, AddrModeIdx, "addr_idx.txt")
-    );
+    let mut base_instr_map: Vec<AddrModeCount> =
+        vec![AddrModeCount::None; raw_instrs.base_instructions.len()];
 
-    let instrs = izip!(
-        base_instr_lut.iter(),
-        addr_mode_lut.iter(),
-        addr_idx_lut.iter()
-    )
-    .map(|(base_instr, addr_mode, addr_idx)| {
-        quote! {
-            Instruction {
-                base_instr: BaseInstruction::#base_instr,
-                addr_mode: AddrMode::#addr_mode,
-                addr_idx: AddrModeIdx::#addr_idx,
+    for (i, addr_mode) in raw_instrs.addressing_modes.iter().enumerate() {
+        for opcode in addr_mode.pattern.possible_opcodes() {
+            assert!(lut[opcode].addr_mode.is_none() || lut[opcode].addr_mode == Some(i));
+            lut[opcode].addr_mode = Some(i);
+            base_instr_map[lut[opcode].instr.unwrap()].add(i);
+        }
+    }
+
+    let mut addr_mode_map: Vec<bool> = vec![false; raw_instrs.addressing_modes.len()];
+
+    for (i, addr_mode_reg) in raw_instrs.addressing_mode_registers.iter().enumerate() {
+        for opcode in addr_mode_reg.pattern.possible_opcodes() {
+            assert!(lut[opcode].addr_mode_reg.is_none() || lut[opcode].addr_mode_reg == Some(i));
+            lut[opcode].addr_mode_reg = Some(i);
+            addr_mode_map[lut[opcode].addr_mode.unwrap()] = true;
+        }
+    }
+
+    let instr_variant_tokens = raw_instrs
+        .base_instructions
+        .iter()
+        .enumerate()
+        .map(|(i, instr)| {
+            let base_instr_ident = Ident::new(&instr.name, Span::call_site());
+            if matches!(base_instr_map[i], AddrModeCount::Multiple) {
+                quote! { #base_instr_ident (AddressingMode) }
+            } else {
+                quote! { #base_instr_ident }
             }
+        });
+
+    let addr_mode_variant_tokens =
+        raw_instrs
+            .addressing_modes
+            .iter()
+            .enumerate()
+            .map(|(i, addr_mode)| {
+                let addr_mode_ident = Ident::new(&addr_mode.name, Span::call_site());
+                if addr_mode_map[i] {
+                    quote! { #addr_mode_ident (AddressingModeRegister) }
+                } else {
+                    quote! { #addr_mode_ident }
+                }
+            });
+
+    let addr_mode_reg_variant_tokens = raw_instrs
+        .addressing_mode_registers
+        .iter()
+        .map(|addr_mode_idx| Ident::new(&addr_mode_idx.name, Span::call_site()));
+
+    let lut_entry_tokens = lut.iter().map(|entry| {
+        let instr_idx = entry.instr.unwrap();
+        let instr_ident = Ident::new(
+            &raw_instrs.base_instructions[instr_idx].name,
+            Span::call_site(),
+        );
+
+        if matches!(base_instr_map[instr_idx], AddrModeCount::Multiple) {
+            let addr_mode_idx = entry.addr_mode.unwrap();
+            let addr_mode_ident = Ident::new(
+                &raw_instrs.addressing_modes[addr_mode_idx].name,
+                Span::call_site(),
+            );
+
+            println!(
+                "{:?}, {}, {}",
+                entry,
+                raw_instrs.base_instructions[instr_idx].name,
+                raw_instrs.addressing_modes[addr_mode_idx].name,
+            );
+
+            if addr_mode_map[addr_mode_idx] {
+                let addr_mode_reg_idx = entry.addr_mode_reg.unwrap();
+                let addr_mode_reg_ident = Ident::new(
+                    &raw_instrs.addressing_mode_registers[addr_mode_reg_idx].name,
+                    Span::call_site(),
+                );
+
+                quote! {
+                    Instruction::#instr_ident (
+                        AddressingMode::#addr_mode_ident (
+                            AddressingModeRegister::#addr_mode_reg_ident
+                        )
+                    )
+                }
+            } else {
+                quote! {
+                    Instruction::#instr_ident (AddressingMode::#addr_mode_ident)
+                }
+            }
+        } else {
+            println!(
+                "{:?}, {}",
+                entry, raw_instrs.base_instructions[instr_idx].name,
+            );
+
+            quote! { Instruction::#instr_ident }
         }
     });
 
-    token_stream.extend(quote! {
+    let token_stream = quote! {
         #[derive(Clone, Copy, Debug)]
-        struct Instruction {
-            base_instr: BaseInstruction,
-            addr_mode: AddrMode,
-            addr_idx: AddrModeIdx,
+        enum Instruction {
+            #(#instr_variant_tokens),*
         }
 
-        const OPCODE_LUT: [Instruction; 256] = [#(#instrs),*];
-    });
+        #[derive(Clone, Copy, Debug)]
+        enum AddressingMode {
+            #(#addr_mode_variant_tokens),*
+        }
+
+        #[derive(Clone, Copy, Debug)]
+        enum AddressingModeRegister {
+            #(#addr_mode_reg_variant_tokens),*
+        }
+
+        const OPCODE_LUT: [Instruction; 256] = [
+            #(#lut_entry_tokens),*
+        ];
+    };
 
     let out_dir = env::var("OUT_DIR").unwrap();
-    let dest = Path::new(&out_dir).join("lut.rs");
-    fs::write(dest, token_stream.to_string()).unwrap();
+    let dest = Path::new(&out_dir).join("gen.rs");
+
+    let syntax_tree: SynFile = syn::parse2(token_stream).unwrap();
+    let formatted = prettyplease::unparse(&syntax_tree);
+
+    fs::write(dest, formatted).unwrap();
 }

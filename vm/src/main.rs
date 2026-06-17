@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
-include!(concat!(env!("OUT_DIR"), "/lut.rs"));
+include!(concat!(env!("OUT_DIR"), "/gen.rs"));
 
 use anyhow::anyhow;
 use std::io::Read;
@@ -38,7 +38,7 @@ impl Cpu {
         }
     }
 
-    pub fn tick(&self, rom: &[u8], ram: &mut [Option<u8>]) -> anyhow::Result<()> {
+    pub fn tick(&mut self, rom: &[u8], ram: &mut [Option<u8>]) -> anyhow::Result<()> {
         let opcode = if (self.pc >> 12) & 1 == 0 {
             ram[(self.pc & 0xFFF) as usize]
                 .ok_or_else(|| anyhow!("attempted to access uninitialised RAM"))?
@@ -48,7 +48,7 @@ impl Cpu {
 
         let instr = OPCODE_LUT[usize::from(opcode)];
 
-        Ok(())
+        todo!()
     }
 }
 
@@ -62,7 +62,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut ram = [None; 4096];
 
-    let cpu = Cpu::new(&rom);
+    let mut cpu = Cpu::new(&rom);
 
     loop {
         cpu.tick(&rom, &mut ram)?;
