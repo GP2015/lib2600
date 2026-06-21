@@ -10,10 +10,10 @@ http://www.robotsandcomputers.com/computers/manuals/atari2600_fsm.pdf
 MOS 650X datasheet:
 https://web.archive.org/web/20220629085756if_/http://archive.6502.org/datasheets/mos_6500_mpu_nov_1985.pdf
 
-MOS 6502 instruction set:
+MOS 650X instruction set:
 https://www.masswerk.at/6502/6502_instruction_set.html
 
-MOS 6502 per-instruction cycle breakdown:
+MOS 650X per-instruction cycle breakdown:
 https://www.nesdev.org/6502_cpu.txt
 
 MOS 6532 (RIOT) datasheet:
