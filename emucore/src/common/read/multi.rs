@@ -1,8 +1,5 @@
 use crate::common::{
-    HasMux, IsCondition,
-    condition::BaseCondition,
-    line::{error::LineError, ident::LineIdent},
-    read::single::SingleRead,
+    HasCouldBe, HasMux, IsCondition, condition::BaseCondition, read::single::SingleRead,
 };
 use arrayvec::ArrayVec;
 use core::array;
@@ -12,9 +9,12 @@ pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
 pub trait IsMultiRead {
     fn from_value(value: u16) -> Self;
     fn iter_possible_reads(&self) -> impl Iterator<Item = u16>;
-    fn is_value(&self, val: u16) -> BaseCondition;
+
+    #[must_use]
+    fn incremented(&self) -> Self;
     #[must_use]
     fn decremented(&self) -> Self;
+
     #[must_use]
     fn combine_with(&self, other: &Self) -> Self;
 }
@@ -46,18 +46,37 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
         })
     }
 
-    fn is_value(&self, value: u16) -> BaseCondition {
-        let check = |check_bit: u16| {
-            self.iter()
-                .enumerate()
-                .all(|(bit, bit_state)| bit_state.could_read((value >> bit) & 1 == check_bit))
-        };
+    fn incremented(&self) -> Self {
+        let mut res = *self;
+        let mut must_carry = true;
 
-        match (check(1), check(0)) {
-            (true, false) => BaseCondition::Yes,
-            (false, true) => BaseCondition::No,
-            _ => BaseCondition::Unknown,
+        for bit in &mut res {
+            match bit {
+                SingleRead::Low => {
+                    *bit = if must_carry {
+                        SingleRead::High
+                    } else {
+                        SingleRead::Unknown
+                    };
+                    break;
+                }
+                SingleRead::High => {
+                    *bit = if must_carry {
+                        SingleRead::Low
+                    } else {
+                        SingleRead::Unknown
+                    };
+                }
+                SingleRead::Unknown => {
+                    if must_carry {
+                        *bit = SingleRead::High;
+                    }
+                    must_carry = false;
+                }
+            }
         }
+
+        res
     }
 
     fn decremented(&self) -> Self {
@@ -108,20 +127,18 @@ impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
     }
 }
 
-pub trait CheckMultiRead<const SIZE: usize> {
-    fn ok_or_impossible(self, name: &'static str) -> Result<MultiRead<SIZE>, LineError>;
-}
+impl<const SIZE: usize> HasCouldBe<usize> for MultiRead<SIZE> {
+    fn could_be(&self, other: &usize) -> BaseCondition {
+        let check = |check_bit: usize| {
+            self.iter()
+                .enumerate()
+                .all(|(bit, bit_state)| bit_state.could_read((*other >> bit) & 1 == check_bit))
+        };
 
-impl<const SIZE: usize> CheckMultiRead<SIZE> for Result<MultiRead<SIZE>, usize> {
-    fn ok_or_impossible(self, name: &'static str) -> Result<MultiRead<SIZE>, LineError> {
-        match self {
-            Ok(read) => Ok(read),
-            Err(bit) => Err(LineError::ImpossibleLineSignal {
-                ident: LineIdent::BusLine {
-                    bus_name: name,
-                    bit,
-                },
-            }),
+        match (check(1), check(0)) {
+            (true, false) => BaseCondition::Yes,
+            (false, true) => BaseCondition::No,
+            _ => BaseCondition::Unknown,
         }
     }
 }

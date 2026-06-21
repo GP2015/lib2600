@@ -1,14 +1,6 @@
 #![no_std]
 #![warn(clippy::pedantic, clippy::nursery)]
-#![cfg_attr(
-    not(test),
-    warn(
-        clippy::indexing_slicing,
-        // clippy::todo,
-        clippy::unreachable,
-        clippy::unwrap_used,
-    )
-)]
+#![cfg_attr(not(test), warn(clippy::unreachable, clippy::unwrap_used,))]
 #![allow(clippy::missing_errors_doc)]
 
 mod common;
@@ -26,7 +18,8 @@ pub use crate::full::Emulator;
 
 // pub use crate::{
 //     common::{
-//         BaseCondition, HasMux, IsCondition,
+//         HasMux,
+//         condition::{BaseCondition, IsCondition},
 //         line::{
 //             error::LineError,
 //             ident::LineIdent,

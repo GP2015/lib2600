@@ -14,3 +14,7 @@ pub type MBitReg<const SIZE: usize> = MultiRead<SIZE>;
 pub trait HasMux {
     fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self;
 }
+
+pub trait HasCouldBe<T> {
+    fn could_be(&self, other: &T) -> BaseCondition;
+}
