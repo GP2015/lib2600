@@ -2,7 +2,7 @@ use crate::common::{
     HasMux, IsCondition,
     condition::BaseCondition,
     line::{error::LineError, ident::LineIdent},
-    read::single::{CheckSingleRead, SingleRead},
+    read::single::SingleRead,
     signal::LineSignal,
 };
 
@@ -33,8 +33,8 @@ impl DriveState {
         }
     }
 
-    pub fn read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError> {
-        self.read().ok_or_impossible(ident)
+    pub fn read_ok(self, ident: LineIdent) -> Result<SingleRead, LineError> {
+        self.read().ok_or(LineError::ImpossibleLineSignal { ident })
     }
 
     #[must_use]
@@ -81,6 +81,13 @@ impl DriveState {
 
         states.try_fold(init, Self::contend_pair)
     }
+
+    pub fn contend_ok(
+        states: impl Iterator<Item = Self>,
+        ident: LineIdent,
+    ) -> Result<Self, LineError> {
+        Self::contend(states).ok_or(LineError::ShortCircuit { ident })
+    }
 }
 
 impl From<SingleRead> for DriveState {
@@ -120,20 +127,5 @@ impl HasMux for DriveState {
             BaseCondition::Yes => high_opt(),
             BaseCondition::Unknown => low_opt().combine_with(high_opt()),
         }
-    }
-}
-
-pub trait CheckDriveState {
-    fn ok_or_short(self, ident: LineIdent) -> Result<DriveState, LineError>;
-    fn ok_read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError>;
-}
-
-impl CheckDriveState for Option<DriveState> {
-    fn ok_or_short(self, ident: LineIdent) -> Result<DriveState, LineError> {
-        self.ok_or(LineError::ShortCircuit { ident })
-    }
-
-    fn ok_read_or_error(self, ident: LineIdent) -> Result<SingleRead, LineError> {
-        self.ok_or_short(ident)?.read().ok_or_impossible(ident)
     }
 }

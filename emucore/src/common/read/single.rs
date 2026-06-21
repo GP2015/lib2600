@@ -1,8 +1,4 @@
-use crate::common::{
-    HasMux, IsCondition,
-    condition::BaseCondition,
-    line::{error::LineError, ident::LineIdent},
-};
+use crate::common::{HasMux, IsCondition, condition::BaseCondition};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum SingleRead {
@@ -82,15 +78,5 @@ impl HasMux for SingleRead {
             BaseCondition::Yes => high_opt(),
             BaseCondition::Unknown => low_opt().combine_with(high_opt()),
         }
-    }
-}
-
-pub trait CheckSingleRead {
-    fn ok_or_impossible(self, ident: LineIdent) -> Result<SingleRead, LineError>;
-}
-
-impl CheckSingleRead for Option<SingleRead> {
-    fn ok_or_impossible(self, ident: LineIdent) -> Result<SingleRead, LineError> {
-        self.ok_or(LineError::ImpossibleLineSignal { ident })
     }
 }
