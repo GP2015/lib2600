@@ -128,11 +128,11 @@ impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
 }
 
 impl<const SIZE: usize> HasCouldBe<usize> for MultiRead<SIZE> {
-    fn could_be(&self, other: &usize) -> BaseCondition {
+    fn could_be(&self, other: usize) -> BaseCondition {
         let check = |check_bit: usize| {
             self.iter()
                 .enumerate()
-                .all(|(bit, bit_state)| bit_state.could_read((*other >> bit) & 1 == check_bit))
+                .all(|(bit, bit_state)| bit_state.could_read((other >> bit) & 1 == check_bit))
         };
 
         match (check(1), check(0)) {
@@ -140,5 +140,11 @@ impl<const SIZE: usize> HasCouldBe<usize> for MultiRead<SIZE> {
             (false, true) => BaseCondition::No,
             _ => BaseCondition::Unknown,
         }
+    }
+}
+
+impl<const SIZE: usize> HasCouldBe<&'static str> for MultiRead<SIZE> {
+    fn could_be(&self, other: &'static str) -> BaseCondition {
+        todo!()
     }
 }

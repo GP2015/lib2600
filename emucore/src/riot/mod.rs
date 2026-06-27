@@ -84,7 +84,7 @@ impl Riot {
         self.reg.timer = HasMux::mux(
             reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                HasMux::mux(reads.reg.sub_timer.could_be(&0), def, &|| {
+                HasMux::mux(reads.reg.sub_timer.could_be(0), def, &|| {
                     def().decremented()
                 })
             },
@@ -96,9 +96,9 @@ impl Riot {
         self.reg.sub_timer = HasMux::mux(
             reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                HasMux::mux(def().could_be(&0), &|| def().decremented(), &|| {
+                HasMux::mux(def().could_be(0), &|| def().decremented(), &|| {
                     HasMux::mux(
-                        reads.reg.timer.could_be(&0),
+                        reads.reg.timer.could_be(0),
                         &|| Self::timer_interval_read(reads.reg.timer_interval),
                         unknown,
                     )
@@ -112,8 +112,8 @@ impl Riot {
         self.reg.timer_interval = HasMux::mux(
             reads.reg.timer_ir_flag.as_cond(),
             &|| {
-                HasMux::mux(reads.reg.sub_timer.could_be(&0), def, &|| {
-                    HasMux::mux(reads.reg.timer.could_be(&0), def, unknown)
+                HasMux::mux(reads.reg.sub_timer.could_be(0), def, &|| {
+                    HasMux::mux(reads.reg.timer.could_be(0), def, unknown)
                 })
             },
             unknown,
@@ -124,10 +124,10 @@ impl Riot {
             def().as_cond(),
             &|| {
                 HasMux::mux(
-                    reads.reg.sub_timer.could_be(&0),
+                    reads.reg.sub_timer.could_be(0),
                     &|| SingleRead::Low,
                     &|| {
-                        HasMux::mux(reads.reg.timer.could_be(&0), &|| SingleRead::Low, &|| {
+                        HasMux::mux(reads.reg.timer.could_be(0), &|| SingleRead::Low, &|| {
                             SingleRead::High
                         })
                     },
@@ -151,8 +151,8 @@ impl Riot {
             let cond = cs_cond(reads)
                 & reads.line.rs.as_cond()
                 & !reads.line.a[2].as_cond()
-                & reads.line.a[0].as_cond().could_be(&a0)
-                & reads.line.a[1].as_cond().could_be(&a1)
+                & reads.line.a[0].as_cond().could_be(a0)
+                & reads.line.a[1].as_cond().could_be(a1)
                 & !reads.line.rw.as_cond();
 
             *reg = HasMux::mux(cond, &|| *read, &|| reads.line.db);

@@ -52,7 +52,7 @@ impl BitOr for BaseCondition {
 }
 
 impl HasCouldBe<bool> for BaseCondition {
-    fn could_be(&self, b: &bool) -> Self {
-        if *b { *self } else { !*self }
+    fn could_be(&self, b: bool) -> Self {
+        if b { *self } else { !*self }
     }
 }

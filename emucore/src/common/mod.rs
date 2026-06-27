@@ -16,5 +16,5 @@ pub trait HasMux {
 }
 
 pub trait HasCouldBe<T> {
-    fn could_be(&self, other: &T) -> BaseCondition;
+    fn could_be(&self, other: T) -> BaseCondition;
 }

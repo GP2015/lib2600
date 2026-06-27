@@ -1,6 +1,7 @@
-pub mod instructions;
 pub mod reads;
 pub mod regs;
+
+use emucore_macros::cpu_instr_mnemonic;
 
 use crate::{
     common::{
@@ -13,7 +14,6 @@ use crate::{
         signal::LineSignal,
     },
     cpu::{
-        instructions::Instruction,
         reads::{CpuAllReads, CpuLineReads},
         regs::CpuRegs,
     },
@@ -52,7 +52,7 @@ impl Cpu {
 
         macro_rules! could_match {
             ($cond:expr, $def:expr, ($opt:expr, $branch:expr) $(,)?) => {
-                HasMux::mux($cond.could_be(&$opt), $def, $branch)
+                HasMux::mux($cond.could_be($opt), $def, $branch)
             };
             (
                 $cond:expr,
@@ -62,8 +62,8 @@ impl Cpu {
                 $(,)?
             ) => {
                 HasMux::mux(
-                    $cond.could_be(&$opt1),
-                    &|| could_match!($cond, $def, $(($other_opts, $other_branches))+),
+                    $cond.could_be($opt1),
+                    &|| could_match!($cond, $def, $(($other_opts, $other_branches)),+),
                     $branch1
                 )
             };
@@ -75,34 +75,27 @@ impl Cpu {
             (1, &|| could_match!(
                 reads.line.db,
                 def,
-                (Instruction::Txs, set_to_x)
+                (cpu_instr_mnemonic!(Txs), set_to_x),
             )),
             (2, &|| could_match!(
                 reads.line.db,
                 def,
-                (Instruction::Txs, set_to_x)
-            ))
+                (cpu_instr_mnemonic!(Pha, Php, Brk), dec),
+                (cpu_instr_mnemonic!(Pla, Plp, Rti, Rts), inc),
+            )),
+            (3, &|| could_match!(
+                reads.line.db,
+                def,
+                (cpu_instr_mnemonic!(Brk, Jsr), dec),
+                (cpu_instr_mnemonic!(Rti, Rts), inc),
+            )),
+            (4, &|| could_match!(
+                reads.line.db,
+                def,
+                (cpu_instr_mnemonic!(Brk, Jsr), dec),
+                (cpu_instr_mnemonic!(Rti), inc),
+            )),
         );
-
-        // self.reg.s = could_match!(reads.reg.instr_cycle, def(), (1, set_to_x));
-
-        // self.reg.s = HasMux::mux(
-        //     reads.reg.instr_cycle.could_be(&1),
-        //     &|| HasMux::mux(reads.reg.instr_cycle.could_be(&2), def, dec),
-        //     set_to_x,
-        // );
-
-        // 2(1)
-        //     set <- TXS
-        // 3(2)
-        //     dec <- PHA/PHP/BRK
-        //     inc <- PLA/PLP/RTI/RTS
-        // 4(3)
-        //     dec <- BRK/JSR
-        //     inc <- RTI/RTS
-        // 5(4)
-        //     dec <- BRK/JSR
-        //     inc <- RTI
     }
 
     pub fn handle_falling_edge(&mut self, line_reads: CpuLineReads) {

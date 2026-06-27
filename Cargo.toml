@@ -1,14 +1,14 @@
 [workspace]
 resolver = "3"
-members = ["emucore"]
+members = ["emucore", "emucore-macros"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
+ahash = { version = "0.8.12", features = ["serde"] }
 arrayvec = { version = "0.7.6", default-features = false }
 itertools = { version = "0.15.0", default-features = false }
-prettyplease = "0.2.37"
 proc-macro2 = "1.0.106"
 quote = "1.0.45"
 rstest = "0.26.1"
