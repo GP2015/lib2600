@@ -15,6 +15,17 @@ pub trait HasMux {
     fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self;
 }
 
-pub trait HasCouldBe<T> {
-    fn could_be(&self, other: T) -> BaseCondition;
+#[macro_export]
+macro_rules! mux_matches {
+    (($cond:expr, $arm:expr), $catch:expr) => {
+        HasMux::mux($cond, $catch, $arm)
+    };
+
+    (($cond:expr, $arm:expr), ($cond2:expr, $arm2:expr), $($rest:tt)*) => {
+        HasMux::mux($cond, &|| mux_matches!(($cond2, $arm2), $($rest)*), $arm)
+    };
+}
+
+pub trait HasIs<T> {
+    fn is(&self, other: T) -> BaseCondition;
 }

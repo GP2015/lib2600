@@ -1,4 +1,4 @@
-use crate::common::HasCouldBe;
+use crate::common::HasIs;
 use core::ops::{BitAnd, BitOr, Not};
 
 pub trait IsCondition {
@@ -51,8 +51,8 @@ impl BitOr for BaseCondition {
     }
 }
 
-impl HasCouldBe<bool> for BaseCondition {
-    fn could_be(&self, b: bool) -> Self {
+impl HasIs<bool> for BaseCondition {
+    fn is(&self, b: bool) -> Self {
         if b { *self } else { !*self }
     }
 }
