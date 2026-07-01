@@ -1,5 +1,5 @@
 use crate::common::{
-    HasCouldBe, HasMux, IsCondition, condition::BaseCondition, read::single::SingleRead,
+    CheckIs, HasMux, IsCondition, condition::BaseCondition, read::single::SingleRead,
 };
 use arrayvec::ArrayVec;
 use core::array;
@@ -8,6 +8,8 @@ pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
 
 pub trait IsMultiRead {
     fn from_value(value: u16) -> Self;
+    fn from_pattern(pattern: &str) -> Self;
+
     fn iter_possible_reads(&self) -> impl Iterator<Item = u16>;
 
     #[must_use]
@@ -22,6 +24,22 @@ pub trait IsMultiRead {
 impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
     fn from_value(value: u16) -> Self {
         array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1))
+    }
+
+    fn from_pattern(pattern: &str) -> Self {
+        let bits: ArrayVec<SingleRead, SIZE> = pattern
+            .chars()
+            .rev()
+            .map(|c| match c {
+                '0' => SingleRead::Low,
+                '1' => SingleRead::High,
+                '?' => SingleRead::Unknown,
+                _ => unreachable!(),
+            })
+            .collect();
+
+        bits.into_inner()
+            .expect("the pattern should have exactly SIZE characters")
     }
 
     fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
@@ -127,24 +145,50 @@ impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
     }
 }
 
-impl<const SIZE: usize> HasCouldBe<usize> for MultiRead<SIZE> {
-    fn could_be(&self, other: usize) -> BaseCondition {
-        let check = |check_bit: usize| {
-            self.iter()
-                .enumerate()
-                .all(|(bit, bit_state)| bit_state.could_read((other >> bit) & 1 == check_bit))
-        };
+impl<const SIZE: usize> CheckIs<usize> for MultiRead<SIZE> {
+    fn is(&self, val: usize) -> BaseCondition {
+        let mut must_be = true;
 
-        match (check(1), check(0)) {
-            (true, false) => BaseCondition::Yes,
-            (false, true) => BaseCondition::No,
-            _ => BaseCondition::Unknown,
+        for (i, &read_bit) in self.iter().enumerate() {
+            let val_bit = val >> i & 1 == 1;
+
+            match (read_bit, val_bit) {
+                (SingleRead::Low, false) | (SingleRead::High, true) => (),
+                (SingleRead::Low, true) | (SingleRead::High, false) => return BaseCondition::No,
+                (SingleRead::Unknown, _) => must_be = false,
+            }
+        }
+
+        if must_be {
+            BaseCondition::Yes
+        } else {
+            BaseCondition::Unknown
         }
     }
 }
 
-impl<const SIZE: usize> HasCouldBe<&'static str> for MultiRead<SIZE> {
-    fn could_be(&self, other: &'static str) -> BaseCondition {
-        todo!()
+impl<const SIZE: usize> CheckIs<&Self> for MultiRead<SIZE> {
+    fn is(&self, pattern: &Self) -> BaseCondition {
+        let mut must_be = true;
+
+        for (&read_bit, &pattern_bit) in self.iter().zip(pattern.iter()) {
+            match (read_bit, pattern_bit) {
+                (SingleRead::Low, SingleRead::Low)
+                | (SingleRead::High, SingleRead::High)
+                | (_, SingleRead::Unknown) => (),
+
+                (SingleRead::Low, SingleRead::High) | (SingleRead::High, SingleRead::Low) => {
+                    return BaseCondition::No;
+                }
+
+                (SingleRead::Unknown, _) => must_be = false,
+            }
+        }
+
+        if must_be {
+            BaseCondition::Yes
+        } else {
+            BaseCondition::Unknown
+        }
     }
 }

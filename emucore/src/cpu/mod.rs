@@ -1,23 +1,23 @@
 pub mod reads;
 pub mod regs;
 
-use emucore_macros::cpu_instr_mnemonic;
-
 use crate::{
     common::{
-        HasCouldBe, HasMux,
+        CheckIs, HasMux,
         line::{
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
         },
-        read::multi::IsMultiRead,
+        read::multi::{IsMultiRead, MultiRead},
         signal::LineSignal,
     },
     cpu::{
         reads::{CpuAllReads, CpuLineReads},
         regs::CpuRegs,
     },
+    mux_matches,
 };
+use emucore_macros::str_pattern_from_mnemonic;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Cpu {
@@ -40,67 +40,35 @@ impl Cpu {
     }
 
     pub fn handle_rising_edge(&mut self, line_reads: CpuLineReads) {
-        let reads = CpuAllReads::new(line_reads, self.reg.clone());
+        let r = CpuAllReads::new(line_reads, self.reg.clone());
         todo!()
     }
 
-    fn update_s(&mut self, reads: &CpuAllReads) {
-        let def = &|| reads.reg.s;
-        let set_to_x = &|| reads.reg.x;
-        let dec = &|| reads.reg.s.decremented();
-        let inc = &|| reads.reg.s.incremented();
-
-        macro_rules! could_match {
-            ($cond:expr, $def:expr, ($opt:expr, $branch:expr) $(,)?) => {
-                HasMux::mux($cond.could_be($opt), $def, $branch)
-            };
-            (
-                $cond:expr,
-                $def:expr,
-                ($opt1:expr, $branch1:expr),
-                $(($other_opts:expr, $other_branches:expr)),+
-                $(,)?
-            ) => {
-                HasMux::mux(
-                    $cond.could_be($opt1),
-                    &|| could_match!($cond, $def, $(($other_opts, $other_branches)),+),
-                    $branch1
-                )
+    fn update_s(&mut self, r: &CpuAllReads) {
+        macro_rules! cond {
+            (($($ic:literal),+), ($($mnem:expr),+)) => {
+                r.reg.instr_cycle.is_any([$($ic),+])
+                    & r.line.db.is_any(&str_pattern_from_mnemonic!($($mnem),+))
             };
         }
 
-        self.reg.s = could_match!(
-            reads.reg.instr_cycle,
-            def,
-            (1, &|| could_match!(
-                reads.line.db,
-                def,
-                (cpu_instr_mnemonic!(Txs), set_to_x),
-            )),
-            (2, &|| could_match!(
-                reads.line.db,
-                def,
-                (cpu_instr_mnemonic!(Pha, Php, Brk), dec),
-                (cpu_instr_mnemonic!(Pla, Plp, Rti, Rts), inc),
-            )),
-            (3, &|| could_match!(
-                reads.line.db,
-                def,
-                (cpu_instr_mnemonic!(Brk, Jsr), dec),
-                (cpu_instr_mnemonic!(Rti, Rts), inc),
-            )),
-            (4, &|| could_match!(
-                reads.line.db,
-                def,
-                (cpu_instr_mnemonic!(Brk, Jsr), dec),
-                (cpu_instr_mnemonic!(Rti), inc),
-            )),
+        self.reg.s = mux_matches!(
+            (cond!((1), (Txs)), &|| r.reg.x),
+            (
+                cond!((2), (Pha, Php, Brk)) | cond!((3, 4), (Brk, Jsr)),
+                &|| r.reg.s.decremented()
+            ),
+            (
+                cond!((2), (Pla, Plp, Rti, Rts)) | cond!((3), (Rti, Rts)) | cond!((4), (Rti)),
+                &|| r.reg.s.incremented()
+            ),
+            &|| r.reg.s
         );
     }
 
     pub fn handle_falling_edge(&mut self, line_reads: CpuLineReads) {
-        let reads = CpuAllReads::new(line_reads, self.reg.clone());
-        self.update_s(&reads);
+        let r = CpuAllReads::new(line_reads, self.reg.clone());
+        self.update_s(&r);
         todo!()
     }
 }

@@ -3,7 +3,7 @@ pub mod regs;
 
 use crate::{
     common::{
-        BitReg, HasIs, HasMux, MBitReg,
+        BitReg, CheckIs, HasMux, MBitReg,
         condition::{BaseCondition, IsCondition},
         line::{
             multi::{BusDriveState, IsBusDriveState},

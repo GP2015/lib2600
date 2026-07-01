@@ -11,8 +11,8 @@ struct InstrStructVariant {
 #[derive(Debug, Deserialize)]
 struct InstructionConfig {
     pub mnemonic: Vec<InstrStructVariant>,
-    pub addressing_mode: Vec<InstrStructVariant>,
-    pub addressing_mode_index: Vec<InstrStructVariant>,
+    // pub addressing_mode: Vec<InstrStructVariant>,
+    // pub addressing_mode_index: Vec<InstrStructVariant>,
 }
 
 static INSTR_CFG: LazyLock<InstructionConfig> = LazyLock::new(|| {
@@ -24,7 +24,7 @@ pub static INSTR_MNEMONICS: LazyLock<AHashMap<String, String>> = LazyLock::new(|
     let mut map = AHashMap::new();
     for var in &INSTR_CFG.mnemonic {
         let res = map.insert(var.name.clone(), var.pattern.clone());
-        assert!(res.is_none())
+        assert!(res.is_none());
     }
     map
 });
