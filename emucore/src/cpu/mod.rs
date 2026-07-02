@@ -8,6 +8,7 @@ use crate::{
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
         },
+        mux_matches,
         read::multi::{IsMultiRead, MultiRead},
         signal::LineSignal,
     },
@@ -15,7 +16,6 @@ use crate::{
         reads::{CpuAllReads, CpuLineReads},
         regs::CpuRegs,
     },
-    mux_matches,
 };
 use emucore_macros::str_pattern_from_mnemonic;
 

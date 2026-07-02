@@ -15,7 +15,6 @@ pub trait HasMux {
     fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self;
 }
 
-#[macro_export]
 macro_rules! mux_matches {
     (($cond:expr, $arm:expr), $catch:expr) => {
         HasMux::mux($cond, $catch, $arm)
@@ -25,6 +24,7 @@ macro_rules! mux_matches {
         HasMux::mux($cond, &|| mux_matches!(($cond2, $arm2), $($rest)*), $arm)
     };
 }
+pub(crate) use mux_matches;
 
 pub trait CheckIs<T> {
     fn is(&self, other: T) -> BaseCondition;

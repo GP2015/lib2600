@@ -9,13 +9,13 @@ use crate::{
             multi::{BusDriveState, IsBusDriveState},
             single::DriveState,
         },
+        mux_matches,
         read::{
             multi::{IsMultiRead, MultiRead},
             single::SingleRead,
         },
         signal::LineSignal,
     },
-    mux_matches,
     riot::{
         reads::{RiotAllReads, RiotLineReads},
         regs::RiotRegs,
