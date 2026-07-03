@@ -13,7 +13,7 @@ pub fn str_pattern_from_mnemonic(input: TokenStream) -> TokenStream {
 
     let pattern = input_parsed
         .iter()
-        .map(|m| cpu_instr::INSTR_MNEMONICS[&m.to_string()].clone())
+        .flat_map(|m| cpu_instr::MNEM[&m.to_string()].iter())
         .collect::<Vec<_>>();
 
     quote! {

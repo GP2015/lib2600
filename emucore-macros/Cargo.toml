@@ -9,6 +9,4 @@ proc-macro = true
 [dependencies]
 ahash.workspace = true
 quote.workspace = true
-serde.workspace = true
 syn.workspace = true
-toml.workspace = true
