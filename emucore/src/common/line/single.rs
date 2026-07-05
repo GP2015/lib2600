@@ -1,6 +1,5 @@
 use crate::common::{
-    HasMux, IsCondition,
-    condition::BaseCondition,
+    Combine,
     line::{error::LineError, ident::LineIdent},
     read::single::SingleRead,
     signal::LineSignal,
@@ -35,15 +34,6 @@ impl DriveState {
 
     pub fn read_ok(self, ident: LineIdent) -> Result<SingleRead, LineError> {
         self.read().ok_or(LineError::ImpossibleLineSignal { ident })
-    }
-
-    #[must_use]
-    pub const fn combine_with(self, other: Self) -> Self {
-        Self {
-            low: self.low || other.low,
-            high: self.high || other.high,
-            high_z: self.high_z || other.high_z,
-        }
     }
 
     fn contend_pair(self, other: Self) -> Option<Self> {
@@ -120,12 +110,12 @@ impl From<bool> for DriveState {
     }
 }
 
-impl HasMux for DriveState {
-    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
-        match cond.as_cond() {
-            BaseCondition::No => low_opt(),
-            BaseCondition::Yes => high_opt(),
-            BaseCondition::Unknown => low_opt().combine_with(high_opt()),
+impl Combine for DriveState {
+    fn combine_with(&self, other: &Self) -> Self {
+        Self {
+            low: self.low || other.low,
+            high: self.high || other.high,
+            high_z: self.high_z || other.high_z,
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::common::{HasMux, IsCondition, condition::BaseCondition};
+use crate::common::{Combine, IsCondition, condition::BaseCondition};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum SingleRead {
@@ -44,15 +44,6 @@ impl SingleRead {
             Self::Unknown => &[false, true],
         }
     }
-
-    #[must_use]
-    pub const fn combine_with(self, other: Self) -> Self {
-        match (self, other) {
-            (Self::Low, Self::Low) => Self::Low,
-            (Self::High, Self::High) => Self::High,
-            _ => Self::Unknown,
-        }
-    }
 }
 
 impl From<bool> for SingleRead {
@@ -71,12 +62,12 @@ impl IsCondition for SingleRead {
     }
 }
 
-impl HasMux for SingleRead {
-    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
-        match cond.as_cond() {
-            BaseCondition::No => low_opt(),
-            BaseCondition::Yes => high_opt(),
-            BaseCondition::Unknown => low_opt().combine_with(high_opt()),
+impl Combine for SingleRead {
+    fn combine_with(&self, other: &Self) -> Self {
+        match (self, other) {
+            (Self::Low, Self::Low) => Self::Low,
+            (Self::High, Self::High) => Self::High,
+            _ => Self::Unknown,
         }
     }
 }

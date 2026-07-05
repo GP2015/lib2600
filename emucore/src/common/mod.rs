@@ -11,17 +11,13 @@ use crate::common::{
 pub type BitReg = SingleRead;
 pub type MBitReg<const SIZE: usize> = MultiRead<SIZE>;
 
-pub trait HasMux {
-    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self;
-}
-
 macro_rules! mux_matches {
     (($cond:expr, $arm:expr), $catch:expr) => {
-        HasMux::mux($cond, $catch, $arm)
+        Combine::mux($cond, $catch, $arm)
     };
 
     (($cond:expr, $arm:expr), ($cond2:expr, $arm2:expr), $($rest:tt)*) => {
-        HasMux::mux($cond, &|| mux_matches!(($cond2, $arm2), $($rest)*), $arm)
+        Combine::mux($cond, &|| mux_matches!(($cond2, $arm2), $($rest)*), $arm)
     };
 }
 pub(crate) use mux_matches;
@@ -29,9 +25,27 @@ pub(crate) use mux_matches;
 pub trait CheckIs<T> {
     fn is(&self, other: T) -> BaseCondition;
 
-    fn is_any(&self, others: impl IntoIterator<Item = T>) -> BaseCondition {
+    fn is_any(&self, others: impl Iterator<Item = T>) -> BaseCondition {
         others
             .into_iter()
             .fold(BaseCondition::No, |acc, v| acc | self.is(v))
+    }
+}
+
+pub trait Combine {
+    #[must_use]
+    fn combine_with(&self, other: &Self) -> Self;
+
+    fn mux<L, H>(cond: BaseCondition, low_opt: L, high_opt: H) -> Self
+    where
+        Self: Sized,
+        L: FnOnce() -> Self,
+        H: FnOnce() -> Self,
+    {
+        match cond.as_cond() {
+            BaseCondition::No => low_opt(),
+            BaseCondition::Yes => high_opt(),
+            BaseCondition::Unknown => low_opt().combine_with(&high_opt()),
+        }
     }
 }
