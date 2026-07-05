@@ -1,48 +1,18 @@
-use crate::common::{
-    CheckIs, HasMux, IsCondition, condition::BaseCondition, read::single::SingleRead,
-};
+use crate::common::{CheckIs, Combine, condition::BaseCondition, read::single::SingleRead};
 use arrayvec::ArrayVec;
 use core::array;
+use derive_more::{Deref, DerefMut, From, Index, IndexMut};
 
-pub type MultiRead<const SIZE: usize> = [SingleRead; SIZE];
+#[derive(Clone, Debug, Deref, DerefMut, Eq, From, Hash, Index, IndexMut, PartialEq)]
+pub struct MultiRead<const SIZE: usize>(pub [SingleRead; SIZE]);
 
-pub trait IsMultiRead {
-    fn from_value(value: u16) -> Self;
-    fn from_pattern(pattern: &str) -> Self;
-
-    fn iter_possible_reads(&self) -> impl Iterator<Item = u16>;
-
+impl<const SIZE: usize> MultiRead<SIZE> {
     #[must_use]
-    fn incremented(&self) -> Self;
-    #[must_use]
-    fn decremented(&self) -> Self;
-
-    #[must_use]
-    fn combine_with(&self, other: &Self) -> Self;
-}
-
-impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
-    fn from_value(value: u16) -> Self {
-        array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1))
+    pub fn from_value(value: u16) -> Self {
+        array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)).into()
     }
 
-    fn from_pattern(pattern: &str) -> Self {
-        let bits: ArrayVec<SingleRead, SIZE> = pattern
-            .chars()
-            .rev()
-            .map(|c| match c {
-                '0' => SingleRead::Low,
-                '1' => SingleRead::High,
-                '?' => SingleRead::Unknown,
-                _ => unreachable!(),
-            })
-            .collect();
-
-        bits.into_inner()
-            .expect("the pattern should have exactly SIZE characters")
-    }
-
-    fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
+    pub fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
         let mut count = ArrayVec::<_, SIZE>::new();
         let mut mask = 0;
 
@@ -64,11 +34,12 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
         })
     }
 
-    fn incremented(&self) -> Self {
-        let mut res = *self;
+    #[must_use]
+    pub fn incremented(&self) -> Self {
+        let mut res = self.clone();
         let mut must_carry = true;
 
-        for bit in &mut res {
+        for bit in &mut *res {
             match bit {
                 SingleRead::Low => {
                     *bit = if must_carry {
@@ -97,11 +68,12 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
         res
     }
 
-    fn decremented(&self) -> Self {
-        let mut res = *self;
+    #[must_use]
+    pub fn decremented(&self) -> Self {
+        let mut res = self.clone();
         let mut must_carry = true;
 
-        for bit in &mut res {
+        for bit in &mut *res {
             match bit {
                 SingleRead::High => {
                     *bit = if must_carry {
@@ -129,19 +101,11 @@ impl<const SIZE: usize> IsMultiRead for MultiRead<SIZE> {
 
         res
     }
-
-    fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| self[bit].combine_with(other[bit]))
-    }
 }
 
-impl<const SIZE: usize> HasMux for MultiRead<SIZE> {
-    fn mux(cond: BaseCondition, low_opt: &impl Fn() -> Self, high_opt: &impl Fn() -> Self) -> Self {
-        match cond.as_cond() {
-            BaseCondition::No => low_opt(),
-            BaseCondition::Yes => high_opt(),
-            BaseCondition::Unknown => low_opt().combine_with(&high_opt()),
-        }
+impl<const SIZE: usize> Combine for MultiRead<SIZE> {
+    fn combine_with(&self, other: &Self) -> Self {
+        array::from_fn(|bit| self[bit].combine_with(&other[bit])).into()
     }
 }
 

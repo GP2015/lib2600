@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 arrayvec.workspace = true
+derive_more.workspace = true
 emucore-macros = { path = "../emucore-macros" }
 itertools.workspace = true
 strum_macros.workspace = true

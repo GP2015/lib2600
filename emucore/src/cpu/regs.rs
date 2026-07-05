@@ -18,14 +18,14 @@ pub struct CpuRegs {
 }
 
 impl CpuRegs {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            instr_cycle: [BitReg::Unknown; _],
-            a: [BitReg::Unknown; _],
-            x: [BitReg::Unknown; _],
-            y: [BitReg::Unknown; _],
-            pc: [BitReg::Unknown; _],
-            s: [BitReg::Unknown; _],
+            instr_cycle: [BitReg::Unknown; _].into(),
+            a: [BitReg::Unknown; _].into(),
+            x: [BitReg::Unknown; _].into(),
+            y: [BitReg::Unknown; _].into(),
+            pc: [BitReg::Unknown; _].into(),
+            s: [BitReg::Unknown; _].into(),
             n: BitReg::Unknown,
             v: BitReg::Unknown,
             b: BitReg::Unknown,

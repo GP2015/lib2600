@@ -1,11 +1,6 @@
 use crate::{
     common::{
-        line::{
-            error::LineError,
-            ident::LineIdent,
-            multi::{BusDriveState, IsBusDriveState},
-            single::DriveState,
-        },
+        line::{error::LineError, ident::LineIdent, multi::BusDriveState, single::DriveState},
         read::{multi::MultiRead, single::SingleRead},
     },
     cpu::{Cpu, reads::CpuLineReads},
@@ -29,12 +24,12 @@ pub struct EmuLineStates {
 }
 
 impl EmuLineStates {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            a: [SingleRead::Unknown; _],
-            db: [SingleRead::Unknown; _],
-            inp1: [SingleRead::Unknown; _],
-            inp2: [SingleRead::Unknown; _],
+            a: [SingleRead::Unknown; _].into(),
+            db: [SingleRead::Unknown; _].into(),
+            inp1: [SingleRead::Unknown; _].into(),
+            inp2: [SingleRead::Unknown; _].into(),
             rdiff: SingleRead::Unknown,
             ldiff: SingleRead::Unknown,
             col: SingleRead::Unknown,
@@ -51,7 +46,7 @@ impl EmuLineStates {
         cpu: &Cpu,
         riot: &Riot,
     ) -> Result<(), LineError> {
-        let mut inp1 = [SingleRead::Unknown; _];
+        let mut inp1: MultiRead<_> = [SingleRead::Unknown; _].into();
         for (bit, read) in inp1.iter_mut().enumerate() {
             let ident = LineIdent::BusLine {
                 bus_name: "inp1",
@@ -66,7 +61,7 @@ impl EmuLineStates {
             }
         }
 
-        let mut inp2 = [SingleRead::Unknown; _];
+        let mut inp2: MultiRead<_> = [SingleRead::Unknown; _].into();
         for (bit, read) in inp2.iter_mut().enumerate() {
             let ident = LineIdent::BusLine {
                 bus_name: "inp2",
@@ -98,8 +93,8 @@ impl EmuLineStates {
         }
 
         create_buses!(
-            (a, [ext_drives.a, cpu.a_out]),
-            (db, [ext_drives.db, cpu.db_out, riot.db_out])
+            (a, [&ext_drives.a, &cpu.a_out]),
+            (db, [&ext_drives.db, &cpu.db_out, &riot.db_out])
         );
         create_lines!(
             (rdiff, [ext_drives.rdiff, riot.pb_out[4]]),
@@ -130,15 +125,17 @@ impl EmuLineStates {
     }
 
     pub fn riot_reads(&self) -> RiotLineReads {
-        let mut pa = [SingleRead::Unknown; _];
+        let mut pa: MultiRead<_> = [SingleRead::Unknown; _].into();
         pa[0..4].copy_from_slice(&self.inp2[0..4]);
         pa[4..8].copy_from_slice(&self.inp1[0..4]);
 
+        let a_arr: [SingleRead; _] = self.a[0..7].try_into().expect("same-sized slices");
+
         RiotLineReads {
-            a: self.a[0..7].try_into().expect("same-sized slices"),
-            db: self.db,
+            a: a_arr.into(),
+            db: self.db.clone(),
             pa,
-            pb: [self.res, self.sel, self.col, self.ldiff, self.rdiff],
+            pb: [self.res, self.sel, self.col, self.ldiff, self.rdiff].into(),
             cs1: self.a[11],
             cs2: self.a[12],
             rs: self.a[9],
@@ -146,9 +143,9 @@ impl EmuLineStates {
         }
     }
 
-    pub const fn cpu_reads(&self) -> CpuLineReads {
+    pub fn cpu_reads(&self) -> CpuLineReads {
         CpuLineReads {
-            db: self.db,
+            db: self.db.clone(),
             rdy: self.rdy,
         }
     }

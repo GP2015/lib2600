@@ -18,21 +18,21 @@ pub struct RiotRegs {
 }
 
 impl RiotRegs {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            ddra: [BitReg::Low; 8],
-            ddrb: [BitReg::Low; 8],
-            ora: [BitReg::Low; 8],
-            orb: [BitReg::Low; 8],
+            ddra: [BitReg::Low; 8].into(),
+            ddrb: [BitReg::Low; 8].into(),
+            ora: [BitReg::Low; 8].into(),
+            orb: [BitReg::Low; 8].into(),
 
             edc_ir_flag: BitReg::Unknown,
             timer_ir_flag: BitReg::Unknown,
 
             edc_edge_type: BitReg::Low,
 
-            timer: [BitReg::Unknown; 8],
-            sub_timer: [BitReg::Unknown; 10],
-            timer_interval: [BitReg::Unknown; 2],
+            timer: [BitReg::Unknown; 8].into(),
+            sub_timer: [BitReg::Unknown; 10].into(),
+            timer_interval: [BitReg::Unknown; 2].into(),
         }
     }
 }
