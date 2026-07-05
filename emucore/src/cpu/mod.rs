@@ -3,13 +3,10 @@ pub mod regs;
 
 use crate::{
     common::{
-        CheckIs, HasMux,
-        line::{
-            multi::{BusDriveState, IsBusDriveState},
-            single::DriveState,
-        },
+        CheckIs, Combine,
+        line::{multi::BusDriveState, single::DriveState},
         mux_matches,
-        read::multi::{IsMultiRead, MultiRead},
+        read::single::SingleRead,
         signal::LineSignal,
     },
     cpu::{
@@ -17,7 +14,19 @@ use crate::{
         regs::CpuRegs,
     },
 };
-use emucore_macros::str_pattern_from_mnemonic;
+use emucore_macros::mnem_pat;
+
+macro_rules! ic {
+    ($r:ident, $($v:literal),+) => {
+        $r.reg.instr_cycle.is_any([$($v),+].into_iter())
+    };
+}
+
+macro_rules! db {
+    ($r:ident, $($v:ident),+) => {
+        $r.line.db.is_any(mnem_pat!($($v),+).iter())
+    };
+}
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Cpu {
@@ -45,24 +54,19 @@ impl Cpu {
     }
 
     fn update_s(&mut self, r: &CpuAllReads) {
-        macro_rules! cond {
-            (($($ic:literal),+), ($($mnem:expr),+)) => {
-                r.reg.instr_cycle.is_any([$($ic),+])
-                    & r.line.db.is_any(&str_pattern_from_mnemonic!($($mnem),+))
-            };
-        }
-
         self.reg.s = mux_matches!(
-            (cond!((1), (Txs)), &|| r.reg.x),
+            (ic!(r, 1) & db!(r, Txs), &|| r.reg.x.clone()),
             (
-                cond!((2), (Pha, Php, Brk)) | cond!((3, 4), (Brk, Jsr)),
+                (ic!(r, 2) & db!(r, Pha, Php, Brk)) | (ic!(r, 3, 4) & db!(r, Brk, Jsr)),
                 &|| r.reg.s.decremented()
             ),
             (
-                cond!((2), (Pla, Plp, Rti, Rts)) | cond!((3), (Rti, Rts)) | cond!((4), (Rti)),
+                (ic!(r, 2) & db!(r, Pla, Plp, Rti, Rts))
+                    | (ic!(r, 3) & db!(r, Rti, Rts))
+                    | (ic!(r, 4) & db!(r, Rti)),
                 &|| r.reg.s.incremented()
             ),
-            &|| r.reg.s
+            &|| r.reg.s.clone()
         );
     }
 

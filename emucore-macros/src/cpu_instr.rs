@@ -18,27 +18,23 @@ macro_rules! entries {
     };
 }
 
-fn create_lut(arr_entries: &'static [ArrEntry]) -> AHashMap<String, Vec<String>> {
-    let mut map = AHashMap::new();
-    for arr_entry in arr_entries {
-        let k = arr_entry.name.to_string();
-        let v = arr_entry.patterns.iter().map(|&s| s.to_string()).collect();
-        let res = map.insert(k, v);
-        assert!(res.is_none());
-    }
-    map
+pub type Lut = AHashMap<&'static str, &'static [&'static str]>;
+
+fn create_lut(arr_entries: &'static [ArrEntry]) -> Lut {
+    arr_entries.iter().map(|e| (e.name, e.patterns)).collect()
 }
 
-macro_rules! lut {
-    ($lut_name:ident, $arr:ident) => {
-        pub static $lut_name: LazyLock<AHashMap<String, Vec<String>>> =
-            LazyLock::new(|| create_lut($arr));
-    };
+macro_rules! create_luts {
+    ($(($lut_name:ident, $arr:ident)),+ $(,)?) => {$(
+        pub static $lut_name: LazyLock<Lut> = LazyLock::new(|| create_lut($arr));
+    )+};
 }
 
-lut!(MNEM, MNEM_ARR);
-lut!(ADDR_MODE, ADDR_MODE_ARR);
-lut!(ADDR_MODE_IDX, ADDR_MODE_IDX_ARR);
+create_luts!(
+    (MNEM, MNEM_ARR),
+    (ADDR_MODE, ADDR_MODE_ARR),
+    (ADDR_MODE_IDX, ADDR_MODE_IDX_ARR),
+);
 
 const MNEM_ARR: &[ArrEntry] = entries!(
     ("Adc", ["011???01"]),
@@ -107,23 +103,23 @@ const MNEM_ARR: &[ArrEntry] = entries!(
     ("Anc", ["00?01011"]),
     ("Ane", ["10001011"]),
     ("Arr", ["01101011"]),
-    ("Dcp", ["110?0?11,110??111,1101??11"]),
-    ("Isc", ["111?0?11,111??111,1111??11"]),
+    ("Dcp", ["110?0?11", "110??111", "1101??11"]),
+    ("Isc", ["111?0?11", "111??111", "1111??11"]),
     ("Las", ["10111011"]),
-    ("Lax", ["101?0?11,101??111"]),
+    ("Lax", ["101?0?11", "101??111"]),
     ("Lxa", ["10101011"]),
-    ("Rla", ["001?0?11,001??111,0011??11"]),
-    ("Rra", ["011?0?11,011??111,0111??11"]),
-    ("Sax", ["10000?11,1000?111,100?0111"]),
+    ("Rla", ["001?0?11", "001??111", "0011??11"]),
+    ("Rra", ["011?0?11", "011??111", "0111??11"]),
+    ("Sax", ["10000?11", "1000?111", "100?0111"]),
     ("Sbx", ["11001011"]),
-    ("Sha", ["10010011,10011111"]),
+    ("Sha", ["10010011", "10011111"]),
     ("Shx", ["10011110"]),
     ("Shy", ["10011100"]),
-    ("Slo", ["000?0?11,000??111,0001??11"]),
-    ("Sre", ["010?0?11,010??111,0101??11"]),
+    ("Slo", ["000?0?11", "000??111", "0001??11"]),
+    ("Sre", ["010?0?11", "010??111", "0101??11"]),
     ("Tas", ["10011011"]),
     ("Usbc", ["11101011"]),
-    ("Jam", ["0???0010,???10010"]),
+    ("Jam", ["0???0010", "???10010"]),
 );
 
 const ADDR_MODE_ARR: &[ArrEntry] = entries!(
