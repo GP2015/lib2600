@@ -1,21 +1,23 @@
-use crate::common::CheckIs;
+use crate::common::cond::{IsCondition, check::CheckIs};
 use core::ops::{BitAnd, BitOr, Not};
-
-pub trait IsCondition {
-    fn as_cond(&self) -> BaseCondition;
-}
-
-impl IsCondition for BaseCondition {
-    fn as_cond(&self) -> Self {
-        *self
-    }
-}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum BaseCondition {
     No,
     Yes,
     Unknown,
+}
+
+impl From<bool> for BaseCondition {
+    fn from(value: bool) -> Self {
+        if value { Self::Yes } else { Self::No }
+    }
+}
+
+impl IsCondition for BaseCondition {
+    fn as_cond(&self) -> Self {
+        *self
+    }
 }
 
 impl Not for BaseCondition {

@@ -1,4 +1,7 @@
-use crate::common::{Combine, IsCondition, condition::BaseCondition};
+use crate::common::{
+    combine::Combine,
+    cond::{IsCondition, base::BaseCondition},
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum SingleRead {

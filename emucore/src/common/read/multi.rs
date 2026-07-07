@@ -1,4 +1,8 @@
-use crate::common::{CheckIs, Combine, condition::BaseCondition, read::single::SingleRead};
+use crate::common::{
+    combine::Combine,
+    cond::{base::BaseCondition, check::CheckIs},
+    read::single::SingleRead,
+};
 use arrayvec::ArrayVec;
 use core::array;
 use derive_more::{Deref, DerefMut, From, Index, IndexMut};

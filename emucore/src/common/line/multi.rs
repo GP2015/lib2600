@@ -1,5 +1,5 @@
 use crate::common::{
-    Combine,
+    combine::Combine,
     line::{error::LineError, ident::LineIdent, single::DriveState},
     read::{multi::MultiRead, single::SingleRead},
     signal::LineSignal,
