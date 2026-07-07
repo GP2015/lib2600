@@ -1,5 +1,51 @@
 use ahash::AHashMap;
+use proc_macro::TokenStream;
+use quote::quote;
 use std::sync::LazyLock;
+use syn::{Ident, Token, parse_macro_input, punctuated::Punctuated};
+
+pub type Lut = AHashMap<&'static str, &'static [&'static str]>;
+
+pub fn pat(input: TokenStream, lut: &LazyLock<Lut>) -> TokenStream {
+    let input_parsed: Punctuated<Ident, Token![,]> =
+        parse_macro_input!(input with Punctuated::parse_terminated);
+
+    let patterns = input_parsed
+        .iter()
+        .flat_map(|m| lut[m.to_string().as_str()].iter())
+        .map(|&s| {
+            let bits = s.chars().map(|c| {
+                let enum_var = match c {
+                    '0' => quote!(Low),
+                    '1' => quote!(High),
+                    '?' => quote!(Unknown),
+                    _ => unreachable!(),
+                };
+
+                quote!(SingleRead::#enum_var)
+            });
+
+            quote!([#(#bits),*].into())
+        });
+
+    quote!([#(#patterns),*]).into()
+}
+
+fn create_lut(arr_entries: &'static [ArrEntry]) -> Lut {
+    arr_entries.iter().map(|e| (e.name, e.patterns)).collect()
+}
+
+macro_rules! create_luts {
+    ($(($lut_name:ident, $arr:ident)),+ $(,)?) => {$(
+        pub static $lut_name: LazyLock<Lut> = LazyLock::new(|| create_lut($arr));
+    )+};
+}
+
+create_luts!(
+    (MNEM, MNEM_ARR),
+    (ADDR_MODE, ADDR_MODE_ARR),
+    (ADDR_MODE_IDX, ADDR_MODE_IDX_ARR),
+);
 
 struct ArrEntry {
     name: &'static str,
@@ -18,24 +64,7 @@ macro_rules! entries {
     };
 }
 
-pub type Lut = AHashMap<&'static str, &'static [&'static str]>;
-
-fn create_lut(arr_entries: &'static [ArrEntry]) -> Lut {
-    arr_entries.iter().map(|e| (e.name, e.patterns)).collect()
-}
-
-macro_rules! create_luts {
-    ($(($lut_name:ident, $arr:ident)),+ $(,)?) => {$(
-        pub static $lut_name: LazyLock<Lut> = LazyLock::new(|| create_lut($arr));
-    )+};
-}
-
-create_luts!(
-    (MNEM, MNEM_ARR),
-    (ADDR_MODE, ADDR_MODE_ARR),
-    (ADDR_MODE_IDX, ADDR_MODE_IDX_ARR),
-);
-
+// The instruction USBC is functionally identical to SBC Imm.
 const MNEM_ARR: &[ArrEntry] = entries!(
     ("Adc", ["011???01"]),
     ("And", ["001???01"]),
@@ -86,7 +115,7 @@ const MNEM_ARR: &[ArrEntry] = entries!(
     ("Ror", ["011??110", "01101?10"]),
     ("Rti", ["01000000"]),
     ("Rts", ["01100000"]),
-    ("Sbc", ["111???01"]),
+    ("Sbc", ["111???01", "111010?1"]),
     ("Sec", ["00111000"]),
     ("Sed", ["11111000"]),
     ("Sei", ["01111000"]),
@@ -118,7 +147,6 @@ const MNEM_ARR: &[ArrEntry] = entries!(
     ("Slo", ["000?0?11", "000??111", "0001??11"]),
     ("Sre", ["010?0?11", "010??111", "0101??11"]),
     ("Tas", ["10011011"]),
-    ("Usbc", ["11101011"]),
     ("Jam", ["0???0010", "???10010"]),
 );
 
