@@ -3,11 +3,11 @@ pub mod regs;
 
 use crate::{
     common::{
-        BitReg, CheckIs, Combine, MBitReg,
-        condition::{BaseCondition, IsCondition},
+        combine::{Combine, mux_matches},
+        cond::{IsCondition, base::BaseCondition, check::CheckIs},
         line::{multi::BusDriveState, single::DriveState},
-        mux_matches,
         read::{multi::MultiRead, single::SingleRead},
+        reg::{BitReg, MBitReg},
         signal::LineSignal,
     },
     riot::{
@@ -159,9 +159,8 @@ impl Riot {
 
         self.reg.timer = Combine::mux(tw_cond, &|| r.reg.timer.clone(), &|| r.line.db.clone());
 
-        for bit in 0..2 {
-            self.reg.timer_interval[bit] =
-                Combine::mux(tw_cond, &|| r.reg.timer_interval[bit], &|| r.line.a[bit]);
+        for (bit, reg) in self.reg.timer_interval.iter_mut().enumerate() {
+            *reg = Combine::mux(tw_cond, &|| r.reg.timer_interval[bit], &|| r.line.a[bit]);
         }
 
         self.reg.sub_timer = Combine::mux(tw_cond, &|| r.reg.sub_timer.clone(), &|| {
