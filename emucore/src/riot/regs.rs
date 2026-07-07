@@ -1,4 +1,4 @@
-use crate::common::{BitReg, MBitReg};
+use crate::common::reg::{BitReg, MBitReg};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct RiotRegs {
@@ -20,19 +20,19 @@ pub struct RiotRegs {
 impl RiotRegs {
     pub fn new() -> Self {
         Self {
-            ddra: [BitReg::Low; 8].into(),
-            ddrb: [BitReg::Low; 8].into(),
-            ora: [BitReg::Low; 8].into(),
-            orb: [BitReg::Low; 8].into(),
+            ddra: [BitReg::Low; _].into(),
+            ddrb: [BitReg::Low; _].into(),
+            ora: [BitReg::Low; _].into(),
+            orb: [BitReg::Low; _].into(),
 
             edc_ir_flag: BitReg::Unknown,
             timer_ir_flag: BitReg::Unknown,
 
             edc_edge_type: BitReg::Low,
 
-            timer: [BitReg::Unknown; 8].into(),
-            sub_timer: [BitReg::Unknown; 10].into(),
-            timer_interval: [BitReg::Unknown; 2].into(),
+            timer: [BitReg::Unknown; _].into(),
+            sub_timer: [BitReg::Unknown; _].into(),
+            timer_interval: [BitReg::Unknown; _].into(),
         }
     }
 }

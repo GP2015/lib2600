@@ -3,9 +3,9 @@ pub mod regs;
 
 use crate::{
     common::{
-        CheckIs, Combine,
+        combine::mux_matches,
+        cond::{base::BaseCondition, check::CheckIs},
         line::{multi::BusDriveState, single::DriveState},
-        mux_matches,
         read::single::SingleRead,
         signal::LineSignal,
     },
@@ -18,7 +18,7 @@ use emucore_macros::mnem_pat;
 
 macro_rules! ic {
     ($r:ident, $($v:literal),+) => {
-        $r.reg.instr_cycle.is_any([$($v),+].into_iter())
+        ($(BaseCondition::from($r.reg.instr_cycle[$v]))|+)
     };
 }
 
