@@ -1,0 +1,17 @@
+-- Supported ALU operations --
+
+Dec (Dex,Dey)
+Inc (Inx,Iny)
+
+Adc
+Sbc (Cmp,Cpx,Cpy)
+
+And (Bit)
+Eor
+Ora
+
+Asl
+Lsr
+
+Rol
+Ror

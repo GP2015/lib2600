@@ -1,6 +1,5 @@
 nums are 1 higher than intended
 
-Write to S:
 PHA/PHP
     dec 3
 PLA/PLP

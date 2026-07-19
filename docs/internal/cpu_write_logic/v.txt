@@ -1,0 +1,79 @@
+nums are 1 higher than intended
+
+Adc
+    Imm     2 alu
+    Zpg     3 alu
+    ZpgX    4 alu
+    Abs     4 alu
+    AbsX    4* alu
+    AbsY    4* alu
+    XInd    6 alu
+    IndY    5* alu
+Bit
+    Zpg     3 m6
+    Abs     4 m6
+Clv
+    Impl    2 low
+Plp
+    Impl    4 m6
+Rti
+    Impl    4 m6
+Sbc
+    Imm     2 alu
+    Zpg     3 alu
+    ZpgX    4 alu
+    Abs     4 alu
+    AbsX    4* alu
+    AbsY    4* alu
+    XInd    6 alu
+    IndY    5* alu
+Arr
+    Imm     2 custom_arr
+Isc
+    Zpg     3 alu
+    ZpgX    4 alu
+    Abs     4 alu
+    AbsX    4* alu
+    AbsY    4* alu
+    XInd    6 alu
+    IndY    5* alu
+Rra
+    Zpg     3 alu
+    ZpgX    4 alu
+    Abs     4 alu
+    AbsX    4* alu
+    AbsY    4* alu
+    XInd    6 alu
+    IndY    5* alu
+
+
+
+
+-- ALU --
+Adc         Imm     2
+Adc/Rra     Zpg     3
+Adc/Rra     ZpgX    4
+Adc/Rra     Abs     4
+Adc/Rra     AbsX    4*
+Adc/Rra     AbsY    4*
+Adc/Rra     XInd    6
+Adc/Rra     IndY    5*
+Sbc         Imm     2
+Sbc/Isc     Zpg     3
+Sbc/Isc     ZpgX    4
+Sbc/Isc     Abs     4
+Sbc/Isc     AbsX    4*
+Sbc/Isc     AbsY    4*
+Sbc/Isc     XInd    6
+Sbc/Isc     IndY    5*
+
+-- DB M6 --
+Bit         Zpg     3
+Bit         Abs     4
+Plp/Rti     N/A     4
+
+-- Low --
+Clv     N/A     2
+
+-- Custom Arr --
+Arr     N/A     2
