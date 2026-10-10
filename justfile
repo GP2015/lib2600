@@ -14,7 +14,7 @@ doc-open:
     cargo doc --open
 
 no-std:
-    cargo build --release --target=thumbv7em-none-eabi
+    cargo build --release --target=thumbv6m-none-eabi
 
 test:
     cargo test
