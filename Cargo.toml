@@ -1,12 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["common", "riot"]
+members = ["emucore"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
-ahash = "0.8.12"
 arrayvec = { version = "0.7.6", default-features = false }
 derive_more = { version = "2.1.1", default-features = false, features = [
     "deref",
@@ -16,10 +15,8 @@ derive_more = { version = "2.1.1", default-features = false, features = [
     "index_mut",
 ] }
 itertools = { version = "0.15.0", default-features = false }
-quote = "1.0.45"
-rstest = "0.26.1"
+rstest = "0.27.0"
 strum_macros = "0.28.0"
-syn = "2.0.117"
 thiserror = { version = "2.0.18", default-features = false }
 
 [profile.release]
