@@ -3,11 +3,14 @@ name = "emucore"
 version = "0.1.0"
 edition.workspace = true
 
+[build-dependencies]
+quote.workspace = true
+
 [dependencies]
 arrayvec.workspace = true
 derive_more.workspace = true
 itertools.workspace = true
-strum_macros.workspace = true
+strum.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

@@ -1,6 +1,8 @@
 pub mod reads;
 pub mod regs;
 
+include!(concat!(env!("OUT_DIR"), "/cpu_gen.rs"));
+
 use crate::{
     common::{
         line::{multi::BusDriveState, single::DriveState},
@@ -28,7 +30,6 @@ impl Default for Cpu {
 }
 
 impl Cpu {
-    #[must_use]
     pub fn new() -> Self {
         Self {
             phi2_out: DriveState::none_enabled(),
