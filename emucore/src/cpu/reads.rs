@@ -18,7 +18,6 @@ pub struct CpuAllReads {
 }
 
 impl CpuAllReads {
-    #[must_use]
     pub const fn new(lines: CpuLineReads, regs: CpuRegReads) -> Self {
         Self {
             line: lines,

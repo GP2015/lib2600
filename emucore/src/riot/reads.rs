@@ -24,7 +24,6 @@ pub struct RiotAllReads {
 }
 
 impl RiotAllReads {
-    #[must_use]
     pub const fn new(lines: RiotLineReads, regs: RiotRegReads) -> Self {
         Self {
             line: lines,

@@ -13,7 +13,6 @@ pub struct DriveState {
 }
 
 impl DriveState {
-    #[must_use]
     pub const fn none_enabled() -> Self {
         Self {
             low: false,
@@ -22,7 +21,6 @@ impl DriveState {
         }
     }
 
-    #[must_use]
     pub const fn read(self) -> Option<SingleRead> {
         match (self.low, self.high, self.high_z) {
             (false, false, false) => None,

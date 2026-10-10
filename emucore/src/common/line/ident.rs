@@ -1,4 +1,4 @@
-use strum_macros::Display;
+use strum::Display;
 
 #[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq)]
 pub enum LineIdent {

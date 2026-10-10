@@ -24,7 +24,6 @@ impl Default for RiotRegs {
 }
 
 impl RiotRegs {
-    #[must_use]
     pub fn new() -> Self {
         Self {
             ddra: [BitReg::Low; _].into(),

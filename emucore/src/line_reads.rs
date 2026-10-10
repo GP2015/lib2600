@@ -30,7 +30,6 @@ impl Default for EmuLineStates {
 }
 
 impl EmuLineStates {
-    #[must_use]
     pub fn new() -> Self {
         Self {
             a: [SingleRead::Unknown; _].into(),
@@ -131,7 +130,6 @@ impl EmuLineStates {
         Ok(())
     }
 
-    #[must_use]
     pub fn riot_reads(&self) -> RiotLineReads {
         let mut pa: MultiRead<_> = [SingleRead::Unknown; _].into();
         pa[0..4].copy_from_slice(&self.inp2[0..4]);
@@ -151,7 +149,6 @@ impl EmuLineStates {
         }
     }
 
-    #[must_use]
     pub fn cpu_reads(&self) -> CpuLineReads {
         CpuLineReads {
             db: self.db.clone(),

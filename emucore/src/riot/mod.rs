@@ -43,7 +43,6 @@ impl Default for Riot {
 }
 
 impl Riot {
-    #[must_use]
     pub fn new() -> Self {
         Self {
             db_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),

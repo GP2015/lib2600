@@ -24,7 +24,6 @@ impl Default for CpuRegs {
 }
 
 impl CpuRegs {
-    #[must_use]
     pub fn new() -> Self {
         Self {
             instr_cycle: [false; _],
