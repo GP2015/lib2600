@@ -1,6 +1,5 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
-#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
 mod build {
     pub mod cpu;

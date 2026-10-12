@@ -9,10 +9,16 @@ mod ext_drives;
 mod line_reads;
 mod riot;
 
-use crate::{ext_drives::ExtDrives, line_reads::EmuLineStates};
-use common::line::error::LineError;
-use cpu::Cpu;
-use riot::Riot;
+pub use crate::{
+    common::{
+        line::{error::LineError, ident::LineIdent, multi::BusDriveState, single::DriveState},
+        read::{multi::MultiRead, single::SingleRead},
+        signal::LineSignal,
+    },
+    ext_drives::ExtDrives,
+};
+
+use crate::{cpu::Cpu, line_reads::EmuLineStates, riot::Riot};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Emulator {
