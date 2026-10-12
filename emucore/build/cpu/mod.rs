@@ -1,5 +1,4 @@
-mod instrs;
-mod opcodes;
+mod raw_instr;
 
 use std::{fs, path::Path};
 

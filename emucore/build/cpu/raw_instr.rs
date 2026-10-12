@@ -1,33 +1,151 @@
-use crate::build::cpu::instrs::{AddressingMode, Instruction};
+use strum::EnumCount;
 
-pub const OPCODE_TABLE: [(Instruction, AddressingMode); 256] = {
-    let mut ops = [(Instruction::Nop, AddressingMode::Impl); _];
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct RawInstr {
+    pub stem: RawStem,
+    pub addr: RawAddrMode,
+}
+
+impl RawInstr {
+    const fn default() -> Self {
+        Self {
+            stem: RawStem::Nop,
+            addr: RawAddrMode::Impl,
+        }
+    }
+}
+
+// A->Impl, Rel->Imm
+#[derive(Clone, Copy, Debug, EnumCount, Eq, Hash, PartialEq)]
+pub enum RawAddrMode {
+    Abs,
+    AbsX,
+    AbsY,
+    Imm,
+    Impl,
+    Ind,
+    XInd,
+    IndY,
+    Zpg,
+    ZpgX,
+    ZpgY,
+}
+
+// USBC == SBC Imm
+#[derive(Clone, Copy, Debug, EnumCount, Eq, Hash, PartialEq)]
+pub enum RawStem {
+    // Legal:
+    Adc,
+    And,
+    Asl,
+    Bcc,
+    Bcs,
+    Beq,
+    Bit,
+    Bmi,
+    Bne,
+    Bpl,
+    Brk,
+    Bvc,
+    Bvs,
+    Clc,
+    Cld,
+    Cli,
+    Clv,
+    Cmp,
+    Cpx,
+    Cpy,
+    Dec,
+    Dex,
+    Dey,
+    Eor,
+    Inc,
+    Inx,
+    Iny,
+    Jmp,
+    Jsr,
+    Lda,
+    Ldx,
+    Ldy,
+    Lsr,
+    Nop,
+    Ora,
+    Pha,
+    Php,
+    Pla,
+    Plp,
+    Rol,
+    Ror,
+    Rti,
+    Rts,
+    Sbc,
+    Sec,
+    Sed,
+    Sei,
+    Sta,
+    Stx,
+    Sty,
+    Tax,
+    Tay,
+    Tsx,
+    Txa,
+    Txs,
+    Tya,
+
+    // Illegal:
+    Alr,
+    Anc,
+    Ane,
+    Arr,
+    Dcp,
+    Isc,
+    Las,
+    Lax,
+    Lxa,
+    Rla,
+    Rra,
+    Sax,
+    Sbx,
+    Sha,
+    Shx,
+    Shy,
+    Slo,
+    Sre,
+    Tas,
+    Jam,
+}
+
+pub const RAW_OP_MAP: [RawInstr; 256] = {
+    let mut ops = [RawInstr::default(); _];
 
     macro_rules! set_ops {
-        ($(($op:literal, $instr:ident, $addr:ident)),+ $(,)?) => {
+        ($(($op:literal, $stem:ident, $addr:ident)),+ $(,)?) => {
             $(
-                ops[$op] = (Instruction::$instr, AddressingMode::$addr);
+                ops[$op] = RawInstr{
+                    stem: RawStem::$stem,
+                    addr: RawAddrMode::$addr,
+                };
             )+
         };
     }
 
     set_ops!(
         (0x00, Brk, Impl),
-        (0x10, Bpl, Rel),
+        (0x10, Bpl, Imm),
         (0x20, Jsr, Abs),
-        (0x30, Bmi, Rel),
+        (0x30, Bmi, Imm),
         (0x40, Rti, Impl),
-        (0x50, Bvc, Rel),
+        (0x50, Bvc, Imm),
         (0x60, Rts, Impl),
-        (0x70, Bvs, Rel),
+        (0x70, Bvs, Imm),
         (0x80, Nop, Imm),
-        (0x90, Bcc, Rel),
+        (0x90, Bcc, Imm),
         (0xa0, Ldy, Imm),
-        (0xb0, Bcs, Rel),
+        (0xb0, Bcs, Imm),
         (0xc0, Cpy, Imm),
-        (0xd0, Bne, Rel),
+        (0xd0, Bne, Imm),
         (0xe0, Cpx, Imm),
-        (0xf0, Beq, Rel),
+        (0xf0, Beq, Imm),
         //
         (0x01, Ora, XInd),
         (0x11, Ora, IndY),
@@ -182,13 +300,13 @@ pub const OPCODE_TABLE: [(Instruction, AddressingMode); 256] = {
         (0xe9, Sbc, Imm),
         (0xf9, Sbc, AbsY),
         //
-        (0x0a, Asl, A),
+        (0x0a, Asl, Impl),
         (0x1a, Nop, Impl),
-        (0x2a, Rol, A),
+        (0x2a, Rol, Impl),
         (0x3a, Nop, Impl),
-        (0x4a, Lsr, A),
+        (0x4a, Lsr, Impl),
         (0x5a, Nop, Impl),
-        (0x6a, Ror, A),
+        (0x6a, Ror, Impl),
         (0x7a, Nop, Impl),
         (0x8a, Txa, Impl),
         (0x9a, Txs, Impl),
@@ -213,7 +331,7 @@ pub const OPCODE_TABLE: [(Instruction, AddressingMode); 256] = {
         (0xbb, Las, AbsY),
         (0xcb, Sbx, Imm),
         (0xdb, Dcp, AbsY),
-        (0xeb, Usbc, Imm),
+        (0xeb, Sbc, Imm),
         (0xfb, Isc, AbsY),
         //
         (0x0c, Nop, Abs),

@@ -4,7 +4,9 @@ version = "0.1.0"
 edition.workspace = true
 
 [build-dependencies]
+arrayvec.workspace = true
 quote.workspace = true
+strum.workspace = true
 
 [dependencies]
 arrayvec.workspace = true
