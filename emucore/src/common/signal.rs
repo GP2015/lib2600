@@ -13,6 +13,7 @@ pub enum LineSignal {
 }
 
 impl LineSignal {
+    #[must_use]
     pub const fn as_bool(self) -> Option<bool> {
         match self {
             Self::Low => Some(false),
@@ -21,6 +22,7 @@ impl LineSignal {
         }
     }
 
+    #[must_use]
     pub const fn contend_with(self, other: Self) -> Option<Self> {
         match (self, other) {
             (Self::Low, Self::Low) => Some(Self::Low),

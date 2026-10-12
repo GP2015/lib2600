@@ -11,6 +11,7 @@ use derive_more::{Deref, DerefMut, From, Index, IndexMut};
 pub struct MultiRead<const SIZE: usize>(pub [SingleRead; SIZE]);
 
 impl<const SIZE: usize> MultiRead<SIZE> {
+    #[must_use]
     pub fn from_value(value: u16) -> Self {
         array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)).into()
     }
@@ -37,6 +38,7 @@ impl<const SIZE: usize> MultiRead<SIZE> {
         })
     }
 
+    #[must_use]
     pub fn incremented(&self) -> Self {
         let mut res = self.clone();
         let mut must_carry = true;
@@ -70,6 +72,7 @@ impl<const SIZE: usize> MultiRead<SIZE> {
         res
     }
 
+    #[must_use]
     pub fn decremented(&self) -> Self {
         let mut res = self.clone();
         let mut must_carry = true;

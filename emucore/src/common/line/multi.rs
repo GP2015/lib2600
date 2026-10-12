@@ -11,14 +11,17 @@ use derive_more::{Deref, DerefMut, From, Index, IndexMut};
 pub struct BusDriveState<const SIZE: usize>(pub [DriveState; SIZE]);
 
 impl<const SIZE: usize> BusDriveState<SIZE> {
+    #[must_use]
     pub fn from_multi_read(reads: &MultiRead<SIZE>) -> Self {
         reads.each_ref().map(|&read| read.into()).into()
     }
 
+    #[must_use]
     pub fn from_signals(signals: &[LineSignal; SIZE]) -> Self {
         signals.each_ref().map(|&signal| signal.into()).into()
     }
 
+    #[must_use]
     pub fn from_value(value: u16) -> Self {
         array::from_fn(|bit| DriveState::from(value >> bit & 1 == 1)).into()
     }
