@@ -1,7 +1,7 @@
 build:
     cargo build
 
-build-rel:
+rbuild:
     RUSTFLAGS="-C target-cpu=native" cargo build --release
 
 clean:
