@@ -26,6 +26,7 @@ pub enum RawAddrMode {
     Ind,
     XInd,
     IndY,
+    Rel,
     Zpg,
     ZpgX,
     ZpgY,
@@ -34,7 +35,7 @@ pub enum RawAddrMode {
 // USBC == SBC Imm
 #[derive(Clone, Copy, Debug, EnumCount, Eq, Hash, PartialEq)]
 pub enum RawStem {
-    // Legal:
+    // Legal
     Adc,
     And,
     Asl,
@@ -92,7 +93,7 @@ pub enum RawStem {
     Txs,
     Tya,
 
-    // Illegal:
+    // Illegal
     Alr,
     Anc,
     Ane,
@@ -131,21 +132,21 @@ pub const RAW_OP_MAP: [RawInstr; 256] = {
 
     set_ops!(
         (0x00, Brk, Impl),
-        (0x10, Bpl, Imm),
+        (0x10, Bpl, Rel),
         (0x20, Jsr, Abs),
-        (0x30, Bmi, Imm),
+        (0x30, Bmi, Rel),
         (0x40, Rti, Impl),
-        (0x50, Bvc, Imm),
+        (0x50, Bvc, Rel),
         (0x60, Rts, Impl),
-        (0x70, Bvs, Imm),
+        (0x70, Bvs, Rel),
         (0x80, Nop, Imm),
-        (0x90, Bcc, Imm),
+        (0x90, Bcc, Rel),
         (0xa0, Ldy, Imm),
-        (0xb0, Bcs, Imm),
+        (0xb0, Bcs, Rel),
         (0xc0, Cpy, Imm),
-        (0xd0, Bne, Imm),
+        (0xd0, Bne, Rel),
         (0xe0, Cpx, Imm),
-        (0xf0, Beq, Imm),
+        (0xf0, Beq, Rel),
         //
         (0x01, Ora, XInd),
         (0x11, Ora, IndY),
