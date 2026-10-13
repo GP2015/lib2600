@@ -1,3 +1,5 @@
+use crate::build::cpu::instr::Instr;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum WriteLoc {
     Phi2,
@@ -20,11 +22,65 @@ enum WriteLoc {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum WriteKind {}
-
-struct CycleWriteEffect {
-    loc: WriteLoc,
-    kind: WriteKind,
+enum WriteMod {
+    Inc,
+    StackAddr,
 }
 
-enum InstrKind {}
+struct Effect {
+    cycle: u8,
+    loc: WriteLoc,
+    kind: WriteMod,
+}
+
+impl Effect {
+    fn new(cycle: u8, loc: WriteLoc, kind: WriteMod) -> Self {
+        Self { cycle, loc, kind }
+    }
+}
+
+struct InstrCycles {
+    inc_c1_inc: bool,
+    extra_effects: Vec<Effect>,
+}
+
+impl InstrCycles {
+    pub fn new(inc_c1_inc: bool) -> Self {
+        Self {
+            inc_c1_inc,
+            extra_effects: Vec::new(),
+        }
+    }
+}
+
+impl InstrCycles {
+    pub fn from_instr(instr: Instr) -> Self {
+        macro_rules! effects {
+            ($(($cycle:literal, $loc:ident, $mod:ident)),+ $(,)?) => {
+                vec![$(Effect::new($cycle, WriteLoc::$loc, WriteMod::$mod)),+]
+            };
+        }
+
+        match instr {
+            Instr::Brk => Self(effects!((2, Addr, StackAddr), (2, Db, StackAddr),)),
+            Instr::Rti => todo!(),
+            Instr::Rts => todo!(),
+            Instr::Jsr => todo!(),
+            Instr::JmpInd => todo!(),
+            Instr::JmpAbs => todo!(),
+            Instr::BranchOnSet(flag) => todo!(),
+            Instr::BranchOnClear(flag) => todo!(),
+            Instr::StackPush(reg) => todo!(),
+            Instr::StackPull(reg) => todo!(),
+            Instr::Impl(impl_op) => todo!(),
+            Instr::Imm(gen_read_op) => todo!(),
+            Instr::Abs(gen_op) => todo!(),
+            Instr::Zpg(gen_op) => todo!(),
+            Instr::AbsIdx(reg, gen_op) => todo!(),
+            Instr::ZpgIdx(reg, gen_op) => todo!(),
+            Instr::XInd(gen_op) => todo!(),
+            Instr::IndY(gen_op) => todo!(),
+            Instr::Illegal => Self(Vec::new()),
+        }
+    }
+}

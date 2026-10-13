@@ -55,18 +55,6 @@ pub enum GenRmwOp {
     Dec,
 }
 
-pub const OP_MAP: [Instr; 256] = {
-    let mut instrs = [Instr::Illegal; _];
-
-    let mut i = 0;
-    while i < 256 {
-        instrs[i] = Instr::from_raw(RAW_OP_MAP[i]);
-        i += 1;
-    }
-
-    instrs
-};
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum GenOp {
     Read(GenReadOp),
@@ -241,7 +229,20 @@ impl Instr {
             RawAddrMode::AbsY => Self::AbsIdx(Reg::Y, gen_op),
             RawAddrMode::ZpgX => Self::ZpgIdx(Reg::X, gen_op),
             RawAddrMode::ZpgY => Self::ZpgIdx(Reg::Y, gen_op),
+
             _ => unreachable!(),
         }
     }
 }
+
+pub const OP_MAP: [Instr; 256] = {
+    let mut instrs = [Instr::Illegal; _];
+
+    let mut i = 0;
+    while i < 256 {
+        instrs[i] = Instr::from_raw(RAW_OP_MAP[i]);
+        i += 1;
+    }
+
+    instrs
+};

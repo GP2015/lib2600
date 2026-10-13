@@ -1,3 +1,4 @@
+mod cycle;
 mod instr;
 mod raw;
 
