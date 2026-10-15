@@ -1,6 +1,7 @@
 use crate::common::cond::{IsCondition, base::BaseCondition};
 
 pub trait Combine {
+    #[must_use]
     fn combine_with(&self, other: &Self) -> Self;
 
     fn mux<L, H>(cond: BaseCondition, low_opt: L, high_opt: H) -> Self

@@ -66,7 +66,7 @@ impl Riot {
         );
     }
 
-    fn timer_interval_read(read: &MultiRead<2>) -> MultiRead<10> {
+    fn timer_interval_read(read: MultiRead<2>) -> MultiRead<10> {
         read.iter_possible_reads()
             .map(|i| MultiRead::from(TIMER_INTERVALS[usize::from(i)]))
             .reduce(|acc, val| acc.combine_with(&val))
@@ -78,7 +78,7 @@ impl Riot {
         let timer_0 = r.reg.timer.is(0);
         let sub_timer_0 = r.reg.sub_timer.is(0);
 
-        self.reg.timer = Combine::mux(ir_flag | sub_timer_0, &|| r.reg.timer.clone(), &|| {
+        self.reg.timer = Combine::mux(ir_flag | sub_timer_0, &|| r.reg.timer, &|| {
             r.reg.timer.decremented()
         });
 
@@ -86,14 +86,14 @@ impl Riot {
         self.reg.sub_timer = mux_matches!(
             (!ir_flag & !def.is(0), &|| def.decremented()),
             (!ir_flag & def.is(0) & !timer_0, &|| {
-                Self::timer_interval_read(&r.reg.timer_interval)
+                Self::timer_interval_read(r.reg.timer_interval)
             }),
             &|| [SingleRead::Unknown; _].into()
         );
 
         self.reg.timer_interval = Combine::mux(
             ir_flag | (sub_timer_0 & timer_0),
-            &|| r.reg.timer_interval.clone(),
+            &|| r.reg.timer_interval,
             &|| [SingleRead::Unknown; _].into(),
         );
 
@@ -109,8 +109,8 @@ impl Riot {
             let ram_byte = &mut self.ram[usize::from(addr)];
             *ram_byte = Combine::mux(
                 cs_cond(r) & !r.line.rs.as_cond() & !r.line.rw.as_cond(),
-                &|| ram_byte.clone(),
-                &|| r.line.db.clone(),
+                &|| *ram_byte,
+                &|| r.line.db,
             );
         }
     }
@@ -124,8 +124,8 @@ impl Riot {
                     & r.line.a[0].as_cond().is(a0)
                     & r.line.a[1].as_cond().is(a1)
                     & !r.line.rw.as_cond(),
-                &|| read.clone(),
-                &|| r.line.db.clone(),
+                &|| *read,
+                &|| r.line.db,
             );
         };
 
@@ -163,16 +163,16 @@ impl Riot {
         let cond = cs_cond(r) & r.line.rs.as_cond() & r.line.a[2].as_cond();
         let tw_cond = cond & !r.line.rw.as_cond() & r.line.a[4].as_cond();
 
-        self.reg.timer = Combine::mux(tw_cond, &|| r.reg.timer.clone(), &|| r.line.db.clone());
+        self.reg.timer = Combine::mux(tw_cond, &|| r.reg.timer, &|| r.line.db);
 
         for (bit, reg) in self.reg.timer_interval.iter_mut().enumerate() {
             *reg = Combine::mux(tw_cond, &|| r.reg.timer_interval[bit], &|| r.line.a[bit]);
         }
 
-        self.reg.sub_timer = Combine::mux(tw_cond, &|| r.reg.sub_timer.clone(), &|| {
+        self.reg.sub_timer = Combine::mux(tw_cond, &|| r.reg.sub_timer, &|| {
             Self::timer_interval_read(
                 // This must use the new timer_interval value
-                &self.reg.timer_interval,
+                self.reg.timer_interval,
             )
         });
 
@@ -189,10 +189,10 @@ impl Riot {
 
         let ram_read = &|| {
             BusDriveState::from(
-                &r.line
+                r.line
                     .a
                     .iter_possible_reads()
-                    .map(|addr| self.ram[usize::from(addr)].clone())
+                    .map(|addr| self.ram[usize::from(addr)])
                     .reduce(|acc, byte| acc.combine_with(&byte))
                     .expect("SingleRead will always have at least one possible read"),
             )
@@ -213,21 +213,21 @@ impl Riot {
                 &|| {
                     Combine::mux(
                         r.line.a[1].as_cond(),
-                        &|| BusDriveState::from(&r.reg.ora),
-                        &|| BusDriveState::from(&r.reg.orb),
+                        &|| BusDriveState::from(r.reg.ora),
+                        &|| BusDriveState::from(r.reg.orb),
                     )
                 },
                 &|| {
                     Combine::mux(
                         r.line.a[1].as_cond(),
-                        &|| BusDriveState::from(&r.reg.ddra),
-                        &|| BusDriveState::from(&r.reg.ddrb),
+                        &|| BusDriveState::from(r.reg.ddra),
+                        &|| BusDriveState::from(r.reg.ddrb),
                     )
                 },
             )
         };
 
-        let timer_read = &|| BusDriveState::from(&r.reg.timer);
+        let timer_read = &|| BusDriveState::from(r.reg.timer);
 
         self.db_out = Combine::mux(cs_cond(r) & r.line.rw.as_cond(), high_z_out, &|| {
             mux_matches!(

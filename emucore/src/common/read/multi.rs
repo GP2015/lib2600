@@ -7,11 +7,11 @@ use arrayvec::ArrayVec;
 use core::array;
 use derive_more::{Deref, DerefMut, Index, IndexMut};
 
-#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
+#[derive(Clone, Copy, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
 pub struct MultiRead<const SIZE: usize>([SingleRead; SIZE]);
 
 impl<const SIZE: usize> MultiRead<SIZE> {
-    pub fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
+    pub fn iter_possible_reads(self) -> impl Iterator<Item = u16> {
         let mut count = ArrayVec::<_, SIZE>::new();
         let mut mask = 0;
 
@@ -34,8 +34,8 @@ impl<const SIZE: usize> MultiRead<SIZE> {
     }
 
     #[must_use]
-    pub fn incremented(&self) -> Self {
-        let mut res = self.clone();
+    pub fn incremented(self) -> Self {
+        let mut res = self;
         let mut must_carry = true;
 
         for bit in &mut *res {
@@ -68,8 +68,8 @@ impl<const SIZE: usize> MultiRead<SIZE> {
     }
 
     #[must_use]
-    pub fn decremented(&self) -> Self {
-        let mut res = self.clone();
+    pub fn decremented(self) -> Self {
+        let mut res = self;
         let mut must_carry = true;
 
         for bit in &mut *res {
@@ -142,8 +142,8 @@ impl<const SIZE: usize> CheckIs<usize> for MultiRead<SIZE> {
     }
 }
 
-impl<const SIZE: usize> CheckIs<&Self> for MultiRead<SIZE> {
-    fn is(&self, pattern: &Self) -> BaseCondition {
+impl<const SIZE: usize> CheckIs<Self> for MultiRead<SIZE> {
+    fn is(&self, pattern: Self) -> BaseCondition {
         let mut must_be = true;
 
         for (&read_bit, &pattern_bit) in self.iter().zip(pattern.iter()) {

@@ -156,7 +156,7 @@ impl EmuLineStates {
 
         RiotLineReads {
             a: a_arr.into(),
-            db: self.db.clone(),
+            db: self.db,
             pa,
             pb: [self.res, self.sel, self.col, self.ldiff, self.rdiff].into(),
             cs1: self.a[11],
@@ -166,9 +166,9 @@ impl EmuLineStates {
         }
     }
 
-    pub fn cpu_reads(&self) -> CpuLineReads {
+    pub const fn cpu_reads(&self) -> CpuLineReads {
         CpuLineReads {
-            db: self.db.clone(),
+            db: self.db,
             rdy: self.rdy,
         }
     }

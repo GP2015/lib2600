@@ -39,8 +39,8 @@ impl<const SIZE: usize> From<u16> for BusDriveState<SIZE> {
     }
 }
 
-impl<const SIZE: usize> From<&MultiRead<SIZE>> for BusDriveState<SIZE> {
-    fn from(value: &MultiRead<SIZE>) -> Self {
+impl<const SIZE: usize> From<MultiRead<SIZE>> for BusDriveState<SIZE> {
+    fn from(value: MultiRead<SIZE>) -> Self {
         value.map(DriveState::from).into()
     }
 }

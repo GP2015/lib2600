@@ -11,6 +11,8 @@ mod riot;
 
 pub use crate::{
     common::{
+        combine::Combine,
+        cond::{IsCondition, base::BaseCondition},
         line::{
             error::{LineError, LineIdent},
             multi::BusDriveState,
