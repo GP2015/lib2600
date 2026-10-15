@@ -11,7 +11,11 @@ mod riot;
 
 pub use crate::{
     common::{
-        line::{error::LineError, ident::LineIdent, multi::BusDriveState, single::DriveState},
+        line::{
+            error::{LineError, LineIdent},
+            multi::BusDriveState,
+            single::DriveState,
+        },
         read::{multi::MultiRead, single::SingleRead},
         signal::LineSignal,
     },

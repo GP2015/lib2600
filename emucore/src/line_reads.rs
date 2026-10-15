@@ -1,6 +1,11 @@
 use crate::{
+    LineIdent,
     common::{
-        line::{error::LineError, ident::LineIdent, multi::BusDriveState, single::DriveState},
+        line::{
+            error::{LineError, MapToLineError},
+            multi::BusDriveState,
+            single::DriveState,
+        },
         read::{multi::MultiRead, single::SingleRead},
     },
     cpu::{Cpu, reads::CpuLineReads},
@@ -61,9 +66,12 @@ impl EmuLineStates {
 
             *read = if bit < 4 {
                 let drives = [ext_drives.inp1[bit], riot.pa_out[bit + 4]].into_iter();
-                DriveState::contend_ok(drives, ident)?.read_ok(ident)?
+                DriveState::contend(drives)
+                    .map_short(ident)?
+                    .read()
+                    .map_imp(ident)?
             } else {
-                ext_drives.inp1[bit].read_ok(ident)?
+                ext_drives.inp1[bit].read().map_imp(ident)?
             }
         }
 
@@ -76,9 +84,12 @@ impl EmuLineStates {
 
             *read = if bit < 4 {
                 let drives = [ext_drives.inp2[bit], riot.pa_out[bit]].into_iter();
-                DriveState::contend_ok(drives, ident)?.read_ok(ident)?
+                DriveState::contend(drives)
+                    .map_short(ident)?
+                    .read()
+                    .map_imp(ident)?
             } else {
-                ext_drives.inp2[bit].read_ok(ident)?
+                ext_drives.inp2[bit].read().map_imp(ident)?
             };
         }
 
@@ -87,14 +98,20 @@ impl EmuLineStates {
                 let ident = LineIdent::UniqueLine {
                     name: stringify!($name),
                 };
-                let $name = DriveState::contend_ok($drives.into_iter(), ident)?.read_ok(ident)?;
+                let $name = DriveState::contend($drives.into_iter())
+                    .map_short(ident)?
+                    .read()
+                    .map_imp(ident)?;
             )+};
         }
 
         macro_rules! create_buses {
             ($(($name:ident, $drives:expr)),+ $(,)?) => {$(
-                let name_str = stringify!($name);
-                let $name = BusDriveState::contend_ok(&$drives, name_str)?.read_ok(name_str)?;
+                let ident = stringify!($name);
+                let $name = BusDriveState::contend(&$drives)
+                    .map_short(ident.into())?
+                    .read()
+                    .map_imp(ident.into())?;
             )+};
         }
 
@@ -110,7 +127,7 @@ impl EmuLineStates {
             (res, [ext_drives.sel, riot.pb_out[0]])
         );
 
-        let rw = cpu.rw_out.read_ok("rw".into())?;
+        let rw = cpu.rw_out.read().map_imp("rw".into())?;
         let rdy = SingleRead::Unknown;
 
         *self = Self {

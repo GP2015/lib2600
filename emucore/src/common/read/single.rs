@@ -1,6 +1,9 @@
-use crate::common::{
-    combine::Combine,
-    cond::{IsCondition, base::BaseCondition},
+use crate::{
+    LineSignal,
+    common::{
+        combine::Combine,
+        cond::{IsCondition, base::BaseCondition},
+    },
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -32,11 +35,7 @@ impl SingleRead {
 
     #[must_use]
     pub const fn could_read(self, state: bool) -> bool {
-        if state {
-            self.could_read_high()
-        } else {
-            self.could_read_low()
-        }
+        !matches!((state, self), (true, Self::Low) | (false, Self::High))
     }
 
     #[must_use]
@@ -52,6 +51,16 @@ impl SingleRead {
 impl From<bool> for SingleRead {
     fn from(value: bool) -> Self {
         if value { Self::High } else { Self::Low }
+    }
+}
+
+impl From<LineSignal> for SingleRead {
+    fn from(value: LineSignal) -> Self {
+        match value {
+            LineSignal::Low => Self::Low,
+            LineSignal::High => Self::High,
+            LineSignal::HighZ => Self::Unknown,
+        }
     }
 }
 

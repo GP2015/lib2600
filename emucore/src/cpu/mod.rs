@@ -32,9 +32,9 @@ impl Default for Cpu {
 impl Cpu {
     pub fn new() -> Self {
         Self {
-            phi2_out: DriveState::none_enabled(),
-            a_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
-            db_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
+            phi2_out: DriveState::default(),
+            a_out: BusDriveState::from([LineSignal::HighZ; _]),
+            db_out: BusDriveState::from([LineSignal::HighZ; _]),
             rw_out: LineSignal::HighZ.into(),
             reg: CpuRegs::new(),
         }

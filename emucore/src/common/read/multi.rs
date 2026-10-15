@@ -1,21 +1,16 @@
 use crate::common::{
     combine::Combine,
-    cond::{base::BaseCondition, check::CheckIs},
+    cond::{CheckIs, base::BaseCondition},
     read::single::SingleRead,
 };
 use arrayvec::ArrayVec;
 use core::array;
-use derive_more::{Deref, DerefMut, From, Index, IndexMut};
+use derive_more::{Deref, DerefMut, Index, IndexMut};
 
-#[derive(Clone, Debug, Deref, DerefMut, Eq, From, Hash, Index, IndexMut, PartialEq)]
-pub struct MultiRead<const SIZE: usize>(pub [SingleRead; SIZE]);
+#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
+pub struct MultiRead<const SIZE: usize>([SingleRead; SIZE]);
 
 impl<const SIZE: usize> MultiRead<SIZE> {
-    #[must_use]
-    pub fn from_value(value: u16) -> Self {
-        array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)).into()
-    }
-
     pub fn iter_possible_reads(&self) -> impl Iterator<Item = u16> {
         let mut count = ArrayVec::<_, SIZE>::new();
         let mut mask = 0;
@@ -104,6 +99,18 @@ impl<const SIZE: usize> MultiRead<SIZE> {
         }
 
         res
+    }
+}
+
+impl<const SIZE: usize> From<u16> for MultiRead<SIZE> {
+    fn from(value: u16) -> Self {
+        array::from_fn(|bit| SingleRead::from(value >> bit & 1 == 1)).into()
+    }
+}
+
+impl<T: Into<SingleRead>, const SIZE: usize> From<[T; SIZE]> for MultiRead<SIZE> {
+    fn from(value: [T; SIZE]) -> Self {
+        value.map(Into::into).into()
     }
 }
 

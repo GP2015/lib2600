@@ -1,4 +1,4 @@
-use crate::common::cond::{IsCondition, check::CheckIs};
+use crate::common::cond::{CheckIs, IsCondition};
 use core::ops::{BitAnd, BitOr, Not};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -17,6 +17,12 @@ impl From<bool> for BaseCondition {
 impl IsCondition for BaseCondition {
     fn as_cond(&self) -> Self {
         *self
+    }
+}
+
+impl CheckIs<bool> for BaseCondition {
+    fn is(&self, b: bool) -> Self {
+        if b { *self } else { !*self }
     }
 }
 
@@ -50,11 +56,5 @@ impl BitOr for BaseCondition {
             (Self::Yes, _) | (_, Self::Yes) => Self::Yes,
             _ => Self::Unknown,
         }
-    }
-}
-
-impl CheckIs<bool> for BaseCondition {
-    fn is(&self, b: bool) -> Self {
-        if b { *self } else { !*self }
     }
 }

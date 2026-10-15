@@ -4,7 +4,7 @@ pub mod regs;
 use crate::{
     common::{
         combine::{Combine, mux_matches},
-        cond::{IsCondition, base::BaseCondition, check::CheckIs},
+        cond::{CheckIs, IsCondition, base::BaseCondition},
         line::{multi::BusDriveState, single::DriveState},
         read::{multi::MultiRead, single::SingleRead},
         reg::{BitReg, MBitReg},
@@ -45,9 +45,9 @@ impl Default for Riot {
 impl Riot {
     pub fn new() -> Self {
         Self {
-            db_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
-            pa_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
-            pb_out: BusDriveState::from_signals(&[LineSignal::HighZ; _]),
+            db_out: BusDriveState::from([LineSignal::HighZ; _]),
+            pa_out: BusDriveState::from([LineSignal::HighZ; _]),
+            pb_out: BusDriveState::from([LineSignal::HighZ; _]),
             reg: RiotRegs::new(),
             ram: array::from_fn(|_| [BitReg::Unknown; _].into()),
             old_pa7_read: SingleRead::Unknown,
@@ -68,7 +68,7 @@ impl Riot {
 
     fn timer_interval_read(read: &MultiRead<2>) -> MultiRead<10> {
         read.iter_possible_reads()
-            .map(|i| MultiRead::from_value(TIMER_INTERVALS[usize::from(i)]))
+            .map(|i| MultiRead::from(TIMER_INTERVALS[usize::from(i)]))
             .reduce(|acc, val| acc.combine_with(&val))
             .expect("MultiRead will always have at least one possible read")
     }
@@ -185,10 +185,10 @@ impl Riot {
     }
 
     fn update_db_bus(&mut self, r: &RiotAllReads) {
-        let high_z_out = &|| BusDriveState::from_signals(&[LineSignal::HighZ; 8]);
+        let high_z_out = &|| BusDriveState::from([LineSignal::HighZ; 8]);
 
         let ram_read = &|| {
-            BusDriveState::from_multi_read(
+            BusDriveState::from(
                 &r.line
                     .a
                     .iter_possible_reads()
@@ -213,21 +213,21 @@ impl Riot {
                 &|| {
                     Combine::mux(
                         r.line.a[1].as_cond(),
-                        &|| BusDriveState::from_multi_read(&r.reg.ora),
-                        &|| BusDriveState::from_multi_read(&r.reg.orb),
+                        &|| BusDriveState::from(&r.reg.ora),
+                        &|| BusDriveState::from(&r.reg.orb),
                     )
                 },
                 &|| {
                     Combine::mux(
                         r.line.a[1].as_cond(),
-                        &|| BusDriveState::from_multi_read(&r.reg.ddra),
-                        &|| BusDriveState::from_multi_read(&r.reg.ddrb),
+                        &|| BusDriveState::from(&r.reg.ddra),
+                        &|| BusDriveState::from(&r.reg.ddrb),
                     )
                 },
             )
         };
 
-        let timer_read = &|| BusDriveState::from_multi_read(&r.reg.timer);
+        let timer_read = &|| BusDriveState::from(&r.reg.timer);
 
         self.db_out = Combine::mux(cs_cond(r) & r.line.rw.as_cond(), high_z_out, &|| {
             mux_matches!(
@@ -283,6 +283,6 @@ impl Riot {
     }
 
     pub fn handle_falling_edge(&mut self) {
-        self.db_out = BusDriveState::from_signals(&[LineSignal::HighZ; 8]);
+        self.db_out = BusDriveState::from([LineSignal::HighZ; 8]);
     }
 }

@@ -62,7 +62,7 @@ impl InstrCycles {
         }
 
         match instr {
-            Instr::Brk => Self(effects!((2, Addr, StackAddr), (2, Db, StackAddr),)),
+            Instr::Brk => todo!(),
             Instr::Rti => todo!(),
             Instr::Rts => todo!(),
             Instr::Jsr => todo!(),
@@ -80,7 +80,7 @@ impl InstrCycles {
             Instr::ZpgIdx(reg, gen_op) => todo!(),
             Instr::XInd(gen_op) => todo!(),
             Instr::IndY(gen_op) => todo!(),
-            Instr::Illegal => Self(Vec::new()),
+            Instr::Illegal => todo!(),
         }
     }
 }

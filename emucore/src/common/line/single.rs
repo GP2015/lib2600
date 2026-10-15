@@ -1,11 +1,6 @@
-use crate::common::{
-    combine::Combine,
-    line::{error::LineError, ident::LineIdent},
-    read::single::SingleRead,
-    signal::LineSignal,
-};
+use crate::common::{combine::Combine, read::single::SingleRead, signal::LineSignal};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub struct DriveState {
     pub low: bool,
     pub high: bool,
@@ -14,12 +9,8 @@ pub struct DriveState {
 
 impl DriveState {
     #[must_use]
-    pub const fn none_enabled() -> Self {
-        Self {
-            low: false,
-            high: false,
-            high_z: false,
-        }
+    pub const fn new(low: bool, high: bool, high_z: bool) -> Self {
+        Self { low, high, high_z }
     }
 
     #[must_use]
@@ -32,12 +23,8 @@ impl DriveState {
         }
     }
 
-    pub fn read_ok(self, ident: LineIdent) -> Result<SingleRead, LineError> {
-        self.read().ok_or(LineError::ImpossibleLineSignal { ident })
-    }
-
     fn contend_pair(self, other: Self) -> Option<Self> {
-        let mut result = Self::none_enabled();
+        let mut result = Self::new(false, false, false);
 
         let iter_possible = |state: Self| {
             [
@@ -71,12 +58,15 @@ impl DriveState {
 
         states.try_fold(init, Self::contend_pair)
     }
+}
 
-    pub fn contend_ok(
-        states: impl Iterator<Item = Self>,
-        ident: LineIdent,
-    ) -> Result<Self, LineError> {
-        Self::contend(states).ok_or(LineError::ShortCircuit { ident })
+impl From<LineSignal> for DriveState {
+    fn from(value: LineSignal) -> Self {
+        Self {
+            low: matches!(value, LineSignal::Low),
+            high: matches!(value, LineSignal::High),
+            high_z: matches!(value, LineSignal::HighZ),
+        }
     }
 }
 
@@ -86,16 +76,6 @@ impl From<SingleRead> for DriveState {
             low: matches!(value, SingleRead::Low | SingleRead::Unknown),
             high: matches!(value, SingleRead::High | SingleRead::Unknown),
             high_z: false,
-        }
-    }
-}
-
-impl From<LineSignal> for DriveState {
-    fn from(value: LineSignal) -> Self {
-        Self {
-            low: matches!(value, LineSignal::Low),
-            high: matches!(value, LineSignal::High),
-            high_z: matches!(value, LineSignal::HighZ),
         }
     }
 }
