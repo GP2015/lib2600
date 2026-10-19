@@ -1,3 +1,3 @@
 pub mod error;
-pub mod multi;
-pub mod single;
+pub mod output;
+pub mod signal;

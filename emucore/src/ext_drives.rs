@@ -1,13 +1,14 @@
-use crate::common::line::{multi::BusDriveState, single::DriveState};
+use crate::common::line::output::{multi::BusOutput, single::LineOutput};
 
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct ExtDrives {
-    pub a: BusDriveState<13>,
-    pub db: BusDriveState<8>,
-    pub inp1: BusDriveState<7>,
-    pub inp2: BusDriveState<7>,
-    pub rdiff: DriveState,
-    pub ldiff: DriveState,
-    pub col: DriveState,
-    pub sel: DriveState,
-    pub res: DriveState,
+    pub a: BusOutput<13>,
+    pub db: BusOutput<8>,
+    pub inp1: BusOutput<7>,
+    pub inp2: BusOutput<7>,
+    pub rdiff: LineOutput,
+    pub ldiff: LineOutput,
+    pub col: LineOutput,
+    pub sel: LineOutput,
+    pub res: LineOutput,
 }

@@ -24,18 +24,3 @@ pub enum LineError {
     #[error("cannot read line {ident} as it has no possible signal through it")]
     ImpossibleLineSignal { ident: LineIdent },
 }
-
-pub trait MapToLineError<T> {
-    fn map_short(self, ident: LineIdent) -> Result<T, LineError>;
-    fn map_imp(self, ident: LineIdent) -> Result<T, LineError>;
-}
-
-impl<T> MapToLineError<T> for Option<T> {
-    fn map_short(self, ident: LineIdent) -> Result<T, LineError> {
-        self.ok_or(LineError::ShortCircuit { ident })
-    }
-
-    fn map_imp(self, ident: LineIdent) -> Result<T, LineError> {
-        self.ok_or(LineError::ImpossibleLineSignal { ident })
-    }
-}

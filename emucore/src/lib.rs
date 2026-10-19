@@ -11,27 +11,24 @@ mod riot;
 
 pub use crate::{
     common::{
+        bit::{multi::BitStringState, single::BitState},
         combine::Combine,
-        cond::{IsCondition, base::BaseCondition},
+        cond::BaseCondition,
         line::{
             error::{LineError, LineIdent},
-            multi::BusDriveState,
-            single::DriveState,
+            output::{multi::BusOutput, single::LineOutput},
+            signal::LineSignal,
         },
-        read::{multi::MultiRead, single::SingleRead},
-        signal::LineSignal,
     },
     ext_drives::ExtDrives,
 };
 
-use crate::{cpu::Cpu, line_reads::EmuLineStates, riot::Riot};
+use crate::{cpu::Cpu, riot::Riot};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Emulator {
     cpu: Cpu,
     riot: Riot,
-    phi0: bool,
-    line_states: EmuLineStates,
 }
 
 impl Default for Emulator {
@@ -46,27 +43,16 @@ impl Emulator {
         Self {
             cpu: Cpu::new(),
             riot: Riot::new(),
-            phi0: false,
-            line_states: EmuLineStates::new(),
         }
     }
 
-    fn update(&mut self, ext: &ExtDrives) -> Result<(), LineError> {
-        self.line_states.update(ext, &self.cpu, &self.riot)
-    }
-
     pub fn tick(&mut self, ext: &ExtDrives) -> Result<(), LineError> {
-        self.update(ext)?;
-        self.cpu.handle_rising_edge(self.line_states.cpu_reads());
+        let rdy_read = BitState::Unknown;
+        let cpu_out = self.cpu.tick_rising(rdy_read);
 
-        self.update(ext)?;
-        self.riot.handle_rising_edge(self.line_states.riot_reads());
+        // let riot_out = self.riot.tick(&self.line_states.riot_reads());
 
-        self.update(ext)?;
-        self.cpu.handle_falling_edge(self.line_states.cpu_reads());
-
-        self.update(ext)?;
-        self.riot.handle_falling_edge();
+        // self.cpu.tick_falling(self.line_states.cpu_reads());
 
         Ok(())
     }

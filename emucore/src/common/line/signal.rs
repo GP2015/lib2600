@@ -1,6 +1,6 @@
 use strum::Display;
 
-#[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq)]
 pub enum LineSignal {
     #[strum(to_string = "low")]
     Low,
@@ -8,6 +8,7 @@ pub enum LineSignal {
     #[strum(to_string = "high")]
     High,
 
+    #[default]
     #[strum(to_string = "high-impedance")]
     HighZ,
 }

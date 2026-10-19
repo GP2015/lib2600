@@ -1,26 +1,23 @@
-pub mod reads;
-pub mod regs;
+pub mod data;
 
 include!(concat!(env!("OUT_DIR"), "/cpu_gen.rs"));
 
-use crate::{
-    common::{
-        line::{multi::BusDriveState, single::DriveState},
-        signal::LineSignal,
-    },
-    cpu::{
-        reads::{CpuAllReads, CpuLineReads},
-        regs::CpuRegs,
-    },
-};
+use crate::{BitState, BitStringState, cpu::data::CpuOutput};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Cpu {
-    pub phi2_out: DriveState,
-    pub a_out: BusDriveState<13>,
-    pub db_out: BusDriveState<8>,
-    pub rw_out: DriveState,
-    reg: CpuRegs,
+    a: BitStringState<8>,
+    x: BitStringState<8>,
+    y: BitStringState<8>,
+    pc: BitStringState<16>,
+    sp: BitStringState<8>,
+    n: BitState,
+    v: BitState,
+    b: BitState,
+    d: BitState,
+    i: BitState,
+    z: BitState,
+    c: BitState,
 }
 
 impl Default for Cpu {
@@ -32,21 +29,26 @@ impl Default for Cpu {
 impl Cpu {
     pub fn new() -> Self {
         Self {
-            phi2_out: DriveState::default(),
-            a_out: BusDriveState::from([LineSignal::HighZ; _]),
-            db_out: BusDriveState::from([LineSignal::HighZ; _]),
-            rw_out: LineSignal::HighZ.into(),
-            reg: CpuRegs::new(),
+            a: [BitState::Unknown; _].into(),
+            x: [BitState::Unknown; _].into(),
+            y: [BitState::Unknown; _].into(),
+            pc: [BitState::Unknown; _].into(),
+            sp: [BitState::Unknown; _].into(),
+            n: BitState::Unknown,
+            v: BitState::Unknown,
+            b: BitState::Unknown,
+            d: BitState::Unknown,
+            i: BitState::Unknown,
+            z: BitState::Unknown,
+            c: BitState::Unknown,
         }
     }
 
-    pub fn handle_rising_edge(&mut self, line_reads: CpuLineReads) {
-        let r = CpuAllReads::new(line_reads, self.reg.clone());
+    pub fn tick_rising(&mut self, rdy_read: BitState) -> CpuOutput {
         todo!()
     }
 
-    pub fn handle_falling_edge(&mut self, line_reads: CpuLineReads) {
-        let r = CpuAllReads::new(line_reads, self.reg.clone());
+    pub fn tick_falling(&mut self, rdy_read: BitState, db_read: BitStringState<8>) {
         todo!()
     }
 }
