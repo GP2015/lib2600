@@ -27,6 +27,7 @@ enum WriteMod {
     StackAddr,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Effect {
     cycle: u8,
     loc: WriteLoc,
