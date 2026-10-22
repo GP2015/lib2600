@@ -99,7 +99,7 @@ impl Riot {
         }
     }
 
-    // fn edc_ticked(&self, pa7_read: BitState) -> BitState {
+    // pub fn update_edc(&self, pa7_read: BitState) -> BitState {
     //     let edge_type = self.edc_edge_type.as_cond();
     //     let old_pa7 = self.old_pa7_read.as_cond();
     //     let new_pa7 = pa7_read.as_cond();

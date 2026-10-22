@@ -7,6 +7,29 @@ use derive_more::{Deref, DerefMut, Index, IndexMut};
 #[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
 pub struct BusOutput<const SIZE: usize>([LineOutput; SIZE]);
 
+impl<const SIZE: usize> BusOutput<SIZE> {
+    pub fn read(&self) -> Result<BitStringState<SIZE>, u8> {
+        let mut v: BitStringState<_> = BitStringState::default();
+
+        for (i, (line, bit)) in self.iter().zip(v.iter_mut()).enumerate() {
+            let Some(state) = line.read() else {
+                return Err(i.try_into().expect("guaranteed to be valid"));
+            };
+            *bit = state;
+        }
+
+        Ok(v)
+    }
+
+    #[must_use]
+    pub fn section<const LEN: usize>(&self, start: usize) -> BusOutput<LEN> {
+        let arr: [_; _] = self[start..start + LEN]
+            .try_into()
+            .expect("must be the same size");
+        arr.into()
+    }
+}
+
 impl<const SIZE: usize> Default for BusOutput<SIZE> {
     fn default() -> Self {
         [LineOutput::default(); _].into()

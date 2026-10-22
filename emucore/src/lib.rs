@@ -5,7 +5,7 @@
 
 mod common;
 mod cpu;
-mod ext_drives;
+mod data;
 mod line_reads;
 mod riot;
 
@@ -20,10 +20,13 @@ pub use crate::{
             signal::LineSignal,
         },
     },
-    ext_drives::ExtDrives,
+    data::ExtDrives,
 };
 
-use crate::{cpu::Cpu, riot::Riot};
+use crate::{
+    cpu::Cpu,
+    riot::{Riot, data::RiotLineReads},
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Emulator {
@@ -46,14 +49,58 @@ impl Emulator {
         }
     }
 
-    pub fn tick(&mut self, ext: &ExtDrives) -> Result<(), LineError> {
+    pub fn tick_rising(&mut self, drv: &ExtDrives) -> Result<(), LineError> {
         let rdy_read = BitState::Unknown;
         let cpu_out = self.cpu.tick_rising(rdy_read);
 
-        // let riot_out = self.riot.tick(&self.line_states.riot_reads());
+        todo!()
+    }
+
+    pub fn tick_falling(&mut self, drv: &ExtDrives) -> Result<(), LineError> {
+        let riot_reads = self.riot_reads(drv)?;
+        let riot_out = self.riot.tick(&riot_reads);
 
         // self.cpu.tick_falling(self.line_states.cpu_reads());
 
-        Ok(())
+        todo!()
+    }
+
+    fn riot_reads(&self, drv: &ExtDrives) -> Result<RiotLineReads, LineError> {
+        let mut pa: BitStringState<_> = [BitState::Unknown; _].into();
+
+        let pa_low = drv
+            .inp2
+            .section::<4>(0)
+            .read()
+            .map_err(|bit| LineError::ImpossibleLineSignal(LineIdent::Inp2(bit)))?;
+
+        let pa_high = drv
+            .inp1
+            .section::<4>(0)
+            .read()
+            .map_err(|bit| LineError::ImpossibleLineSignal(LineIdent::Inp1(bit)))?;
+
+        pa[0..4].clone_from_slice(pa_low.as_slice());
+        pa[4..8].clone_from_slice(pa_high.as_slice());
+
+        let pb_ok = [
+            (drv.res, LineIdent::Res),
+            (drv.sel, LineIdent::Sel),
+            (drv.col, LineIdent::Col),
+            (drv.ldiff, LineIdent::LDiff),
+            (drv.rdiff, LineIdent::RDiff),
+        ]
+        .map(|(line, ident)| line.read().ok_or(LineError::ImpossibleLineSignal(ident)));
+
+        Ok(RiotLineReads {
+            a: todo!(),
+            db: todo!(),
+            pa,
+            pb: [pb_ok[0]?, pb_ok[1]?, pb_ok[2]?, pb_ok[3]?, pb_ok[4]?],
+            cs1: todo!(),
+            cs2: todo!(),
+            rs: todo!(),
+            rw: todo!(),
+        })
     }
 }

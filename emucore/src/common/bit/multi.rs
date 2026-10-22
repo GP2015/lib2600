@@ -6,12 +6,6 @@ use derive_more::{Deref, DerefMut, Index, IndexMut};
 #[derive(Clone, Copy, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
 pub struct BitStringState<const SIZE: usize>([BitState; SIZE]);
 
-impl<const SIZE: usize> Default for BitStringState<SIZE> {
-    fn default() -> Self {
-        [BitState::default(); _].into()
-    }
-}
-
 impl<const SIZE: usize> BitStringState<SIZE> {
     #[must_use]
     pub fn value(&self) -> Option<u16> {
@@ -103,6 +97,11 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         })
     }
 
+    pub fn section<const LEN: usize>(self, start: usize) -> BitStringState<LEN> {
+        let arr: [_; _] = self[start..start + LEN].try_into().unwrap();
+        arr.into()
+    }
+
     #[must_use]
     pub fn incremented(self) -> Self {
         let mut res = self;
@@ -169,6 +168,12 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         }
 
         res
+    }
+}
+
+impl<const SIZE: usize> Default for BitStringState<SIZE> {
+    fn default() -> Self {
+        [BitState::default(); _].into()
     }
 }
 
