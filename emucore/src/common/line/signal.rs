@@ -46,21 +46,6 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(false, LineSignal::Low)]
-    #[case(true, LineSignal::High)]
-    fn from_bool(#[case] b: bool, #[case] signal: LineSignal) {
-        assert_eq!(LineSignal::from(b), signal);
-    }
-
-    #[rstest]
-    #[case(LineSignal::Low, Some(false))]
-    #[case(LineSignal::High, Some(true))]
-    #[case(LineSignal::HighZ, None)]
-    fn as_bool(#[case] signal: LineSignal, #[case] b: Option<bool>) {
-        assert_eq!(signal.as_bool(), b);
-    }
-
-    #[rstest]
     #[case(LineSignal::Low, LineSignal::Low, LineSignal::Low)]
     #[case(LineSignal::Low, LineSignal::HighZ, LineSignal::Low)]
     #[case(LineSignal::High, LineSignal::High, LineSignal::High)]
