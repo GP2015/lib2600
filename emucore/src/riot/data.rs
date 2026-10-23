@@ -1,4 +1,7 @@
-use crate::{BitState, BitStringState, BusOutput, LineOutput};
+use crate::common::{
+    bit::{multi::BitStringState, single::BitState},
+    line::output::{multi::BusOutput, single::LineOutput},
+};
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct RiotLineReads {

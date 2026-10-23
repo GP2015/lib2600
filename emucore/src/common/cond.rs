@@ -1,6 +1,5 @@
+use crate::common::bit::single::BitState;
 use core::ops::{BitAnd, BitOr, Not};
-
-use crate::BitState;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum BaseCondition {
