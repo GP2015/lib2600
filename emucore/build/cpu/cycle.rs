@@ -1,7 +1,7 @@
 use crate::build::cpu::instr::Instr;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum WriteLoc {
+enum Loc {
     Phi2,
     Addr,
     Db,
@@ -22,7 +22,7 @@ enum WriteLoc {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum WriteMod {
+enum Modif {
     Inc,
     StackAddr,
 }
@@ -30,12 +30,12 @@ enum WriteMod {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct Effect {
     cycle: u8,
-    loc: WriteLoc,
-    kind: WriteMod,
+    loc: Loc,
+    kind: Modif,
 }
 
 impl Effect {
-    fn new(cycle: u8, loc: WriteLoc, kind: WriteMod) -> Self {
+    const fn new(cycle: u8, loc: Loc, kind: Modif) -> Self {
         Self { cycle, loc, kind }
     }
 }
@@ -46,7 +46,7 @@ struct InstrCycles {
 }
 
 impl InstrCycles {
-    pub fn new(inc_c1_inc: bool) -> Self {
+    pub const fn new(inc_c1_inc: bool) -> Self {
         Self {
             inc_c1_inc,
             extra_effects: Vec::new(),
@@ -58,7 +58,7 @@ impl InstrCycles {
     pub fn from_instr(instr: Instr) -> Self {
         macro_rules! effects {
             ($(($cycle:literal, $loc:ident, $mod:ident)),+ $(,)?) => {
-                vec![$(Effect::new($cycle, WriteLoc::$loc, WriteMod::$mod)),+]
+                vec![$(Effect::new($cycle, Loc::$loc, Modif::$mod)),+]
             };
         }
 
