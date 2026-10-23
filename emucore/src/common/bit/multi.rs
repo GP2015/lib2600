@@ -1,4 +1,4 @@
-use crate::common::{bit::single::BitState, combine::Combine, cond::BaseCondition};
+use crate::common::{bit::single::BitState, combine::Combine, cond::BaseCond};
 use arrayvec::ArrayVec;
 use core::array;
 use derive_more::{Deref, DerefMut, Index, IndexMut};
@@ -30,7 +30,7 @@ impl<const SIZE: usize> BitStringState<SIZE> {
     }
 
     #[must_use]
-    pub fn is_uint(&self, val: usize) -> BaseCondition {
+    pub fn is_uint(&self, val: usize) -> BaseCond {
         let mut must_be = true;
 
         for (i, &read_bit) in self.iter().enumerate() {
@@ -38,20 +38,20 @@ impl<const SIZE: usize> BitStringState<SIZE> {
 
             match (read_bit, val_bit) {
                 (BitState::Low, false) | (BitState::High, true) => (),
-                (BitState::Low, true) | (BitState::High, false) => return BaseCondition::No,
+                (BitState::Low, true) | (BitState::High, false) => return BaseCond::No,
                 (BitState::Unknown, _) => must_be = false,
             }
         }
 
         if must_be {
-            BaseCondition::Yes
+            BaseCond::Yes
         } else {
-            BaseCondition::Unknown
+            BaseCond::Unknown
         }
     }
 
     #[must_use]
-    pub fn is_pattern(&self, pattern: &Self) -> BaseCondition {
+    pub fn is_pattern(&self, pattern: &Self) -> BaseCond {
         let mut must_be = true;
 
         for (&read_bit, &pattern_bit) in self.iter().zip(pattern.iter()) {
@@ -61,7 +61,7 @@ impl<const SIZE: usize> BitStringState<SIZE> {
                 | (_, BitState::Unknown) => (),
 
                 (BitState::Low, BitState::High) | (BitState::High, BitState::Low) => {
-                    return BaseCondition::No;
+                    return BaseCond::No;
                 }
 
                 (BitState::Unknown, _) => must_be = false,
@@ -69,9 +69,9 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         }
 
         if must_be {
-            BaseCondition::Yes
+            BaseCond::Yes
         } else {
-            BaseCondition::Unknown
+            BaseCond::Unknown
         }
     }
 

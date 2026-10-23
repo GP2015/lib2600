@@ -1,16 +1,18 @@
+use crate::BaseCond;
+
 pub trait Combine {
     #[must_use]
     fn combine_with(&self, other: &Self) -> Self;
 
-    fn update_val<F>(&mut self, cond: BaseCondition, new_val: F)
+    fn update_val<F>(&mut self, cond: BaseCond, new_val: F)
     where
         Self: Sized,
         F: FnOnce() -> Self,
     {
         match cond {
-            BaseCondition::No => (),
-            BaseCondition::Yes => *self = new_val(),
-            BaseCondition::Unknown => *self = self.combine_with(&new_val()),
+            BaseCond::No => (),
+            BaseCond::Yes => *self = new_val(),
+            BaseCond::Unknown => *self = self.combine_with(&new_val()),
         }
     }
 
@@ -28,14 +30,14 @@ pub trait Combine {
     fn mux<C, L, H>(cond: C, low_opt: L, high_opt: H) -> Self
     where
         Self: Sized,
-        C: Into<BaseCondition>,
+        C: Into<BaseCond>,
         L: FnOnce() -> Self,
         H: FnOnce() -> Self,
     {
         match cond.into() {
-            BaseCondition::No => low_opt(),
-            BaseCondition::Yes => high_opt(),
-            BaseCondition::Unknown => low_opt().combine_with(&high_opt()),
+            BaseCond::No => low_opt(),
+            BaseCond::Yes => high_opt(),
+            BaseCond::Unknown => low_opt().combine_with(&high_opt()),
         }
     }
 }
@@ -55,5 +57,3 @@ macro_rules! mux_matches {
 }
 
 pub(crate) use mux_matches;
-
-use crate::common::cond::BaseCondition;

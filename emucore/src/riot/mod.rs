@@ -4,7 +4,7 @@ use crate::{
     common::{
         bit::{multi::BitStringState, single::BitState},
         combine::{Combine, mux_matches},
-        cond::BaseCondition,
+        cond::BaseCond,
         line::{
             error::{Error, LineIdent},
             output::{multi::BusOutput, single::LineOutput},
@@ -19,7 +19,7 @@ const PB_CONNECTED_LINES: [usize; 5] = [0, 1, 3, 6, 7];
 
 const TIMER_INTERVALS: [u16; 4] = [1, 8, 64, 1024];
 
-fn cs_cond(r: &RiotLineReads) -> BaseCondition {
+fn cs_cond(r: &RiotLineReads) -> BaseCond {
     r.cs1.as_cond() & !r.cs2.as_cond()
 }
 
@@ -71,6 +71,31 @@ impl Riot {
         }
     }
 
+    pub fn ack_new_pa7_drv(&mut self, ext_drv: LineOutput) -> Result<BitState, Error> {
+        let drv_out = Combine::mux(
+            self.ddra[7],
+            &|| LineOutput::from(LineSignal::HighZ),
+            &|| LineOutput::from(self.ora[7]),
+        );
+
+        let ident = LineIdent::Inp1(3);
+        let imp_err = Error::NoSignal(ident);
+
+        let total_drv = ext_drv.contend_with(drv_out).ok_or(Error::Short(ident))?;
+
+        let edge_type = self.edc_edge_type.as_cond();
+        let prev_read = self.prev_pa7_total_drv.read().ok_or(imp_err)?.as_cond();
+        let cur_read = total_drv.read().ok_or(imp_err)?.as_cond();
+
+        self.prev_pa7_total_drv = total_drv;
+
+        Ok(Combine::mux(
+            (edge_type & !prev_read & cur_read) | (!edge_type & prev_read & !cur_read),
+            &|| self.edc_ir_flag,
+            &|| BitState::High,
+        ))
+    }
+
     pub fn tick(&mut self, r: &RiotLineReads) -> RiotOutput {
         let new_timer_regs = self.timer_ticked();
 
@@ -102,31 +127,6 @@ impl Riot {
             pa: self.pa_out(),
             pb: self.pb_out(),
         }
-    }
-
-    pub fn ack_new_pa7_drv(&mut self, ext_drv: LineOutput) -> Result<BitState, Error> {
-        let drv_out = Combine::mux(
-            self.ddra[7],
-            &|| LineOutput::from(LineSignal::HighZ),
-            &|| LineOutput::from(self.ora[7]),
-        );
-
-        let ident = LineIdent::Inp1(3);
-        let imp_err = Error::NoSignal(ident);
-
-        let total_drv = ext_drv.contend_with(drv_out).ok_or(Error::Short(ident))?;
-
-        let edge_type = self.edc_edge_type.as_cond();
-        let prev_read = self.prev_pa7_total_drv.read().ok_or(imp_err)?.as_cond();
-        let cur_read = total_drv.read().ok_or(imp_err)?.as_cond();
-
-        self.prev_pa7_total_drv = total_drv;
-
-        Ok(Combine::mux(
-            (edge_type & !prev_read & cur_read) | (!edge_type & prev_read & !cur_read),
-            &|| self.edc_ir_flag,
-            &|| BitState::High,
-        ))
     }
 
     fn timer_interval_read(idx: BitStringState<2>) -> BitStringState<10> {
@@ -172,9 +172,9 @@ impl Riot {
         let ram_write_cond = cs_cond(r) & !r.rs.as_cond() & !r.rw.as_cond();
 
         let must_be = match ram_write_cond {
-            BaseCondition::No => false,
-            BaseCondition::Yes => true,
-            BaseCondition::Unknown => return,
+            BaseCond::No => false,
+            BaseCond::Yes => true,
+            BaseCond::Unknown => return,
         };
 
         if let Some(addr) = r.a.value() {

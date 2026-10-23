@@ -12,7 +12,7 @@ pub use crate::{
     common::{
         bit::{multi::BitStringState, single::BitState},
         combine::Combine,
-        cond::BaseCondition,
+        cond::BaseCond,
         line::{
             error::{Error, LineIdent},
             output::{multi::BusOutput, single::LineOutput},

@@ -1,4 +1,4 @@
-use crate::common::{combine::Combine, cond::BaseCondition, line::signal::LineSignal};
+use crate::common::{combine::Combine, cond::BaseCond, line::signal::LineSignal};
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum BitState {
@@ -19,11 +19,11 @@ impl BitState {
     }
 
     #[must_use]
-    pub const fn as_cond(self) -> BaseCondition {
+    pub const fn as_cond(self) -> BaseCond {
         match self {
-            Self::High => BaseCondition::Yes,
-            Self::Low => BaseCondition::No,
-            Self::Unknown => BaseCondition::Unknown,
+            Self::High => BaseCond::Yes,
+            Self::Low => BaseCond::No,
+            Self::Unknown => BaseCond::Unknown,
         }
     }
 
