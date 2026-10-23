@@ -21,7 +21,7 @@ impl Mapper for M2K {
             &|| BusOutput::from([LineSignal::HighZ; _]),
             &|| {
                 BusOutput::from(
-                    BitStringState::from(a[0..11])
+                    a.section::<11>(0)
                         .iter_possible_uints()
                         .map(|addr| u16::from(self.rom[usize::from(addr)]).into())
                         .reduce(|acc: BitStringState<_>, byte| acc.combine_with(&byte))
@@ -31,21 +31,6 @@ impl Mapper for M2K {
         );
 
         MapperDrive { a_drv, db_drv }
-
-        // for addr in a.iter_possible_reads() {
-        //     let ram_byte = &mut self.ram[usize::from(addr)];
-        //     *ram_byte = Combine::mux(
-        //         cs_cond(r) & !r.line.rs.as_cond() & !r.line.rw.as_cond(),
-        //         &|| ram_byte.clone(),
-        //         &|| r.line.db.clone(),
-        //     );
-        // }
-
-        // if address_bus.get_line(CHIP_ENABLE_LINE) {
-        //     let addr = address_bus.get_combined();
-        //     let data = self.rom[addr % ROM_SIZE];
-        //     data_bus.set_combined(data as usize);
-        // }
     }
 }
 

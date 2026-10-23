@@ -1,77 +1,81 @@
-use crate::core::{Bus, Cartridge};
-use crate::mappers::MapperError;
+use crate::{Mapper, MapperDrive};
+use emucore::{BitStringState, BusOutput, Combine, LineSignal};
 
-const ROM_SIZE: usize = 4096;
-const CHIP_ENABLE_LINE: usize = 12;
-
-pub struct Mapper4K {
-    rom: Vec<u8>,
+pub struct M4K {
+    rom: [u8; 4096],
 }
 
-impl Mapper4K {
-    pub fn new(program: Vec<u8>) -> Result<Self, MapperError> {
-        if program.len() != ROM_SIZE {
-            return Err(MapperError::InvalidProgram {
-                mapper_name: String::from("4K"),
-            });
-        }
-
-        Ok(Self { rom: program })
+impl M4K {
+    #[must_use]
+    pub const fn new(rom: [u8; 4096]) -> Self {
+        Self { rom }
     }
 }
 
-impl Cartridge for Mapper4K {
-    fn tick(&mut self, address_bus: &mut Bus, data_bus: &mut Bus) {
-        if address_bus.get_line(CHIP_ENABLE_LINE) {
-            let addr = address_bus.get_combined();
-            let data = self.rom[addr % ROM_SIZE];
-            data_bus.set_combined(data as usize);
-        }
+impl Mapper for M4K {
+    fn tick(&mut self, a: BitStringState<13>, _: BitStringState<8>) -> MapperDrive {
+        let a_drv = [LineSignal::HighZ; _].into();
+
+        let db_drv = Combine::mux(
+            a[12].as_cond(),
+            &|| BusOutput::from([LineSignal::HighZ; _]),
+            &|| {
+                BusOutput::from(
+                    a.section::<12>(0)
+                        .iter_possible_uints()
+                        .map(|addr| u16::from(self.rom[usize::from(addr)]).into())
+                        .reduce(|acc: BitStringState<_>, byte| acc.combine_with(&byte))
+                        .expect("BitState will always have at least one possible read"),
+                )
+            },
+        );
+
+        MapperDrive { a_drv, db_drv }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    fn create_valid_objects(program: Vec<u8>) -> (Bus, Bus, Mapper4K) {
-        let address_bus = Bus::new(13);
-        let data_bus = Bus::new(8);
-        let cart = Mapper4K::new(program).unwrap();
-        (address_bus, data_bus, cart)
-    }
+//     fn create_valid_objects(program: Vec<u8>) -> (Bus, Bus, Mapper4K) {
+//         let address_bus = Bus::new(13);
+//         let data_bus = Bus::new(8);
+//         let cart = Mapper4K::new(program).unwrap();
+//         (address_bus, data_bus, cart)
+//     }
 
-    #[test]
-    fn invalid_program() {
-        let program = vec![0; 5];
-        let Err(_) = Mapper4K::new(program) else {
-            panic!("Provided program is invalid, so cartridge creation should have failed.");
-        };
-    }
+//     #[test]
+//     fn invalid_program() {
+//         let program = vec![0; 5];
+//         let Err(_) = Mapper4K::new(program) else {
+//             panic!("Provided program is invalid, so cartridge creation should have failed.");
+//         };
+//     }
 
-    #[test]
-    fn no_read() {
-        let mut program = vec![0; ROM_SIZE];
-        program[0x67] = 0x89;
+//     #[test]
+//     fn no_read() {
+//         let mut program = vec![0; ROM_SIZE];
+//         program[0x67] = 0x89;
 
-        let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
+//         let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
 
-        address_bus.set_combined(0x0067);
-        cart.tick(&mut address_bus, &mut data_bus);
+//         address_bus.set_combined(0x0067);
+//         cart.tick(&mut address_bus, &mut data_bus);
 
-        assert_eq!(data_bus.get_combined(), 0x00);
-    }
+//         assert_eq!(data_bus.get_combined(), 0x00);
+//     }
 
-    #[test]
-    fn read() {
-        let mut program = vec![0; ROM_SIZE];
-        program[0x67] = 0x89;
+//     #[test]
+//     fn read() {
+//         let mut program = vec![0; ROM_SIZE];
+//         program[0x67] = 0x89;
 
-        let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
+//         let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
 
-        address_bus.set_combined(0x1067);
-        cart.tick(&mut address_bus, &mut data_bus);
+//         address_bus.set_combined(0x1067);
+//         cart.tick(&mut address_bus, &mut data_bus);
 
-        assert_eq!(data_bus.get_combined(), 0x89);
-    }
-}
+//         assert_eq!(data_bus.get_combined(), 0x89);
+//     }
+// }

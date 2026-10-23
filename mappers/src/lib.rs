@@ -3,8 +3,10 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 mod m2k;
+mod m4k;
 
 pub use m2k::M2K;
+pub use m4k::M4K;
 
 use emucore::{BitStringState, BusOutput};
 
