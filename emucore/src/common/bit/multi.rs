@@ -97,8 +97,11 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         })
     }
 
+    #[must_use]
     pub fn section<const LEN: usize>(self, start: usize) -> BitStringState<LEN> {
-        let arr: [_; _] = self[start..start + LEN].try_into().unwrap();
+        let arr: [_; _] = self[start..start + LEN]
+            .try_into()
+            .expect("arrays will always be the same size");
         arr.into()
     }
 

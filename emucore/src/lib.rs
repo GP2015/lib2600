@@ -6,7 +6,6 @@
 mod common;
 mod cpu;
 mod data;
-mod line_reads;
 mod riot;
 
 pub use crate::{
@@ -15,12 +14,12 @@ pub use crate::{
         combine::Combine,
         cond::BaseCondition,
         line::{
-            error::{LineError, LineIdent},
+            error::{Error, LineIdent},
             output::{multi::BusOutput, single::LineOutput},
             signal::LineSignal,
         },
     },
-    data::ExtDrives,
+    data::{InputDrives, OutputDrives},
 };
 
 use crate::{
@@ -28,10 +27,50 @@ use crate::{
     riot::{Riot, data::RiotLineReads},
 };
 
+macro_rules! read_line {
+    ($line:expr, $id:ident) => {
+        $line.read().ok_or(Error::NoSignal(LineIdent::$id))
+    };
+
+    ($line:expr, $id:ident, $bit:literal) => {
+        $line.read().ok_or(Error::NoSignal(LineIdent::$id($bit)))
+    };
+
+    ($l0:expr, $l1:expr, $id:ident) => {
+        $l0.contend_with($l1)
+            .ok_or(Error::Short(LineIdent::$id))
+            .map(|d| read_line!(d, $id))
+    };
+
+    ($l0:expr, $l1:expr, $id:ident, $bit:literal) => {
+        $l0.contend_with($l1)
+            .ok_or(Error::Short(LineIdent::$id($bit)))
+            .map(|d| read_line!(d, $id, $bit))
+    };
+}
+
+macro_rules! read_bus {
+    ($bus:expr, $id:ident) => {
+        $bus.read()
+            .map_err(|bit| Error::NoSignal(LineIdent::$id(bit)))
+    };
+
+    ($b0:expr, $b1:expr, $id:ident) => {
+        $b0.contend_with($b1)
+            .map_err(|bit| Error::Short(LineIdent::$id(bit)))
+            .map(|d| read_bus!(d, $id))
+    };
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Emulator {
     cpu: Cpu,
     riot: Riot,
+
+    cpu_a_out: BusOutput<13>,
+    cpu_db_out: BusOutput<8>,
+
+    rw_read: BitState,
 }
 
 impl Default for Emulator {
@@ -46,61 +85,88 @@ impl Emulator {
         Self {
             cpu: Cpu::new(),
             riot: Riot::new(),
+
+            cpu_a_out: [LineSignal::HighZ; _].into(),
+            cpu_db_out: [LineSignal::HighZ; _].into(),
+
+            rw_read: BitState::Unknown,
         }
+
+        // Read initial PC and tick rising
     }
 
-    pub fn tick_rising(&mut self, drv: &ExtDrives) -> Result<(), LineError> {
+    pub fn tick(&mut self, input_drv: &InputDrives) -> Result<OutputDrives, Error> {
+        // Use CPU drives too
+
+        self.riot.ack_new_pa7_drv(input_drv.inp1[3])?;
+        let riot_reads = self.riot_reads(input_drv)?;
+        let riot_out = self.riot.tick(&riot_reads);
+        self.riot.ack_new_pa7_drv(input_drv.inp1[3])?;
+
+        // Tick TIA
         let rdy_read = BitState::Unknown;
+
+        // Combine drives and read.
+        let db_read = riot_out
+            .db
+            .read()
+            .map_err(|bit| Error::NoSignal(LineIdent::Db(bit)))?;
+
+        self.cpu.tick_falling(rdy_read, db_read);
+
+        // Rising edge below...
+
+        // Acquire rdy_read
+        let rdy_read = BitState::Unknown;
+
         let cpu_out = self.cpu.tick_rising(rdy_read);
 
-        todo!()
+        self.cpu_a_out = cpu_out.a.clone();
+        self.cpu_db_out = cpu_out.db.clone();
+
+        self.rw_read = cpu_out.rw.read().ok_or(Error::NoSignal(LineIdent::Rw))?;
+
+        let mut inp1: BusOutput<_> = [LineSignal::HighZ; _].into();
+        inp1[0..4].clone_from_slice(riot_out.pa.section::<4>(4).as_slice());
+
+        let mut inp2: BusOutput<_> = [LineSignal::HighZ; _].into();
+        inp2[0..4].clone_from_slice(riot_out.pa.section::<4>(0).as_slice());
+
+        Ok(OutputDrives {
+            a: cpu_out.a,
+            db: cpu_out.db,
+            inp1,
+            inp2,
+            rdiff: riot_out.pb[4],
+            ldiff: riot_out.pb[3],
+            col: riot_out.pb[2],
+            sel: riot_out.pb[1],
+            res: riot_out.pb[0],
+        })
     }
 
-    pub fn tick_falling(&mut self, drv: &ExtDrives) -> Result<(), LineError> {
-        let riot_reads = self.riot_reads(drv)?;
-        let riot_out = self.riot.tick(&riot_reads);
-
-        // self.cpu.tick_falling(self.line_states.cpu_reads());
-
-        todo!()
-    }
-
-    fn riot_reads(&self, drv: &ExtDrives) -> Result<RiotLineReads, LineError> {
+    fn riot_reads(&self, drv: &InputDrives) -> Result<RiotLineReads, Error> {
         let mut pa: BitStringState<_> = [BitState::Unknown; _].into();
+        pa[0..4].clone_from_slice(read_bus!(drv.inp2.section::<4>(0), Inp2)?.as_slice());
+        pa[4..8].clone_from_slice(read_bus!(drv.inp1.section::<4>(0), Inp1)?.as_slice());
 
-        let pa_low = drv
-            .inp2
-            .section::<4>(0)
-            .read()
-            .map_err(|bit| LineError::ImpossibleLineSignal(LineIdent::Inp2(bit)))?;
-
-        let pa_high = drv
-            .inp1
-            .section::<4>(0)
-            .read()
-            .map_err(|bit| LineError::ImpossibleLineSignal(LineIdent::Inp1(bit)))?;
-
-        pa[0..4].clone_from_slice(pa_low.as_slice());
-        pa[4..8].clone_from_slice(pa_high.as_slice());
-
-        let pb_ok = [
-            (drv.res, LineIdent::Res),
-            (drv.sel, LineIdent::Sel),
-            (drv.col, LineIdent::Col),
-            (drv.ldiff, LineIdent::LDiff),
-            (drv.rdiff, LineIdent::RDiff),
-        ]
-        .map(|(line, ident)| line.read().ok_or(LineError::ImpossibleLineSignal(ident)));
+        let pb = [
+            read_line!(drv.res, Res)?,
+            read_line!(drv.sel, Sel)?,
+            read_line!(drv.col, Col)?,
+            read_line!(drv.ldiff, LDiff)?,
+            read_line!(drv.rdiff, RDiff)?,
+        ];
 
         Ok(RiotLineReads {
-            a: todo!(),
-            db: todo!(),
+            a: read_bus!(&drv.a.section(0), &self.cpu_a_out.section(0), A)??,
+            db: read_bus!(&drv.db, &self.cpu_db_out, Db)??,
             pa,
-            pb: [pb_ok[0]?, pb_ok[1]?, pb_ok[2]?, pb_ok[3]?, pb_ok[4]?],
-            cs1: todo!(),
-            cs2: todo!(),
-            rs: todo!(),
-            rw: todo!(),
+            pb,
+            cs1: read_line!(drv.a[7], self.cpu_a_out[7], A, 7)??,
+            cs2: read_line!(drv.a[12], self.cpu_a_out[12], A, 12)??,
+            rs: read_line!(drv.a[9], self.cpu_a_out[9], A, 9)??,
+            rw: self.rw_read,
         })
     }
 }

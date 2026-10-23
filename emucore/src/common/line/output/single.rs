@@ -22,6 +22,33 @@ impl LineOutput {
             _ => Some(BitState::Unknown),
         }
     }
+
+    #[must_use]
+    pub fn contend_with(self, other: Self) -> Option<Self> {
+        let mut result = Self::new(false, false, false);
+
+        let iter_possible = |state: Self| {
+            [
+                (state.low, LineSignal::Low),
+                (state.high, LineSignal::High),
+                (state.high_z, LineSignal::HighZ),
+            ]
+            .into_iter()
+            .filter_map(|(enabled, signal)| enabled.then_some(signal))
+        };
+
+        for first_signal in iter_possible(self) {
+            for second_signal in iter_possible(other) {
+                match first_signal.contend_with(second_signal)? {
+                    LineSignal::Low => result.low = true,
+                    LineSignal::High => result.high = true,
+                    LineSignal::HighZ => result.high_z = true,
+                }
+            }
+        }
+
+        Some(result)
+    }
 }
 
 impl From<LineSignal> for LineOutput {

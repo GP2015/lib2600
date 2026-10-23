@@ -6,6 +6,7 @@ use crate::{
         combine::{Combine, mux_matches},
         cond::BaseCondition,
         line::{
+            error::{Error, LineIdent},
             output::{multi::BusOutput, single::LineOutput},
             signal::LineSignal,
         },
@@ -38,6 +39,8 @@ pub struct Riot {
     timer_ir_flag: BitState,
 
     ram: [BitStringState<8>; 128],
+
+    prev_pa7_total_drv: LineOutput,
 }
 
 impl Default for Riot {
@@ -63,6 +66,8 @@ impl Riot {
             timer_ir_flag: BitState::Unknown,
 
             ram: array::from_fn(|_| [BitState::Unknown; _].into()),
+
+            prev_pa7_total_drv: LineOutput::new(true, true, true),
         }
     }
 
@@ -99,17 +104,30 @@ impl Riot {
         }
     }
 
-    // pub fn update_edc(&self, pa7_read: BitState) -> BitState {
-    //     let edge_type = self.edc_edge_type.as_cond();
-    //     let old_pa7 = self.old_pa7_read.as_cond();
-    //     let new_pa7 = pa7_read.as_cond();
+    pub fn ack_new_pa7_drv(&mut self, ext_drv: LineOutput) -> Result<BitState, Error> {
+        let drv_out = Combine::mux(
+            self.ddra[7],
+            &|| LineOutput::from(LineSignal::HighZ),
+            &|| LineOutput::from(self.ora[7]),
+        );
 
-    //     Combine::mux(
-    //         (edge_type & !old_pa7 & new_pa7) | (!edge_type & old_pa7 & !new_pa7),
-    //         &|| self.edc_ir_flag,
-    //         &|| BitState::High,
-    //     )
-    // }
+        let ident = LineIdent::Inp1(3);
+        let imp_err = Error::NoSignal(ident);
+
+        let total_drv = ext_drv.contend_with(drv_out).ok_or(Error::Short(ident))?;
+
+        let edge_type = self.edc_edge_type.as_cond();
+        let prev_read = self.prev_pa7_total_drv.read().ok_or(imp_err)?.as_cond();
+        let cur_read = total_drv.read().ok_or(imp_err)?.as_cond();
+
+        self.prev_pa7_total_drv = total_drv;
+
+        Ok(Combine::mux(
+            (edge_type & !prev_read & cur_read) | (!edge_type & prev_read & !cur_read),
+            &|| self.edc_ir_flag,
+            &|| BitState::High,
+        ))
+    }
 
     fn timer_interval_read(idx: BitStringState<2>) -> BitStringState<10> {
         idx.iter_possible_uints()

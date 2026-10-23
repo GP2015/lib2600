@@ -3,6 +3,7 @@ use crate::common::{
 };
 use core::array;
 use derive_more::{Deref, DerefMut, Index, IndexMut};
+use itertools::izip;
 
 #[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
 pub struct BusOutput<const SIZE: usize>([LineOutput; SIZE]);
@@ -27,6 +28,19 @@ impl<const SIZE: usize> BusOutput<SIZE> {
             .try_into()
             .expect("must be the same size");
         arr.into()
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    pub fn contend_with(&self, other: &Self) -> Result<Self, u8> {
+        let mut res: Self = [LineOutput::default(); _].into();
+
+        for (bit, (res_line, &l0, &l1)) in
+            izip!(res.iter_mut(), self.iter(), other.iter()).enumerate()
+        {
+            *res_line = l0.contend_with(l1).ok_or(bit as u8)?;
+        }
+
+        Ok(res)
     }
 }
 

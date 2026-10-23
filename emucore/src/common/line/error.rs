@@ -17,11 +17,11 @@ pub enum LineIdent {
     Rw,
 }
 
-#[derive(Clone, Debug, Eq, Error, Hash, PartialEq)]
-pub enum LineError {
+#[derive(Clone, Copy, Debug, Eq, Error, Hash, PartialEq)]
+pub enum Error {
     #[error("failed to perform operation on line {0} due to short circuit")]
-    ShortCircuit(LineIdent),
+    Short(LineIdent),
 
     #[error("failed to read line {0} due to no possible signal flowing through it")]
-    ImpossibleLineSignal(LineIdent),
+    NoSignal(LineIdent),
 }

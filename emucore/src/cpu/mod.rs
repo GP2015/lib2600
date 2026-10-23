@@ -2,7 +2,10 @@ pub mod data;
 
 include!(concat!(env!("OUT_DIR"), "/cpu_gen.rs"));
 
-use crate::{BitState, BitStringState, cpu::data::CpuOutput};
+use crate::{
+    common::bit::{multi::BitStringState, single::BitState},
+    cpu::data::CpuOutput,
+};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Cpu {
