@@ -1,4 +1,4 @@
-This document serves as a comprehensive description of the NTSC Atari 2600's functionality (as well as all the relevant peripheral devices' logic functionalities) and has been used as a reference for the development of the lib2600 emulator. Due to its comprehensive nature, this document is extremely verbose and technical.
+This document serves as a comprehensive description of the NTSC Atari 2600's functionality (as well as all the relevant peripheral devices' logic functionalities) and has been used as a reference for the development of the lib2600 emulator. Due to its comprehensive nature, this document is quite verbose and technical.
 
 To avoid unnecessary repetition, all elements relating solely to electrical power transmission will be ignored, unless it affects the underlying logic in some meaningful way.
 
