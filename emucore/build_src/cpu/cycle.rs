@@ -1,4 +1,4 @@
-use crate::build::cpu::instr::Instr;
+use crate::build_src::cpu::instr::Instr;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum Loc {

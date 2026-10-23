@@ -1,14 +1,11 @@
-#![warn(clippy::pedantic, clippy::nursery)]
-#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+#![warn(clippy::pedantic, clippy::nursery, clippy::unwrap_used)]
 
-mod build {
-    pub mod cpu;
-}
+mod build_src;
 
 use std::env;
 
 pub fn main() {
-    println!("cargo::rerun-if-changed=build/");
+    println!("cargo::rerun-if-changed=build_src/");
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR is defined");
-    build::cpu::generate(&out_dir, "cpu_gen");
+    build_src::run(&out_dir);
 }

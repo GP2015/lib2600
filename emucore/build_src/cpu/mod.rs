@@ -2,7 +2,7 @@ mod cycle;
 mod instr;
 mod raw;
 
-use crate::build::cpu::instr::OP_MAP;
+use crate::build_src::cpu::instr::OP_MAP;
 use std::{fs, path::Path};
 
 pub fn generate(out_dir: &str, name: &str) {
