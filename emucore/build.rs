@@ -1,8 +1,12 @@
+#![no_std]
 #![warn(clippy::pedantic, clippy::nursery, clippy::unwrap_used)]
+
+extern crate alloc;
+extern crate std;
 
 mod build_src;
 
-use std::env;
+use std::{env, println};
 
 pub fn main() {
     println!("cargo::rerun-if-changed=build_src/");
