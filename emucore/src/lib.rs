@@ -1,5 +1,5 @@
 #![no_std]
-#![warn(clippy::pedantic, clippy::nursery)]
+#![warn(clippy::pedantic, clippy::nursery, clippy::todo)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
@@ -73,34 +73,48 @@ pub struct Emulator {
     rw_read: BitState,
 }
 
-impl Default for Emulator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Emulator {
     #[must_use]
-    pub fn new() -> Self {
-        Self {
-            cpu: Cpu::new(),
+    pub fn new(
+        cpu_low_pc: BitStringState<8>,
+        cpu_high_pc: BitStringState<8>,
+    ) -> (Self, OutputDrives) {
+        // Acquire rdy_read
+        let rdy_read = BitState::Unknown;
+
+        let mut emu = Self {
+            cpu: Cpu::new(cpu_low_pc, cpu_high_pc),
             riot: Riot::new(),
 
             cpu_a_out: [LineSignal::HighZ; _].into(),
             cpu_db_out: [LineSignal::HighZ; _].into(),
 
             rw_read: BitState::Unknown,
-        }
+        };
 
-        // Read initial PC and tick rising
+        let cpu_out = emu.cpu.tick_rising(rdy_read);
+
+        let out = OutputDrives {
+            a: cpu_out.a,
+            db: cpu_out.db,
+            inp1: [LineSignal::HighZ; _].into(),
+            inp2: [LineSignal::HighZ; _].into(),
+            rdiff: todo!(),
+            ldiff: todo!(),
+            col: todo!(),
+            sel: todo!(),
+            res: todo!(),
+        };
+
+        (emu, out)
     }
 
     pub fn tick(&mut self, input_drv: &InputDrives) -> Result<OutputDrives, Error> {
-        // Use CPU drives too
-
         self.riot.ack_new_pa7_drv(input_drv.inp1[3])?;
+
         let riot_reads = self.riot_reads(input_drv)?;
         let riot_out = self.riot.tick(&riot_reads);
+
         self.riot.ack_new_pa7_drv(input_drv.inp1[3])?;
 
         // Tick TIA
@@ -127,10 +141,10 @@ impl Emulator {
         self.rw_read = cpu_out.rw.read().ok_or(Error::NoSignal(LineIdent::Rw))?;
 
         let mut inp1: BusOutput<_> = [LineSignal::HighZ; _].into();
-        inp1[0..4].clone_from_slice(riot_out.pa.section::<4>(4).as_slice());
+        inp1[0..4].copy_from_slice(riot_out.pa.section::<4>(4).as_slice());
 
         let mut inp2: BusOutput<_> = [LineSignal::HighZ; _].into();
-        inp2[0..4].clone_from_slice(riot_out.pa.section::<4>(0).as_slice());
+        inp2[0..4].copy_from_slice(riot_out.pa.section::<4>(0).as_slice());
 
         Ok(OutputDrives {
             a: cpu_out.a,
@@ -147,8 +161,8 @@ impl Emulator {
 
     fn riot_reads(&self, drv: &InputDrives) -> Result<RiotLineReads, Error> {
         let mut pa: BitStringState<_> = [BitState::Unknown; _].into();
-        pa[0..4].clone_from_slice(read_bus!(drv.inp2.section::<4>(0), Inp2)?.as_slice());
-        pa[4..8].clone_from_slice(read_bus!(drv.inp1.section::<4>(0), Inp1)?.as_slice());
+        pa[0..4].copy_from_slice(read_bus!(drv.inp2.section::<4>(0), Inp2)?.as_slice());
+        pa[4..8].copy_from_slice(read_bus!(drv.inp1.section::<4>(0), Inp1)?.as_slice());
 
         let pb = [
             read_line!(drv.res, Res)?,
