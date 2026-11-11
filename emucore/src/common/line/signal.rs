@@ -45,6 +45,18 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    #[test]
+    fn default() {
+        assert_eq!(LineSignal::default(), LineSignal::HighZ);
+    }
+
+    #[rstest]
+    #[case(false, LineSignal::Low)]
+    #[case(true, LineSignal::High)]
+    fn from_bool(#[case] b: bool, #[case] signal: LineSignal) {
+        assert_eq!(LineSignal::from(b), signal);
+    }
+
     #[rstest]
     #[case(LineSignal::Low, LineSignal::Low, LineSignal::Low)]
     #[case(LineSignal::Low, LineSignal::HighZ, LineSignal::Low)]

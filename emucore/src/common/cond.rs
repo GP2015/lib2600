@@ -22,6 +22,12 @@ impl From<bool> for BaseCond {
     }
 }
 
+impl From<BitState> for BaseCond {
+    fn from(value: BitState) -> Self {
+        value.as_cond()
+    }
+}
+
 impl Not for BaseCond {
     type Output = Self;
     fn not(self) -> Self::Output {
@@ -66,16 +72,41 @@ impl BitXor for BaseCond {
     }
 }
 
-impl From<BitState> for BaseCond {
-    fn from(value: BitState) -> Self {
-        value.as_cond()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[test]
+    fn default() {
+        assert_eq!(BaseCond::default(), BaseCond::Unknown);
+    }
+
+    #[rstest]
+    #[case(BaseCond::No, false, BaseCond::Yes)]
+    #[case(BaseCond::Unknown, false, BaseCond::Unknown)]
+    #[case(BaseCond::Yes, false, BaseCond::No)]
+    #[case(BaseCond::No, true, BaseCond::No)]
+    #[case(BaseCond::Unknown, true, BaseCond::Unknown)]
+    #[case(BaseCond::Yes, true, BaseCond::Yes)]
+    fn is_bool(#[case] input: BaseCond, #[case] b: bool, #[case] output: BaseCond) {
+        assert_eq!(input.is_bool(b), output);
+    }
+
+    #[rstest]
+    #[case(false, BaseCond::No)]
+    #[case(true, BaseCond::Yes)]
+    fn from_bool(#[case] b: bool, #[case] output: BaseCond) {
+        assert_eq!(BaseCond::from(b), output);
+    }
+
+    #[rstest]
+    #[case(BaseCond::No, BaseCond::Yes)]
+    #[case(BaseCond::Yes, BaseCond::No)]
+    #[case(BaseCond::Unknown, BaseCond::Unknown)]
+    fn not(#[case] input: BaseCond, #[case] output: BaseCond) {
+        assert_eq!(!input, output);
+    }
 
     #[rstest]
     #[case(BaseCond::No, BaseCond::No, BaseCond::No)]

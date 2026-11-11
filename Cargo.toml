@@ -5,19 +5,18 @@ members = ["emucore", "mappers"]
 [workspace.package]
 edition = "2024"
 
-[workspace.dependencies]
-arrayvec = { version = "0.7.6", default-features = false }
-derive_more = { version = "2.1.1", default-features = false, features = [
-    "deref",
-    "deref_mut",
-    "index",
-    "index_mut",
-] }
-itertools = { version = "0.15.0", default-features = false }
-rstest = "0.28.0"
-strum = { version = "0.28", default-features = false, features = ["derive"] }
-thiserror = { version = "2.0.18", default-features = false }
-
 [profile.release]
 lto = "fat"
 codegen-units = 1
+
+[workspace.dependencies]
+arrayvec = { version = "0.7.8", default-features = false }
+derive_more = { version = "2.1.1", default-features = false, features = [
+    "deref",
+    "deref_mut",
+] }
+itertools = { version = "0.15.0", default-features = false }
+paste = "1.0.15"
+rstest = "0.28.0"
+strum = { version = "0.28.0", default-features = false, features = ["derive"] }
+thiserror = { version = "2.0.21", default-features = false }
