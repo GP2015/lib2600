@@ -19,6 +19,12 @@ https://www.nesdev.org/6502_cpu.txt
 MOS 6532 (RIOT) datasheet:
 https://web.archive.org/web/20160329090844if_/http://archive.6502.org/datasheets/mos_6532_riot.pdf
 
+TIA Programmer's Guide:
+https://www.atariage.com/2600/programming/2600_101/docs/stella.html
+
+TIA 1A pinout:
+https://www.atarihq.com/danb/tia.shtml
+
 TIA 1A info:
 https://www.atariarchives.org/dev/tia/description.php
 
