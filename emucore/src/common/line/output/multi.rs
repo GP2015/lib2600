@@ -2,10 +2,10 @@ use crate::common::{
     bit::multi::BitStringState, combine::Combine, line::output::single::LineOutput,
 };
 use core::array;
-use derive_more::{Deref, DerefMut, Index, IndexMut};
+use derive_more::{Deref, DerefMut};
 use itertools::izip;
 
-#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
 pub struct BusOutput<const SIZE: usize>([LineOutput; SIZE]);
 
 impl<const SIZE: usize> BusOutput<SIZE> {
@@ -27,12 +27,12 @@ impl<const SIZE: usize> BusOutput<SIZE> {
         let arr: [_; _] = self[start..start + LEN]
             .try_into()
             .expect("must be the same size");
-        arr.into()
+        BusOutput(arr)
     }
 
     #[allow(clippy::cast_possible_truncation)]
     pub fn contend_with(&self, other: &Self) -> Result<Self, u8> {
-        let mut res: Self = [LineOutput::default(); _].into();
+        let mut res = Self([LineOutput::default(); _]);
 
         for (bit, (res_line, &l0, &l1)) in
             izip!(res.iter_mut(), self.iter(), other.iter()).enumerate()
@@ -46,19 +46,21 @@ impl<const SIZE: usize> BusOutput<SIZE> {
 
 impl<const SIZE: usize> Default for BusOutput<SIZE> {
     fn default() -> Self {
-        [LineOutput::default(); _].into()
+        Self([LineOutput::default(); _])
     }
 }
 
 impl<const SIZE: usize> From<u16> for BusOutput<SIZE> {
     fn from(value: u16) -> Self {
-        array::from_fn(|bit| LineOutput::from(value >> bit & 1 == 1)).into()
+        Self(array::from_fn(|bit| {
+            LineOutput::from(value >> bit & 1 == 1)
+        }))
     }
 }
 
 impl<const SIZE: usize> From<BitStringState<SIZE>> for BusOutput<SIZE> {
     fn from(value: BitStringState<SIZE>) -> Self {
-        value.map(LineOutput::from).into()
+        Self(value.map(LineOutput::from))
     }
 }
 
@@ -67,12 +69,12 @@ where
     T: Into<LineOutput>,
 {
     fn from(value: [T; SIZE]) -> Self {
-        value.map(Into::into).into()
+        Self(value.map(Into::into))
     }
 }
 
 impl<const SIZE: usize> Combine for BusOutput<SIZE> {
     fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| self[bit].combine_with(&other[bit])).into()
+        Self(array::from_fn(|bit| self[bit].combine_with(&other[bit])))
     }
 }

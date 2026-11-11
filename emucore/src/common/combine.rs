@@ -1,4 +1,4 @@
-use crate::BaseCond;
+use crate::common::cond::BaseCond;
 
 pub trait Combine {
     #[must_use]

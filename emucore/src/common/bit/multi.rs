@@ -1,9 +1,9 @@
 use crate::common::{bit::single::BitState, combine::Combine, cond::BaseCond};
 use arrayvec::ArrayVec;
 use core::array;
-use derive_more::{Deref, DerefMut, Index, IndexMut};
+use derive_more::{Deref, DerefMut};
 
-#[derive(Clone, Copy, Debug, Deref, DerefMut, Eq, Hash, Index, IndexMut, PartialEq)]
+#[derive(Clone, Copy, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
 pub struct BitStringState<const SIZE: usize>([BitState; SIZE]);
 
 impl<const SIZE: usize> BitStringState<SIZE> {
@@ -99,10 +99,10 @@ impl<const SIZE: usize> BitStringState<SIZE> {
 
     #[must_use]
     pub fn section<const LEN: usize>(self, start: usize) -> BitStringState<LEN> {
-        let arr: [_; _] = self[start..start + LEN]
+        let arr = self[start..start + LEN]
             .try_into()
             .expect("arrays will always be the same size");
-        arr.into()
+        BitStringState(arr)
     }
 
     #[must_use]
@@ -176,13 +176,13 @@ impl<const SIZE: usize> BitStringState<SIZE> {
 
 impl<const SIZE: usize> Default for BitStringState<SIZE> {
     fn default() -> Self {
-        [BitState::default(); _].into()
+        Self([BitState::default(); _])
     }
 }
 
 impl<const SIZE: usize> From<u16> for BitStringState<SIZE> {
     fn from(value: u16) -> Self {
-        array::from_fn(|bit| BitState::from(value >> bit & 1 == 1)).into()
+        Self(array::from_fn(|bit| BitState::from(value >> bit & 1 == 1)))
     }
 }
 
@@ -191,12 +191,12 @@ where
     T: Into<BitState>,
 {
     fn from(value: [T; SIZE]) -> Self {
-        value.map(Into::into).into()
+        Self(value.map(Into::into))
     }
 }
 
 impl<const SIZE: usize> Combine for BitStringState<SIZE> {
     fn combine_with(&self, other: &Self) -> Self {
-        array::from_fn(|bit| self[bit].combine_with(&other[bit])).into()
+        Self(array::from_fn(|bit| self[bit].combine_with(&other[bit])))
     }
 }
