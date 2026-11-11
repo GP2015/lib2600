@@ -5,3 +5,6 @@ edition.workspace = true
 
 [dependencies]
 emucore = { path = "../emucore" }
+
+[dev-dependencies]
+rstest.workspace = true

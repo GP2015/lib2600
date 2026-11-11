@@ -30,7 +30,10 @@ impl Mapper for M4K {
             },
         );
 
-        MapperDrive { a_drv, db_drv }
+        MapperDrive {
+            a: a_drv,
+            db: db_drv,
+        }
     }
 }
 

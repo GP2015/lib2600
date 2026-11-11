@@ -1,6 +1,7 @@
 use crate::{Mapper, MapperDrive};
 use emucore::{BitStringState, BusOutput, Combine, LineSignal};
 
+#[derive(Debug)]
 pub struct M2K {
     rom: [u8; 2048],
 }
@@ -30,65 +31,45 @@ impl Mapper for M2K {
             },
         );
 
-        MapperDrive { a_drv, db_drv }
+        MapperDrive {
+            a: a_drv,
+            db: db_drv,
+        }
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::array;
+    use rstest::{fixture, rstest};
 
-//     fn create_valid_objects(program: Vec<u8>) -> (Bus, Bus, Mapper2K) {
-//         let address_bus = Bus::new(13);
-//         let data_bus = Bus::new(8);
-//         let cart = Mapper2K::new(program).unwrap();
-//         (address_bus, data_bus, cart)
-//     }
+    #[fixture]
+    fn mapper() -> M2K {
+        #[allow(clippy::cast_possible_truncation)]
+        M2K::new(array::from_fn(|bit| bit as u8))
+    }
 
-//     #[test]
-//     fn invalid_program() {
-//         let program = vec![0; 5];
-//         let Err(_) = Mapper2K::new(program) else {
-//             panic!("Provided program is invalid, so cartridge creation should have failed.");
-//         };
-//     }
+    // #[rstest]
+    // fn no_read(mut mapper: M2K) {
+    //     let a = 0.into();
+    //     let drv = mapper.tick(a, BitStringState::default());
+    //     assert_eq!(drv.db, [LineSignal::HighZ; _].into());
+    // }
 
-//     #[test]
-//     fn no_read() {
-//         let mut program = vec![0; ROM_SIZE];
-//         program[0x67] = 0x89;
+    // #[rstest]
+    // fn read(mut mapper: M2K) {
+    //     let a = 0x1067.into();
+    //     let drv = mapper.tick(a, BitStringState::default());
+    //     let val = drv.db.read().unwrap().value().unwrap();
+    //     assert_eq!(val, 0x67);
+    // }
 
-//         let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
-
-//         address_bus.set_combined(0x0067);
-//         cart.tick(&mut address_bus, &mut data_bus);
-
-//         assert_eq!(data_bus.get_combined(), 0x00);
-//     }
-
-//     #[test]
-//     fn read() {
-//         let mut program = vec![0; ROM_SIZE];
-//         program[0x67] = 0x89;
-
-//         let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
-
-//         address_bus.set_combined(0x1067);
-//         cart.tick(&mut address_bus, &mut data_bus);
-
-//         assert_eq!(data_bus.get_combined(), 0x89);
-//     }
-
-//     #[test]
-//     fn read_wrapped() {
-//         let mut program = vec![0; ROM_SIZE];
-//         program[0x67] = 0x89;
-
-//         let (mut address_bus, mut data_bus, mut cart) = create_valid_objects(program);
-
-//         address_bus.set_combined(0x1867);
-//         cart.tick(&mut address_bus, &mut data_bus);
-
-//         assert_eq!(data_bus.get_combined(), 0x89);
-//     }
-// }
+    // #[rstest]
+    // fn read_wrapped(mut mapper: M2K) {
+    //     let a = 0x1867.into();
+    //     let drv = mapper.tick(a, BitStringState::default());
+    //     let val = drv.db.read().unwrap().value().unwrap();
+    //     assert_eq!(val, 0x67);
+    // }
+}

@@ -16,7 +16,6 @@ use crate::{
 use core::array;
 
 const PB_CONNECTED_LINES: [usize; 5] = [0, 1, 3, 6, 7];
-
 const TIMER_INTERVALS: [u16; 4] = [1, 8, 64, 1024];
 
 fn cs_cond(r: &RiotLineReads) -> BaseCond {
@@ -41,12 +40,6 @@ pub struct Riot {
     ram: [BitStringState<8>; 128],
 
     prev_pa7_total_drv: LineOutput,
-}
-
-impl Default for Riot {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Riot {

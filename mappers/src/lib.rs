@@ -2,6 +2,11 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
+#[cfg(test)]
+extern crate alloc;
+#[cfg(test)]
+extern crate std;
+
 mod m2k;
 mod m4k;
 
@@ -11,8 +16,8 @@ pub use m4k::M4K;
 use emucore::{BitStringState, BusOutput};
 
 pub struct MapperDrive {
-    pub a_drv: BusOutput<13>,
-    pub db_drv: BusOutput<8>,
+    pub a: BusOutput<13>,
+    pub db: BusOutput<8>,
 }
 
 pub trait Mapper {
