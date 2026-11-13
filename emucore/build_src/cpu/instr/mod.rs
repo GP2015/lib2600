@@ -1,4 +1,6 @@
-use crate::build_src::cpu::raw::{RAW_OP_MAP, RawAddrMode, RawInstr, RawStem};
+mod raw;
+
+use crate::build_src::cpu::instr::raw::{RawAddrMode, RawInstr, RawStem};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Reg {
@@ -240,7 +242,7 @@ pub const OP_MAP: [Instr; 256] = {
 
     let mut i = 0;
     while i < 256 {
-        instrs[i] = Instr::from_raw(RAW_OP_MAP[i]);
+        instrs[i] = Instr::from_raw(raw::RAW_OP_MAP[i]);
         i += 1;
     }
 

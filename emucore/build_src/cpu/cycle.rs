@@ -1,13 +1,18 @@
 use crate::build_src::cpu::instr::Instr;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
+use derive_more::{Deref, DerefMut};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum Loc {
+    StemHold,
+    Op0Hold,
+    InstrCycles,
+
     Phi2,
     Addr,
     Db,
     Rw,
-    InstrCycles,
+
     Acc,
     X,
     Y,
@@ -23,48 +28,84 @@ enum Loc {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-enum Modif {
-    Inc,
-    StackAddr,
+enum CopyFrom {
+    Lit(usize),
+    Loc(Loc),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-struct Effect {
-    cycle: u8,
+enum Modif {
+    None,
+    Inc,
+    Add(usize),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct SubInstr {
     loc: Loc,
-    kind: Modif,
+    from: CopyFrom,
+    modif: Modif,
 }
 
-impl Effect {
-    const fn new(cycle: u8, loc: Loc, kind: Modif) -> Self {
-        Self { cycle, loc, kind }
+impl SubInstr {
+    const fn new(loc: Loc, from: CopyFrom, modif: Modif) -> Self {
+        Self { loc, from, modif }
     }
 }
 
-struct InstrCycles {
-    inc_c1_inc: bool,
-    extra_effects: Vec<Effect>,
-}
+#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
+struct Cycle([Vec<SubInstr>; 2]);
 
-impl InstrCycles {
-    pub const fn new(inc_c1_inc: bool) -> Self {
-        Self {
-            inc_c1_inc,
-            extra_effects: Vec::new(),
+impl Cycle {
+    fn write(addr_from: CopyFrom, db_from: CopyFrom) -> Self {
+        Self([
+            vec![
+                SubInstr::new(Loc::Addr, addr_from, Modif::None),
+                SubInstr::new(Loc::Db, db_from, Modif::None),
+                SubInstr::new(Loc::Rw, CopyFrom::Lit(0), Modif::None),
+            ],
+            Vec::new(),
+        ])
+    }
+
+    fn read(addr_from: CopyFrom, db_to: Option<Loc>) -> Self {
+        Self([
+            vec![
+                SubInstr::new(Loc::Addr, addr_from, Modif::None),
+                SubInstr::new(Loc::Rw, CopyFrom::Lit(1), Modif::None),
+            ],
+            db_to.map_or_else(Vec::new, |loc| {
+                vec![SubInstr::new(loc, CopyFrom::Loc(Loc::Db), Modif::None)]
+            }),
+        ])
+    }
+
+    fn read_pc(db_to: Option<Loc>, inc_pc: bool) -> Self {
+        let mut cycle = Self::read(CopyFrom::Loc(Loc::Pc), db_to);
+
+        if inc_pc {
+            cycle[1].push(SubInstr::new(Loc::Pc, CopyFrom::Loc(Loc::Pc), Modif::Inc));
         }
+
+        cycle
     }
+
+    // fn with_pc_inc(mut self) -> Self {
+    //     self[1].push(SubInstr::new(Loc::Pc, CopyFrom::Loc(Loc::Pc), Modif::Inc));
+    //     self
+    // }
 }
+
+#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
+struct InstrCycles(Vec<Cycle>);
 
 impl InstrCycles {
     pub fn from_instr(instr: Instr) -> Self {
-        macro_rules! effects {
-            ($(($cycle:literal, $loc:ident, $mod:ident)),+ $(,)?) => {
-                vec![$(Effect::new($cycle, Loc::$loc, Modif::$mod)),+]
-            };
-        }
-
         match instr {
-            Instr::Brk => todo!(),
+            Instr::Brk => Self(vec![
+                Cycle::read_pc(Some(Loc::StemHold), true),
+                Cycle::read_pc(None, true),
+            ]),
             Instr::Rti => todo!(),
             Instr::Rts => todo!(),
             Instr::Jsr => todo!(),
