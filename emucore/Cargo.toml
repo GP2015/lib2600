@@ -4,15 +4,16 @@ version = "0.1.0"
 edition.workspace = true
 
 [build-dependencies]
+derive_more.workspace = true
 strum.workspace = true
 
 [dependencies]
 arrayvec.workspace = true
 derive_more.workspace = true
 itertools.workspace = true
-paste.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+paste.workspace = true
 rstest.workspace = true

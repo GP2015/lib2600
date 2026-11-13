@@ -180,12 +180,6 @@ impl<const SIZE: usize> Default for BitStringState<SIZE> {
     }
 }
 
-impl<const SIZE: usize> From<u16> for BitStringState<SIZE> {
-    fn from(value: u16) -> Self {
-        Self(array::from_fn(|bit| BitState::from(value >> bit & 1 == 1)))
-    }
-}
-
 impl<T, const SIZE: usize> From<[T; SIZE]> for BitStringState<SIZE>
 where
     T: Into<BitState>,
@@ -195,8 +189,64 @@ where
     }
 }
 
+// num-traits cannot be used here as it causes
+// conflicting implementations with From<[T; SIZE]>
+macro_rules! impl_from_unsigned {
+    ($u_type:ident) => {
+        impl<const SIZE: usize> From<$u_type> for BitStringState<SIZE> {
+            fn from(value: $u_type) -> Self {
+                Self(array::from_fn(|bit| BitState::from(value >> bit & 1 == 1)))
+            }
+        }
+    };
+}
+impl_from_unsigned!(u8);
+impl_from_unsigned!(u16);
+impl_from_unsigned!(u32);
+impl_from_unsigned!(u64);
+impl_from_unsigned!(usize);
+
 impl<const SIZE: usize> Combine for BitStringState<SIZE> {
     fn combine_with(&self, other: &Self) -> Self {
         Self(array::from_fn(|bit| self[bit].combine_with(&other[bit])))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[test]
+    fn from_bit_state_arr() {
+        let arr = [BitState::Low, BitState::High, BitState::Unknown];
+        assert_eq!(BitStringState::from(arr), BitStringState(arr));
+    }
+
+    #[test]
+    fn default() {
+        assert_eq!(BitStringState::default(), [BitState::Unknown; 8].into());
+    }
+
+    #[rstest]
+    #[case(0, [false, false, false])]
+    #[case(1, [true, false, false])]
+    #[case(2, [false, true, false])]
+    #[case(3, [true, true, false])]
+    #[case(4, [false, false, true])]
+    #[case(5, [true, false, true])]
+    #[case(6, [false, true, true])]
+    #[case(7, [true, true, true])]
+    fn from_unsigned_normal(#[case] num: usize, #[case] bits: [bool; 3]) {
+        assert_eq!(BitStringState::from(num), BitStringState::from(bits));
+    }
+
+    #[rstest]
+    fn from_unsigned_wrapping(#[values(0, 1, 2, 3, 5, 8, 13, 21)] num: usize) {
+        const BITS: usize = 3;
+        assert_eq!(
+            BitStringState::<BITS>::from(num),
+            BitStringState::<BITS>::from(num + (1 << BITS))
+        );
     }
 }
