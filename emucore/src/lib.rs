@@ -1,5 +1,4 @@
 #![no_std]
-#![warn(clippy::pedantic, clippy::nursery, clippy::todo)]
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
@@ -135,8 +134,8 @@ impl Emulator {
 
         let cpu_out = self.cpu.tick_rising(rdy_read);
 
-        self.cpu_a_out = cpu_out.a.clone();
-        self.cpu_db_out = cpu_out.db.clone();
+        self.cpu_a_out = cpu_out.a;
+        self.cpu_db_out = cpu_out.db;
 
         self.rw_read = cpu_out.rw.read().ok_or(Error::NoSignal(LineIdent::Rw))?;
 

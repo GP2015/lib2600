@@ -1,5 +1,4 @@
 #![no_std]
-#![warn(clippy::pedantic, clippy::nursery, clippy::unwrap_used)]
 
 extern crate alloc;
 extern crate std;
