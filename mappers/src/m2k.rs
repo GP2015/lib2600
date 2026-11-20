@@ -1,7 +1,7 @@
 use crate::{Mapper, MapperDrive};
 use emucore::{BitStringState, BusOutput, Combine, LineSignal};
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct M2K {
     rom: [u8; 2048],
 }
@@ -42,7 +42,7 @@ impl Mapper for M2K {
 mod tests {
     use super::*;
     use core::array;
-    use rstest::{fixture, rstest};
+    use rstest::fixture;
 
     #[fixture]
     fn mapper() -> M2K {

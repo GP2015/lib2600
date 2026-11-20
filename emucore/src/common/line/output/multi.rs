@@ -5,7 +5,7 @@ use core::array;
 use derive_more::{Deref, DerefMut};
 use itertools::izip;
 
-#[derive(Clone, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Deref, DerefMut, Eq, Hash, PartialEq)]
 pub struct BusOutput<const SIZE: usize>([LineOutput; SIZE]);
 
 impl<const SIZE: usize> BusOutput<SIZE> {

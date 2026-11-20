@@ -38,7 +38,7 @@ pub struct IoRegValues {
     pub orb: BitStringState<8>,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct EdcRegValues {
     pub edc_ir_flag: BitState,
     pub edc_edge_type: BitState,

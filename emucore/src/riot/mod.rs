@@ -42,6 +42,12 @@ pub struct Riot {
     prev_pa7_total_drv: LineOutput,
 }
 
+impl Default for Riot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Riot {
     pub fn new() -> Self {
         Self {

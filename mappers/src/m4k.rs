@@ -1,6 +1,7 @@
 use crate::{Mapper, MapperDrive};
 use emucore::{BitStringState, BusOutput, Combine, LineSignal};
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct M4K {
     rom: [u8; 4096],
 }

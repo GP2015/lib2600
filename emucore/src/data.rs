@@ -13,6 +13,7 @@ pub struct InputDrives {
     pub res: LineOutput,
 }
 
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct OutputDrives {
     pub a: BusOutput<13>,
     pub db: BusOutput<8>,
