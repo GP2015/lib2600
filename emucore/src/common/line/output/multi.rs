@@ -24,10 +24,11 @@ impl<const SIZE: usize> BusOutput<SIZE> {
 
     #[must_use]
     pub fn section<const LEN: usize>(&self, start: usize) -> BusOutput<LEN> {
-        let arr: [_; _] = self[start..start + LEN]
-            .try_into()
-            .expect("must be the same size");
-        BusOutput(arr)
+        BusOutput(
+            self[start..start + LEN]
+                .try_into()
+                .expect("must be the same size"),
+        )
     }
 
     #[allow(clippy::cast_possible_truncation)]

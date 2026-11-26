@@ -24,7 +24,7 @@ impl Mapper for M2K {
                 BusOutput::from(
                     a.section::<11>(0)
                         .iter_possible_uints()
-                        .map(|addr| u16::from(self.rom[usize::from(addr)]).into())
+                        .map(|addr| self.rom[usize::from(addr)].into())
                         .reduce(|acc: BitStringState<_>, byte| acc.combine_with(&byte))
                         .expect("BitState will always have at least one possible read"),
                 )
@@ -42,7 +42,7 @@ impl Mapper for M2K {
 mod tests {
     use super::*;
     use core::array;
-    use rstest::fixture;
+    use rstest::{fixture, rstest};
 
     #[fixture]
     fn mapper() -> M2K {
@@ -50,26 +50,26 @@ mod tests {
         M2K::new(array::from_fn(|bit| bit as u8))
     }
 
-    // #[rstest]
-    // fn no_read(mut mapper: M2K) {
-    //     let a = 0.into();
-    //     let drv = mapper.tick(a, BitStringState::default());
-    //     assert_eq!(drv.db, [LineSignal::HighZ; _].into());
-    // }
+    #[rstest]
+    fn no_read(mut mapper: M2K) {
+        let a = 0usize.into();
+        let drv = mapper.tick(a, BitStringState::default());
+        assert_eq!(drv.db, [LineSignal::HighZ; _].into());
+    }
 
-    // #[rstest]
-    // fn read(mut mapper: M2K) {
-    //     let a = 0x1067.into();
-    //     let drv = mapper.tick(a, BitStringState::default());
-    //     let val = drv.db.read().unwrap().value().unwrap();
-    //     assert_eq!(val, 0x67);
-    // }
+    #[rstest]
+    fn read(mut mapper: M2K) {
+        let a = 0x1067usize.into();
+        let drv = mapper.tick(a, BitStringState::default());
+        let val = drv.db.read().unwrap().value().unwrap();
+        assert_eq!(val, 0x67);
+    }
 
-    // #[rstest]
-    // fn read_wrapped(mut mapper: M2K) {
-    //     let a = 0x1867.into();
-    //     let drv = mapper.tick(a, BitStringState::default());
-    //     let val = drv.db.read().unwrap().value().unwrap();
-    //     assert_eq!(val, 0x67);
-    // }
+    #[rstest]
+    fn read_wrapped(mut mapper: M2K) {
+        let a = 0x1867usize.into();
+        let drv = mapper.tick(a, BitStringState::default());
+        let val = drv.db.read().unwrap().value().unwrap();
+        assert_eq!(val, 0x67);
+    }
 }
