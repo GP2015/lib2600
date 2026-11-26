@@ -8,7 +8,7 @@ no-std:
     cargo build --release --target=riscv32i-unknown-none-elf
 
 test:
-    cargo test
+    cargo nextest run
 
 clean:
     cargo clean
