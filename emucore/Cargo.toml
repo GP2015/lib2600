@@ -18,5 +18,5 @@ strum.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-paste.workspace = true
+pastey.workspace = true
 rstest.workspace = true

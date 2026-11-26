@@ -94,7 +94,7 @@ impl Combine for LineOutput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use paste::paste;
+    use pastey::paste;
     use rstest::rstest;
 
     #[rstest]
