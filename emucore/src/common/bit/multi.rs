@@ -8,25 +8,18 @@ pub struct BitStringState<const SIZE: usize>([BitState; SIZE]);
 
 impl<const SIZE: usize> BitStringState<SIZE> {
     #[must_use]
-    pub fn value(&self) -> Option<u16> {
-        let mut val = 0;
-
-        for bit in self.iter() {
-            val += match bit {
-                BitState::Low => 0,
-                BitState::High => 1,
-                BitState::Unknown => return None,
-            };
-
-            val <<= 1;
-        }
-
-        Some(val)
+    pub fn is_defined(&self) -> bool {
+        !self.iter().any(|bit| matches!(bit, BitState::Unknown))
     }
 
     #[must_use]
-    pub fn is_defined(&self) -> bool {
-        !self.iter().any(|bit| matches!(bit, BitState::Unknown))
+    pub fn value(&self) -> Option<u16> {
+        self.is_defined().then(|| {
+            self.iter()
+                .rev()
+                .map(|bit| u16::from(bit.as_bool().expect("case already covered")))
+                .fold(0, |acc, bit| (acc << 1) | bit)
+        })
     }
 
     #[must_use]
@@ -34,9 +27,7 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         let mut must_be = true;
 
         for (i, &read_bit) in self.iter().enumerate() {
-            let val_bit = val >> i & 1 == 1;
-
-            match (read_bit, val_bit) {
+            match (read_bit, val >> i & 1 == 1) {
                 (BitState::Low, false) | (BitState::High, true) => (),
                 (BitState::Low, true) | (BitState::High, false) => return BaseCond::No,
                 (BitState::Unknown, _) => must_be = false,
@@ -87,22 +78,22 @@ impl<const SIZE: usize> BitStringState<SIZE> {
         }
 
         (0..(1 << count.len())).map(move |id| {
-            let mut val = mask;
-
-            for (src_bit, &dst_bit) in count.iter().enumerate() {
-                val |= ((id >> src_bit) & 1) << dst_bit;
-            }
-
-            val
+            count
+                .iter()
+                .enumerate()
+                .fold(mask, |val, (src_bit, &dst_bit)| {
+                    val | (((id >> src_bit) & 1) << dst_bit)
+                })
         })
     }
 
     #[must_use]
     pub fn section<const LEN: usize>(self, start: usize) -> BitStringState<LEN> {
-        let arr = self[start..start + LEN]
-            .try_into()
-            .expect("arrays will always be the same size");
-        BitStringState(arr)
+        BitStringState(
+            self[start..start + LEN]
+                .try_into()
+                .expect("arrays will always be the same size"),
+        )
     }
 
     #[must_use]
@@ -249,4 +240,37 @@ mod tests {
             BitStringState::<BITS>::from(num + (1 << BITS))
         );
     }
+
+    #[rstest]
+    fn is_defined_true(
+        #[values(false, true)] bit2: bool,
+        #[values(false, true)] bit0: bool,
+        #[values(false, true)] bit1: bool,
+    ) {
+        assert!(BitStringState::from([bit0, bit1, bit2]).is_defined());
+    }
+
+    #[rstest]
+    #[case([BitState::Low, BitState::Unknown])]
+    #[case([BitState::High, BitState::Unknown])]
+    #[case([BitState::Unknown, BitState::Low])]
+    #[case([BitState::Unknown, BitState::High])]
+    #[case([BitState::Unknown, BitState::Unknown])]
+    fn is_defined_false(#[case] bits: [BitState; 2]) {
+        assert!(!BitStringState::from(bits).is_defined());
+    }
+
+    #[rstest]
+    fn value(#[values(0, 1, 2, 3, 4, 5, 6, 7)] num: u16) {
+        assert_eq!(BitStringState::<3>::from(num).value().unwrap(), num);
+    }
+
+    // value
+    // is_uint
+    // is_pattern
+    // iter_possible_uints
+    // section
+    // incremented
+    // decremented
+    // combine_with
 }
