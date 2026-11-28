@@ -6,6 +6,7 @@ mod common;
 mod cpu;
 mod data;
 mod riot;
+mod tia;
 
 pub use crate::{
     common::{
