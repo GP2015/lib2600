@@ -3,12 +3,12 @@ mod raw;
 use crate::build_src::cpu::instr::raw::{RawAddrMode, RawInstr, RawStem};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum Reg {
-    A,
+pub enum InstrReg {
+    Acc,
     X,
     Y,
-    S,
-    P,
+    Sp,
+    Sr,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -29,9 +29,9 @@ pub enum ImplOp {
     Ror,
     Clear(Flag),
     Set(Flag),
-    Inc(Reg),
-    Dec(Reg),
-    Transfer(Reg, Reg),
+    Inc(InstrReg),
+    Dec(InstrReg),
+    Transfer(InstrReg, InstrReg),
     Nop,
 }
 
@@ -43,8 +43,8 @@ pub enum GenReadOp {
     Adc,
     Sbc,
     Bit,
-    Load(Reg),
-    Compare(Reg),
+    Load(InstrReg),
+    Compare(InstrReg),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -61,7 +61,7 @@ pub enum GenRmwOp {
 pub enum GenOp {
     Read(GenReadOp),
     Rmw(GenRmwOp),
-    Store(Reg),
+    Store(InstrReg),
 }
 
 impl GenOp {
@@ -73,12 +73,12 @@ impl GenOp {
             RawStem::Adc => Self::Read(GenReadOp::Adc),
             RawStem::Sbc => Self::Read(GenReadOp::Sbc),
             RawStem::Bit => Self::Read(GenReadOp::Bit),
-            RawStem::Lda => Self::Read(GenReadOp::Load(Reg::A)),
-            RawStem::Ldx => Self::Read(GenReadOp::Load(Reg::X)),
-            RawStem::Ldy => Self::Read(GenReadOp::Load(Reg::Y)),
-            RawStem::Cmp => Self::Read(GenReadOp::Compare(Reg::A)),
-            RawStem::Cpx => Self::Read(GenReadOp::Compare(Reg::X)),
-            RawStem::Cpy => Self::Read(GenReadOp::Compare(Reg::Y)),
+            RawStem::Lda => Self::Read(GenReadOp::Load(InstrReg::Acc)),
+            RawStem::Ldx => Self::Read(GenReadOp::Load(InstrReg::X)),
+            RawStem::Ldy => Self::Read(GenReadOp::Load(InstrReg::Y)),
+            RawStem::Cmp => Self::Read(GenReadOp::Compare(InstrReg::Acc)),
+            RawStem::Cpx => Self::Read(GenReadOp::Compare(InstrReg::X)),
+            RawStem::Cpy => Self::Read(GenReadOp::Compare(InstrReg::Y)),
 
             RawStem::Asl => Self::Rmw(GenRmwOp::Asl),
             RawStem::Lsr => Self::Rmw(GenRmwOp::Lsr),
@@ -87,9 +87,9 @@ impl GenOp {
             RawStem::Inc => Self::Rmw(GenRmwOp::Inc),
             RawStem::Dec => Self::Rmw(GenRmwOp::Dec),
 
-            RawStem::Sta => Self::Store(Reg::A),
-            RawStem::Stx => Self::Store(Reg::X),
-            RawStem::Sty => Self::Store(Reg::Y),
+            RawStem::Sta => Self::Store(InstrReg::Acc),
+            RawStem::Stx => Self::Store(InstrReg::X),
+            RawStem::Sty => Self::Store(InstrReg::Y),
 
             _ => unreachable!(),
         }
@@ -106,14 +106,14 @@ pub enum Instr {
     JmpAbs,
     BranchOnSet(Flag),
     BranchOnClear(Flag),
-    StackPush(Reg),
-    StackPull(Reg),
+    StackPush(InstrReg),
+    StackPull(InstrReg),
     Impl(ImplOp),
     Imm(GenReadOp),
     Abs(GenOp),
     Zpg(GenOp),
-    AbsIdx(Reg, GenOp),
-    ZpgIdx(Reg, GenOp),
+    AbsIdx(InstrReg, GenOp),
+    ZpgIdx(InstrReg, GenOp),
     XInd(GenOp),
     IndY(GenOp),
     Illegal,
@@ -133,10 +133,10 @@ impl Instr {
                 _ => unreachable!(),
             },
 
-            RawStem::Pha => Self::StackPush(Reg::A),
-            RawStem::Php => Self::StackPush(Reg::P),
-            RawStem::Pla => Self::StackPull(Reg::A),
-            RawStem::Plp => Self::StackPull(Reg::P),
+            RawStem::Pha => Self::StackPush(InstrReg::Acc),
+            RawStem::Php => Self::StackPush(InstrReg::Sr),
+            RawStem::Pla => Self::StackPull(InstrReg::Acc),
+            RawStem::Plp => Self::StackPull(InstrReg::Sr),
 
             RawStem::Alr
             | RawStem::Anc
@@ -190,20 +190,20 @@ impl Instr {
                 RawStem::Cld => ImplOp::Clear(Flag::D),
                 RawStem::Cli => ImplOp::Clear(Flag::I),
                 RawStem::Clv => ImplOp::Clear(Flag::V),
-                RawStem::Dex => ImplOp::Dec(Reg::X),
-                RawStem::Dey => ImplOp::Dec(Reg::Y),
-                RawStem::Inx => ImplOp::Inc(Reg::X),
-                RawStem::Iny => ImplOp::Inc(Reg::Y),
+                RawStem::Dex => ImplOp::Dec(InstrReg::X),
+                RawStem::Dey => ImplOp::Dec(InstrReg::Y),
+                RawStem::Inx => ImplOp::Inc(InstrReg::X),
+                RawStem::Iny => ImplOp::Inc(InstrReg::Y),
                 RawStem::Nop => ImplOp::Nop,
                 RawStem::Sec => ImplOp::Set(Flag::C),
                 RawStem::Sed => ImplOp::Set(Flag::D),
                 RawStem::Sei => ImplOp::Set(Flag::I),
-                RawStem::Tax => ImplOp::Transfer(Reg::A, Reg::X),
-                RawStem::Tay => ImplOp::Transfer(Reg::A, Reg::Y),
-                RawStem::Tsx => ImplOp::Transfer(Reg::S, Reg::X),
-                RawStem::Txa => ImplOp::Transfer(Reg::X, Reg::A),
-                RawStem::Txs => ImplOp::Transfer(Reg::X, Reg::S),
-                RawStem::Tya => ImplOp::Transfer(Reg::Y, Reg::A),
+                RawStem::Tax => ImplOp::Transfer(InstrReg::Acc, InstrReg::X),
+                RawStem::Tay => ImplOp::Transfer(InstrReg::Acc, InstrReg::Y),
+                RawStem::Tsx => ImplOp::Transfer(InstrReg::Sp, InstrReg::X),
+                RawStem::Txa => ImplOp::Transfer(InstrReg::X, InstrReg::Acc),
+                RawStem::Txs => ImplOp::Transfer(InstrReg::X, InstrReg::Sp),
+                RawStem::Tya => ImplOp::Transfer(InstrReg::Y, InstrReg::Acc),
                 _ => unreachable!(),
             }),
 
@@ -227,10 +227,10 @@ impl Instr {
             RawAddrMode::Zpg => Self::Zpg(gen_op),
             RawAddrMode::XInd => Self::XInd(gen_op),
             RawAddrMode::IndY => Self::IndY(gen_op),
-            RawAddrMode::AbsX => Self::AbsIdx(Reg::X, gen_op),
-            RawAddrMode::AbsY => Self::AbsIdx(Reg::Y, gen_op),
-            RawAddrMode::ZpgX => Self::ZpgIdx(Reg::X, gen_op),
-            RawAddrMode::ZpgY => Self::ZpgIdx(Reg::Y, gen_op),
+            RawAddrMode::AbsX => Self::AbsIdx(InstrReg::X, gen_op),
+            RawAddrMode::AbsY => Self::AbsIdx(InstrReg::Y, gen_op),
+            RawAddrMode::ZpgX => Self::ZpgIdx(InstrReg::X, gen_op),
+            RawAddrMode::ZpgY => Self::ZpgIdx(InstrReg::Y, gen_op),
 
             _ => unreachable!(),
         }
